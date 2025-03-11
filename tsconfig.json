@@ -17,9 +17,12 @@
     "noFallthroughCasesInSwitch": true,
     "allowJs": true,
     "forceConsistentCasingInFileNames": true,
-    "incremental": true,
-    "esModuleInterop": true
+    "esModuleInterop": true,
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "exclude": ["node_modules"]
 } 
