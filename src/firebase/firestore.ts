@@ -32,6 +32,7 @@ import {
   UserData,
   StoredCredential
 } from '../types/index';
+import { encryptPassword, decryptPassword } from '../utils/encryption';
 
 // Collection names
 const COLLECTIONS = {
@@ -45,20 +46,6 @@ const COLLECTIONS = {
 
 // User data collection reference
 const userDataCollection = collection(db, 'userData');
-
-// Helper function to encrypt passwords
-const encryptPassword = async (password: string): Promise<string> => {
-  // In a real application, you would use a proper encryption method
-  // For now, we'll just do a simple base64 encoding as a placeholder
-  return btoa(password);
-};
-
-// Helper function to decrypt passwords
-const decryptPassword = async (encryptedPassword: string): Promise<string> => {
-  // In a real application, you would use a proper decryption method
-  // For now, we'll just do a simple base64 decoding as a placeholder
-  return atob(encryptedPassword);
-};
 
 // Helper function to convert Firestore data to our types
 const convertDoc = <T extends DocumentData>(
@@ -518,7 +505,8 @@ export const getUserPreferences = async (): Promise<UserPreferences | null> => {
       recipeSortOrder: 'desc',
       recipeFilters: {
         mealTypes: [],
-        cuisines: []
+        cuisines: [],
+        showFavorites: false
       },
       lastUpdated: Timestamp.now()
     };
