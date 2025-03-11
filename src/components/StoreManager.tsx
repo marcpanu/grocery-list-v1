@@ -35,7 +35,8 @@ export const StoreManager: React.FC = () => {
     try {
       const newStore: Omit<Store, 'id'> = {
         name: newStoreName.trim(),
-        order: stores.length // Add to end of list
+        order: stores.length, // Add to end of list
+        isActive: true // New stores are active by default
       };
       await addStore(newStore);
       setNewStoreName('');
