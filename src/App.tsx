@@ -1,4 +1,4 @@
-import React from 'react';
+//import React from 'react';
 import { ShoppingList } from './components/ShoppingList';
 import { StoreManager } from './components/StoreManager';
 import { CategoryManager } from './components/CategoryManager';
