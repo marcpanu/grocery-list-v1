@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { addDoc, collection, getDocs, query, orderBy } from 'firebase/firestore';
+import { collection, getDocs, query, orderBy, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Category } from '../types';
 
@@ -7,32 +7,30 @@ export const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
-  const [loading, setLoading] = useState(true);
+  const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchCategories = async () => {
-      try {
-        console.log('Loading categories...');
-        const categoriesRef = collection(db, 'categories');
-        const q = query(categoriesRef, orderBy('order', 'asc'));
-        const querySnapshot = await getDocs(q);
-        const fetchedCategories = querySnapshot.docs.map(doc => ({
-          id: doc.id,
-          ...doc.data()
-        })) as Category[];
-        console.log('Fetched categories:', fetchedCategories);
-        setCategories(fetchedCategories);
-      } catch (err) {
-        console.error('Error loading categories:', err);
-        setError('Failed to load categories');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchCategories();
+    loadCategories();
   }, []);
+
+  const loadCategories = async () => {
+    try {
+      const categoriesRef = collection(db, 'categories');
+      const q = query(categoriesRef, orderBy('order', 'asc'));
+      const querySnapshot = await getDocs(q);
+      const fetchedCategories = querySnapshot.docs.map(doc => ({
+        id: doc.id,
+        ...doc.data()
+      })) as Category[];
+      setCategories(fetchedCategories);
+    } catch (err) {
+      console.error('Failed to load categories:', err);
+      setError('Failed to load categories');
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
   const handleAddCategory = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,10 +46,9 @@ export const CategoryManager: React.FC = () => {
         order: categories.length // Add to end of list
       };
       
-      const docRef = await addDoc(categoriesRef, newCategory);
-      console.log('Added category:', { id: docRef.id, ...newCategory });
-      setCategories([...categories, { id: docRef.id, ...newCategory }]);
+      await addDoc(categoriesRef, newCategory);
       setNewCategoryName('');
+      loadCategories(); // Refresh the list
     } catch (err) {
       console.error('Error adding category:', err);
       setError('Failed to add category');
@@ -60,23 +57,7 @@ export const CategoryManager: React.FC = () => {
     }
   };
 
-  if (loading) {
-    return <div className="p-4">Loading categories...</div>;
-  }
-
-  if (error) {
-    return (
-      <div className="p-4">
-        <div className="text-red-500 mb-4">{error}</div>
-        <button 
-          onClick={() => window.location.reload()}
-          className="text-blue-500 underline"
-        >
-          Retry
-        </button>
-      </div>
-    );
-  }
+  if (isLoading) return <div className="p-4">Loading categories...</div>;
 
   return (
     <div className="p-4">
@@ -114,7 +95,7 @@ export const CategoryManager: React.FC = () => {
               className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
             >
               <span>{category.name}</span>
-              <span className="text-gray-500">Order: {category.order}</span>
+              <span className="text-gray-500">#{category.order + 1}</span>
             </div>
           ))}
           {categories.length === 0 && (
