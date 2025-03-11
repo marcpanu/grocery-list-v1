@@ -10,8 +10,6 @@ import {
   where,
   orderBy,
   DocumentData,
-  arrayUnion,
-  arrayRemove,
   Timestamp,
   QueryDocumentSnapshot
 } from 'firebase/firestore';

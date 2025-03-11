@@ -16,10 +16,11 @@ export const StoreManager: React.FC = () => {
     setError(null);
 
     try {
-      await addStore({
+      const newStore: Omit<Store, 'id'> = {
         name: newStoreName.trim(),
         order: 0 // Default order
-      });
+      };
+      await addStore(newStore);
       setNewStoreName('');
     } catch (err) {
       setError('Failed to add store');
