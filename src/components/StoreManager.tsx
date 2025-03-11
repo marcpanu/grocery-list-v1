@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { addStore, getStores } from '../firebase/firestore';
 import { Store } from '../types';
-import { StoreSelector } from './StoreSelector';
 
 export const StoreManager: React.FC = () => {
   const [stores, setStores] = useState<Store[]>([]);
