@@ -17,6 +17,8 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
   const [isUpdating, setIsUpdating] = useState(false);
   const [isEditing, setIsEditing] = useState(false);
   const [editedName, setEditedName] = useState(item.name);
+  const [isEditingQuantity, setIsEditingQuantity] = useState(false);
+  const [editedQuantity, setEditedQuantity] = useState(item.quantity.toString());
 
   const handleStoreSelect = async (store: Store | undefined) => {
     setIsUpdating(true);
@@ -73,12 +75,42 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
     }
   };
 
-  const handleKeyDown = (e: React.KeyboardEvent) => {
+  const handleQuantityUpdate = async () => {
+    const newQuantity = parseInt(editedQuantity);
+    if (isNaN(newQuantity) || newQuantity === item.quantity) {
+      setIsEditingQuantity(false);
+      setEditedQuantity(item.quantity.toString());
+      return;
+    }
+
+    setIsUpdating(true);
+    try {
+      await updateItemInList(listId, item.id, { quantity: newQuantity });
+      onUpdate();
+    } catch (err) {
+      console.error('Failed to update quantity:', err);
+      setEditedQuantity(item.quantity.toString());
+    } finally {
+      setIsUpdating(false);
+      setIsEditingQuantity(false);
+    }
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent, type: 'name' | 'quantity') => {
     if (e.key === 'Enter') {
-      handleNameUpdate();
+      if (type === 'name') {
+        handleNameUpdate();
+      } else {
+        handleQuantityUpdate();
+      }
     } else if (e.key === 'Escape') {
-      setEditedName(item.name);
-      setIsEditing(false);
+      if (type === 'name') {
+        setEditedName(item.name);
+        setIsEditing(false);
+      } else {
+        setEditedQuantity(item.quantity.toString());
+        setIsEditingQuantity(false);
+      }
     }
   };
 
@@ -120,7 +152,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
               value={editedName}
               onChange={(e) => setEditedName(e.target.value)}
               onBlur={handleNameUpdate}
-              onKeyDown={handleKeyDown}
+              onKeyDown={(e) => handleKeyDown(e, 'name')}
               className="flex-1 px-0 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-zinc-900"
               autoFocus
             />
@@ -136,18 +168,39 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
               {item.name}
             </span>
           )}
-          {item.quantity > 1 && (
-            <span className="text-sm text-zinc-500 tabular-nums whitespace-nowrap">
-              × {item.quantity}{item.unit ? ` ${item.unit}` : ''}
-            </span>
-          )}
+          <div className="flex items-center gap-1">
+            {isEditingQuantity ? (
+              <input
+                type="number"
+                value={editedQuantity}
+                onChange={(e) => setEditedQuantity(e.target.value)}
+                onBlur={handleQuantityUpdate}
+                onKeyDown={(e) => handleKeyDown(e, 'quantity')}
+                className="w-16 px-1 py-0.5 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-sm text-zinc-500 tabular-nums"
+                min="1"
+                autoFocus
+              />
+            ) : (
+              <span 
+                onClick={() => setIsEditingQuantity(true)}
+                className="text-sm text-zinc-500 tabular-nums whitespace-nowrap cursor-text hover:text-violet-600"
+              >
+                × {item.quantity}
+              </span>
+            )}
+            {item.unit && (
+              <span className="text-sm text-zinc-500">
+                {item.unit}
+              </span>
+            )}
+          </div>
         </div>
 
         <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
           <StoreSelector
             selectedStore={item.store}
             onStoreSelect={handleStoreSelect}
-            className="w-40 hidden sm:block"
+            className="w-28 sm:w-40"
           />
           <button
             onClick={handleRemove}
