@@ -181,130 +181,139 @@ export const ShoppingList: React.FC = () => {
   }, {} as Record<string, Record<string, typeof filteredItems>>);
 
   return (
-    <div className="max-w-4xl mx-auto p-4">
-      {/* View Controls */}
-      <div className="flex justify-between items-center mb-6">
-        <div className="flex gap-2">
-          <StoreSelector
-            selectedStore={list.stores.find(s => s.id === currentStore)}
-            onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
-            allowAllStores
-            className="w-40"
-          />
-          <select
-            value={viewMode}
-            onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
-            className="p-2 border rounded bg-white"
-          >
-            <option value="combined">Combined View</option>
-            <option value="sequential">Sequential View</option>
-          </select>
-        </div>
-        <button
-          onClick={handleToggleCompleted}
-          className="px-4 py-2 text-sm text-gray-600 hover:text-gray-800"
-        >
-          {showCompleted ? 'Hide Completed' : 'Show Completed'}
-        </button>
-      </div>
-
-      {/* Add Item Form */}
-      <form onSubmit={handleAddItem} className="mb-6">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div className="flex gap-2">
-            <input
-              type="text"
-              value={newItemName}
-              onChange={(e) => setNewItemName(e.target.value)}
-              placeholder="Item name"
-              className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-            <input
-              type="number"
-              value={newItemQuantity}
-              onChange={(e) => setNewItemQuantity(e.target.value)}
-              min="1"
-              className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-            <input
-              type="text"
-              value={newItemUnit}
-              onChange={(e) => setNewItemUnit(e.target.value)}
-              placeholder="Unit"
-              className="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-            />
-          </div>
-          <div className="flex gap-2">
-            <CategorySelector
-              selectedCategory={selectedCategory}
-              onCategorySelect={setSelectedCategory}
-              className="flex-1"
-            />
-            <StoreSelector
-              selectedStore={selectedStore}
-              onStoreSelect={setSelectedStore}
-              className="flex-1"
-            />
+    <div className="h-full flex flex-col">
+      {/* Sticky Header */}
+      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+        <div className="px-4 py-3 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+            <div className="flex flex-wrap gap-3">
+              <StoreSelector
+                selectedStore={list.stores.find(s => s.id === currentStore)}
+                onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
+                allowAllStores
+                className="w-44"
+              />
+              <select
+                value={viewMode}
+                onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
+                className="w-44 rounded-md border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+              >
+                <option value="combined">Combined View</option>
+                <option value="sequential">Sequential View</option>
+              </select>
+            </div>
             <button
-              type="submit"
-              disabled={!newItemName.trim()}
-              className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+              onClick={handleToggleCompleted}
+              className="text-sm font-medium text-slate-700 hover:text-slate-900"
             >
-              Add
+              {showCompleted ? 'Hide Completed' : 'Show Completed'}
             </button>
           </div>
-        </div>
-      </form>
 
-      {/* Items List */}
-      <div className="space-y-6">
+          {/* Add Item Form */}
+          <form onSubmit={handleAddItem} className="mt-3">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <div className="flex-1 flex gap-2">
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Add an item"
+                  className="flex-1 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+                <input
+                  type="number"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  min="1"
+                  placeholder="Qty"
+                  className="w-20 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+                <input
+                  type="text"
+                  value={newItemUnit}
+                  onChange={(e) => setNewItemUnit(e.target.value)}
+                  placeholder="Unit"
+                  className="w-24 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                />
+              </div>
+              <div className="flex flex-wrap gap-2">
+                <CategorySelector
+                  selectedCategory={selectedCategory}
+                  onCategorySelect={setSelectedCategory}
+                  className="w-44"
+                />
+                <StoreSelector
+                  selectedStore={selectedStore}
+                  onStoreSelect={setSelectedStore}
+                  className="w-44"
+                />
+                <button
+                  type="submit"
+                  disabled={!newItemName.trim()}
+                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+                >
+                  Add Item
+                </button>
+              </div>
+            </div>
+          </form>
+        </div>
+      </div>
+
+      {/* List Content */}
+      <div className="flex-1 bg-white divide-y divide-slate-200">
         {viewMode === 'sequential' ? (
           // Sequential view: Group by store, then by category
-          <div className="space-y-8">
+          <div className="divide-y divide-slate-200">
             {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
               const store = list.stores.find((s: Store) => s.id === storeId);
               return (
-                <div key={storeId} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-2 font-semibold">
-                    {store?.name || 'Unassigned Store'}
+                <div key={storeId}>
+                  <div className="px-4 py-3 bg-slate-50 sm:px-6">
+                    <h2 className="text-sm font-semibold text-slate-900">
+                      {store?.name || 'Unassigned Store'}
+                    </h2>
                   </div>
-                  <div className="divide-y">
-                    {Object.entries(categorizedItems).map(([categoryId, items]) => {
-                      const category = list.categories.find((c: Category) => c.id === categoryId);
-                      return (
-                        <div key={categoryId} className="p-4">
-                          <h3 className="font-medium text-gray-700 mb-2">
+                  {Object.entries(categorizedItems).map(([categoryId, items]) => {
+                    const category = list.categories.find((c: Category) => c.id === categoryId);
+                    return (
+                      <div key={categoryId}>
+                        <div className="px-4 py-2 bg-slate-50/50 sm:px-6">
+                          <h3 className="text-xs font-medium text-slate-500">
                             {category?.name || 'Uncategorized'}
                           </h3>
-                          <div className="space-y-2">
-                            {items.map(item => (
-                              <ShoppingListItem
-                                key={item.id}
-                                item={item}
-                                listId={list.id}
-                                onUpdate={refreshList}
-                              />
-                            ))}
-                          </div>
                         </div>
-                      );
-                    })}
-                  </div>
+                        <div>
+                          {items.map(item => (
+                            <ShoppingListItem
+                              key={item.id}
+                              item={item}
+                              listId={list.id}
+                              onUpdate={refreshList}
+                            />
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })}
                 </div>
               );
             })}
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="space-y-6">
+          <div className="divide-y divide-slate-200">
             {Object.entries(itemsByCategory).map(([categoryId, items]) => {
               const category = list.categories.find((c: Category) => c.id === categoryId);
               return (
-                <div key={categoryId} className="border rounded-lg overflow-hidden">
-                  <div className="bg-gray-100 px-4 py-2 font-semibold">
-                    {category?.name || 'Uncategorized'}
+                <div key={categoryId}>
+                  <div className="px-4 py-2 bg-slate-50/50 sm:px-6">
+                    <h3 className="text-xs font-medium text-slate-500">
+                      {category?.name || 'Uncategorized'}
+                    </h3>
                   </div>
-                  <div className="divide-y">
+                  <div>
                     {items.map(item => (
                       <ShoppingListItem
                         key={item.id}
@@ -321,8 +330,10 @@ export const ShoppingList: React.FC = () => {
         )}
 
         {filteredItems.length === 0 && (
-          <div className="text-center text-gray-500 mt-8">
-            No items in your shopping list
+          <div className="px-4 py-12 text-center sm:px-6">
+            <p className="text-sm text-slate-500">
+              No items in your shopping list
+            </p>
           </div>
         )}
       </div>
