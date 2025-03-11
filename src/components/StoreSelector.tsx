@@ -43,11 +43,16 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
       className={`block w-full rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 ${className}`}
       value={selectedStore?.id || ''}
       onChange={(e) => {
+        if (e.target.value === 'all') {
+          onStoreSelect(undefined);
+          return;
+        }
         const store = stores.find(s => s.id === e.target.value);
         onStoreSelect(store);
       }}
     >
       <option value="">Select a store</option>
+      {allowAllStores && <option value="all">All Stores</option>}
       {stores.map((store) => (
         <option key={store.id} value={store.id}>
           {store.name}

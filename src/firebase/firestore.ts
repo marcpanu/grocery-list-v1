@@ -209,7 +209,8 @@ export const createShoppingList = async (
     showCompleted: true,
     currentStore: 'all',
     createdAt: now,
-    updatedAt: now
+    updatedAt: now,
+    status: 'active'
   };
 
   const docRef = await addDoc(shoppingListsRef, newList);
@@ -241,7 +242,8 @@ export const getShoppingList = async (listId: string): Promise<ShoppingList | nu
     showCompleted: data.showCompleted ?? true,
     currentStore: data.currentStore || 'all',
     createdAt: data.createdAt,
-    updatedAt: data.updatedAt
+    updatedAt: data.updatedAt,
+    status: data.status || 'active'
   };
   
   return list;
@@ -252,6 +254,7 @@ export const getUserShoppingLists = async (userId: string): Promise<ShoppingList
   const q = query(
     listsRef,
     where('userId', '==', userId),
+    where('status', '==', 'active'),
     orderBy('updatedAt', 'desc')
   );
   
@@ -274,7 +277,8 @@ export const getUserShoppingLists = async (userId: string): Promise<ShoppingList
       showCompleted: data.showCompleted ?? true,
       currentStore: data.currentStore || 'all',
       createdAt: data.createdAt,
-      updatedAt: data.updatedAt
+      updatedAt: data.updatedAt,
+      status: data.status || 'active'
     };
     return list;
   });
