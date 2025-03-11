@@ -21,7 +21,8 @@ import {
   NewShoppingItem, 
   UpdateShoppingItem,
   Store,
-  Category
+  Category,
+  ViewMode
 } from '../types';
 
 // Collection names
@@ -147,6 +148,44 @@ export const reorderStores = async (stores: Store[]): Promise<void> => {
   await batch.commit();
 };
 
+// Category Operations
+export const addCategory = async (category: Omit<Category, 'id'>): Promise<Category> => {
+  const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
+  const docRef = await addDoc(categoriesRef, category);
+  return {
+    id: docRef.id,
+    ...category
+  };
+};
+
+export const getCategories = async (): Promise<Category[]> => {
+  const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
+  const q = query(categoriesRef, orderBy('order', 'asc'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => convertDoc<Category>(doc));
+};
+
+export const deleteCategory = async (categoryId: string): Promise<void> => {
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
+  await deleteDoc(categoryRef);
+};
+
+export const updateCategoryOrder = async (categoryId: string, newOrder: number): Promise<void> => {
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
+  await updateDoc(categoryRef, { order: newOrder });
+};
+
+export const reorderCategories = async (categories: Category[]): Promise<void> => {
+  const batch = writeBatch(db);
+  
+  categories.forEach((category, index) => {
+    const categoryRef = doc(db, COLLECTIONS.CATEGORIES, category.id);
+    batch.update(categoryRef, { order: index });
+  });
+  
+  await batch.commit();
+};
+
 // Shopping List Operations
 export const createShoppingList = async (
   userId: string,
@@ -155,19 +194,28 @@ export const createShoppingList = async (
   const shoppingListsRef = collection(db, COLLECTIONS.SHOPPING_LISTS);
   const now = Timestamp.now();
   
-  const newList: Omit<ShoppingList, 'id'> = {
+  // Get stores and categories
+  const stores = await getStores();
+  const categories = await getCategories();
+  
+  const newList: ShoppingList = {
+    id: '', // Will be set after creation
     userId,
     name,
     items: [],
+    stores,
+    categories,
+    viewMode: 'combined',
+    showCompleted: true,
+    currentStore: 'all',
     createdAt: now,
-    updatedAt: now,
-    status: 'active'
+    updatedAt: now
   };
 
   const docRef = await addDoc(shoppingListsRef, newList);
   return {
-    id: docRef.id,
-    ...newList
+    ...newList,
+    id: docRef.id
   };
 };
 
@@ -177,10 +225,26 @@ export const getShoppingList = async (listId: string): Promise<ShoppingList | nu
   
   if (!listSnap.exists()) return null;
   
-  return {
+  // Get stores and categories
+  const stores = await getStores();
+  const categories = await getCategories();
+  
+  const data = listSnap.data();
+  const list: ShoppingList = {
     id: listSnap.id,
-    ...listSnap.data()
-  } as ShoppingList;
+    userId: data.userId,
+    name: data.name,
+    items: data.items || [],
+    stores,
+    categories,
+    viewMode: (data.viewMode || 'combined') as ViewMode,
+    showCompleted: data.showCompleted ?? true,
+    currentStore: data.currentStore || 'all',
+    createdAt: data.createdAt,
+    updatedAt: data.updatedAt
+  };
+  
+  return list;
 };
 
 export const getUserShoppingLists = async (userId: string): Promise<ShoppingList[]> => {
@@ -188,12 +252,32 @@ export const getUserShoppingLists = async (userId: string): Promise<ShoppingList
   const q = query(
     listsRef,
     where('userId', '==', userId),
-    where('status', '==', 'active'),
     orderBy('updatedAt', 'desc')
   );
   
   const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => convertDoc<ShoppingList>(doc));
+  
+  // Get stores and categories once for all lists
+  const stores = await getStores();
+  const categories = await getCategories();
+  
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    const list: ShoppingList = {
+      id: doc.id,
+      userId: data.userId,
+      name: data.name,
+      items: data.items || [],
+      stores,
+      categories,
+      viewMode: (data.viewMode || 'combined') as ViewMode,
+      showCompleted: data.showCompleted ?? true,
+      currentStore: data.currentStore || 'all',
+      createdAt: data.createdAt,
+      updatedAt: data.updatedAt
+    };
+    return list;
+  });
 };
 
 // Shopping List Item Operations
@@ -302,21 +386,4 @@ export const updateItemStore = async (
 export const updateShoppingList = async (shoppingListId: string, shoppingListData: Partial<DocumentData>) => {
   const shoppingListRef = doc(db, COLLECTIONS.SHOPPING_LISTS, shoppingListId);
   return updateDoc(shoppingListRef, shoppingListData);
-};
-
-// Category Operations
-export const deleteCategory = async (categoryId: string): Promise<void> => {
-  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
-  await deleteDoc(categoryRef);
-};
-
-export const reorderCategories = async (categories: Category[]): Promise<void> => {
-  const batch = writeBatch(db);
-  
-  categories.forEach((category, index) => {
-    const categoryRef = doc(db, COLLECTIONS.CATEGORIES, category.id);
-    batch.update(categoryRef, { order: index });
-  });
-  
-  await batch.commit();
 }; 

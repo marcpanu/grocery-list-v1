@@ -2,15 +2,17 @@ import React, { useEffect, useState } from 'react';
 import { Store } from '../types';
 import { getStores } from '../firebase/firestore';
 
-interface StoreSelectorProps {
-  selectedStore?: Store;
+export interface StoreSelectorProps {
+  selectedStore: Store | undefined;
   onStoreSelect: (store: Store | undefined) => void;
+  allowAllStores?: boolean;
   className?: string;
 }
 
 export const StoreSelector: React.FC<StoreSelectorProps> = ({
   selectedStore,
   onStoreSelect,
+  allowAllStores = false,
   className = ''
 }) => {
   const [stores, setStores] = useState<Store[]>([]);

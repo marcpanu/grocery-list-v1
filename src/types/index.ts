@@ -3,7 +3,7 @@ import { Timestamp } from 'firebase/firestore';
 export interface Store {
   id: string;
   name: string;
-  order: number;
+  isActive: boolean;
 }
 
 export interface Category {
@@ -20,18 +20,25 @@ export interface ShoppingItem {
   category?: Category;
   store?: Store;
   checked: boolean;
-  addedAt: Timestamp;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
 }
-
-export type NewShoppingItem = Omit<ShoppingItem, 'id' | 'addedAt'>;
-export type UpdateShoppingItem = Partial<Omit<ShoppingItem, 'id' | 'addedAt'>>;
 
 export interface ShoppingList {
   id: string;
   userId: string;
   name: string;
   items: ShoppingItem[];
+  stores: Store[];
+  categories: Category[];
+  viewMode: ViewMode;
+  showCompleted: boolean;
+  currentStore: string;
   createdAt: Timestamp;
   updatedAt: Timestamp;
-  status: 'active' | 'archived';
-} 
+}
+
+export type ViewMode = 'combined' | 'sequential';
+
+export type NewShoppingItem = Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>;
+export type UpdateShoppingItem = Partial<Omit<ShoppingItem, 'id' | 'createdAt' | 'updatedAt'>>; 
