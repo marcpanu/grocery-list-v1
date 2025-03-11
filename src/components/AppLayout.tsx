@@ -2,22 +2,45 @@ import { useState } from 'react';
 import { ShoppingList } from './ShoppingList';
 import { PageHeader } from './PageHeader';
 import { Settings } from './Settings';
+import { RecipeList } from './recipes/RecipeList';
+import { RecipeDetail } from './recipes/RecipeDetail';
+import { addTestRecipes } from '../scripts/addTestRecipes';
+
+// Expose addTestRecipes to window for development
+if (process.env.NODE_ENV === 'development') {
+  (window as any).addTestRecipes = addTestRecipes;
+}
 
 type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 
 export const AppLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('list');
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+
+  const handleRecipeSelect = (id: string) => {
+    setSelectedRecipeId(id);
+  };
+
+  const handleRecipeBack = () => {
+    setSelectedRecipeId(null);
+  };
+
+  const handleRecipeEdit = (id: string) => {
+    // TODO: Implement recipe editing
+    console.log('Edit recipe:', id);
+  };
 
   const renderContent = () => {
     switch (activeTab) {
       case 'recipes':
-        return (
-          <>
-            <PageHeader title="Recipes" />
-            <div className="p-4">
-              {/* Recipe content */}
-            </div>
-          </>
+        return selectedRecipeId ? (
+          <RecipeDetail
+            recipeId={selectedRecipeId}
+            onBack={handleRecipeBack}
+            onEdit={handleRecipeEdit}
+          />
+        ) : (
+          <RecipeList onRecipeSelect={handleRecipeSelect} />
         );
       case 'plan':
         return (

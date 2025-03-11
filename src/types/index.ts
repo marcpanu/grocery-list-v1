@@ -61,4 +61,6 @@ export interface ShoppingList {
 export type ViewMode = 'combined' | 'sequential';
 
 export type NewShoppingItem = Omit<ShoppingItem, 'id' | 'addedAt'>;
-export type UpdateShoppingItem = Partial<Omit<ShoppingItem, 'id' | 'addedAt'>>; 
+export type UpdateShoppingItem = Partial<Omit<ShoppingItem, 'id' | 'addedAt'>>;
+
+export * from './recipe'; 

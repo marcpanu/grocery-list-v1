@@ -12,7 +12,8 @@ import {
   DocumentData,
   Timestamp,
   QueryDocumentSnapshot,
-  writeBatch
+  writeBatch,
+  limit
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -22,7 +23,9 @@ import {
   UpdateShoppingItem,
   Store,
   Category,
-  ViewMode
+  ViewMode,
+  Recipe,
+  RecipePreview
 } from '../types/index';
 
 // Collection names
@@ -50,34 +53,110 @@ const convertDoc = <T extends DocumentData>(
 };
 
 // Recipe Operations
-export const addRecipe = async (recipeData: DocumentData) => {
+export const addRecipe = async (recipe: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>): Promise<Recipe> => {
   const recipesRef = collection(db, COLLECTIONS.RECIPES);
-  return addDoc(recipesRef, recipeData);
+  const now = Timestamp.now();
+  
+  const recipeWithDates = {
+    ...recipe,
+    dateAdded: now,
+    lastModified: now
+  };
+  
+  const docRef = await addDoc(recipesRef, recipeWithDates);
+  return {
+    ...recipeWithDates,
+    id: docRef.id
+  } as Recipe;
 };
 
-export const getRecipe = async (recipeId: string) => {
+export const getRecipe = async (recipeId: string): Promise<Recipe | null> => {
   const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
   const recipeSnap = await getDoc(recipeRef);
-  return recipeSnap.exists() ? recipeSnap.data() : null;
+  return recipeSnap.exists() ? convertDoc<Recipe>(recipeSnap) : null;
 };
 
-export const getAllRecipes = async () => {
+export const getAllRecipes = async (): Promise<RecipePreview[]> => {
   const recipesRef = collection(db, COLLECTIONS.RECIPES);
-  const querySnapshot = await getDocs(recipesRef);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+  const q = query(recipesRef, orderBy('dateAdded', 'desc'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
+      isFavorite: data.isFavorite
+    } as RecipePreview;
+  });
 };
 
-export const updateRecipe = async (recipeId: string, recipeData: Partial<DocumentData>) => {
-  const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
-  return updateDoc(recipeRef, recipeData);
+export const getFavoriteRecipes = async (): Promise<RecipePreview[]> => {
+  const recipesRef = collection(db, COLLECTIONS.RECIPES);
+  const q = query(
+    recipesRef,
+    where('isFavorite', '==', true),
+    orderBy('dateAdded', 'desc')
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
+      isFavorite: data.isFavorite
+    } as RecipePreview;
+  });
 };
 
-export const deleteRecipe = async (recipeId: string) => {
+export const getRecentRecipes = async (count: number = 5): Promise<RecipePreview[]> => {
+  const recipesRef = collection(db, COLLECTIONS.RECIPES);
+  const q = query(
+    recipesRef,
+    orderBy('dateAdded', 'desc'),
+    limit(count)
+  );
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
+      isFavorite: data.isFavorite
+    } as RecipePreview;
+  });
+};
+
+export const updateRecipe = async (
+  recipeId: string,
+  recipeData: Partial<Omit<Recipe, 'id' | 'dateAdded'>>
+): Promise<void> => {
   const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
-  return deleteDoc(recipeRef);
+  await updateDoc(recipeRef, {
+    ...recipeData,
+    lastModified: Timestamp.now()
+  });
+};
+
+export const toggleRecipeFavorite = async (recipeId: string, isFavorite: boolean): Promise<void> => {
+  const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
+  await updateDoc(recipeRef, {
+    isFavorite,
+    lastModified: Timestamp.now()
+  });
+};
+
+export const deleteRecipe = async (recipeId: string): Promise<void> => {
+  const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
+  await deleteDoc(recipeRef);
 };
 
 // Meal Plan Operations
