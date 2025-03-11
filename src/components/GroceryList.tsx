@@ -6,9 +6,15 @@ export function GroceryList() {
   const { state, dispatch } = useGrocery();
   const { items, showCompleted, currentStore, viewMode } = state;
 
+  // First filter by completion status
   const visibleItems = items.filter((item) =>
     showCompleted || !item.completed
   );
+
+  // Then filter by current store if not in "all" view
+  const filteredItems = currentStore === 'all'
+    ? visibleItems
+    : visibleItems.filter(item => item.currentStore === currentStore);
 
   const getStoreColor = (storeId: string) => {
     switch (storeId) {
@@ -23,16 +29,18 @@ export function GroceryList() {
     }
   };
 
-  const sortedItems = [...visibleItems].sort((a, b) => {
+  const sortedItems = [...filteredItems].sort((a, b) => {
     const catA = CATEGORIES.find((cat) => cat.id === a.category)?.sortOrder || 0;
     const catB = CATEGORIES.find((cat) => cat.id === b.category)?.sortOrder || 0;
     return catA - catB;
   });
 
   const renderStoreSection = (store: Store, items: typeof sortedItems) => {
+    // In sequential view, only show items for the current store
+    // In combined view, show all filtered items
     const storeItems = viewMode === 'sequential'
       ? items.filter(item => item.currentStore === store.id)
-      : items.filter(item => currentStore === 'all' || item.currentStore === store.id);
+      : items;
 
     if (storeItems.length === 0) return null;
 
