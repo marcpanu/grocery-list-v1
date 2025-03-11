@@ -1,6 +1,5 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
-import { CategorySelector } from './CategorySelector';
 import { StoreSelector } from './StoreSelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
