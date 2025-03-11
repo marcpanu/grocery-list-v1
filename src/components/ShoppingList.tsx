@@ -183,7 +183,7 @@ export const ShoppingList: React.FC = () => {
   return (
     <div className="h-full flex flex-col">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-slate-200 shadow-sm">
+      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 shadow-sm">
         <div className="px-4 py-3 sm:px-6">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-wrap gap-3">
@@ -196,7 +196,7 @@ export const ShoppingList: React.FC = () => {
               <select
                 value={viewMode}
                 onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
-                className="w-44 rounded-md border-slate-300 bg-white text-sm shadow-sm focus:border-blue-500 focus:ring-blue-500"
+                className="w-44 rounded-md border-zinc-300 bg-white text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500"
               >
                 <option value="combined">Combined View</option>
                 <option value="sequential">Sequential View</option>
@@ -204,7 +204,7 @@ export const ShoppingList: React.FC = () => {
             </div>
             <button
               onClick={handleToggleCompleted}
-              className="text-sm font-medium text-slate-700 hover:text-slate-900"
+              className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
             >
               {showCompleted ? 'Hide Completed' : 'Show Completed'}
             </button>
@@ -219,7 +219,7 @@ export const ShoppingList: React.FC = () => {
                   value={newItemName}
                   onChange={(e) => setNewItemName(e.target.value)}
                   placeholder="Add an item"
-                  className="flex-1 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  className="flex-1 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
                 />
                 <input
                   type="number"
@@ -227,14 +227,14 @@ export const ShoppingList: React.FC = () => {
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   min="1"
                   placeholder="Qty"
-                  className="w-20 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  className="w-20 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
                 />
                 <input
                   type="text"
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
                   placeholder="Unit"
-                  className="w-24 rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm"
+                  className="w-24 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
                 />
               </div>
               <div className="flex flex-wrap gap-2">
@@ -251,7 +251,7 @@ export const ShoppingList: React.FC = () => {
                 <button
                   type="submit"
                   disabled={!newItemName.trim()}
-                  className="px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 disabled:bg-slate-400 disabled:cursor-not-allowed transition-colors"
+                  className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-md hover:bg-violet-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition-colors"
                 >
                   Add Item
                 </button>
@@ -262,16 +262,16 @@ export const ShoppingList: React.FC = () => {
       </div>
 
       {/* List Content */}
-      <div className="flex-1 bg-white divide-y divide-slate-200">
+      <div className="flex-1 bg-white divide-y divide-zinc-200">
         {viewMode === 'sequential' ? (
           // Sequential view: Group by store, then by category
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-zinc-200">
             {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
               const store = list.stores.find((s: Store) => s.id === storeId);
               return (
                 <div key={storeId}>
-                  <div className="px-4 py-3 bg-slate-50 sm:px-6">
-                    <h2 className="text-sm font-semibold text-slate-900">
+                  <div className="px-4 py-3 bg-zinc-50 sm:px-6">
+                    <h2 className="text-sm font-semibold text-zinc-900">
                       {store?.name || 'Unassigned Store'}
                     </h2>
                   </div>
@@ -279,8 +279,8 @@ export const ShoppingList: React.FC = () => {
                     const category = list.categories.find((c: Category) => c.id === categoryId);
                     return (
                       <div key={categoryId}>
-                        <div className="px-4 py-2 bg-slate-50/50 sm:px-6">
-                          <h3 className="text-xs font-medium text-slate-500">
+                        <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                          <h3 className="text-xs font-medium text-zinc-500">
                             {category?.name || 'Uncategorized'}
                           </h3>
                         </div>
@@ -303,13 +303,13 @@ export const ShoppingList: React.FC = () => {
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="divide-y divide-slate-200">
+          <div className="divide-y divide-zinc-200">
             {Object.entries(itemsByCategory).map(([categoryId, items]) => {
               const category = list.categories.find((c: Category) => c.id === categoryId);
               return (
                 <div key={categoryId}>
-                  <div className="px-4 py-2 bg-slate-50/50 sm:px-6">
-                    <h3 className="text-xs font-medium text-slate-500">
+                  <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                    <h3 className="text-xs font-medium text-zinc-500">
                       {category?.name || 'Uncategorized'}
                     </h3>
                   </div>
@@ -331,7 +331,7 @@ export const ShoppingList: React.FC = () => {
 
         {filteredItems.length === 0 && (
           <div className="px-4 py-12 text-center sm:px-6">
-            <p className="text-sm text-slate-500">
+            <p className="text-sm text-zinc-500">
               No items in your shopping list
             </p>
           </div>

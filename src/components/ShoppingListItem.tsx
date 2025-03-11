@@ -84,7 +84,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
 
   return (
     <div 
-      className={`group px-4 py-3 hover:bg-slate-50 transition-colors ${
+      className={`group px-4 py-3 hover:bg-zinc-50 transition-colors ${
         isUpdating ? 'opacity-50' : ''
       }`}
     >
@@ -95,9 +95,9 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
             checked={item.checked}
             onChange={handleToggleCheck}
             disabled={isUpdating}
-            className="peer h-5 w-5 rounded-full border-2 border-slate-300 text-blue-600 focus:ring-blue-500 focus:ring-offset-0 transition-colors"
+            className="peer h-5 w-5 rounded-full border-2 border-zinc-300 text-violet-600 focus:ring-violet-500 focus:ring-offset-0 transition-colors"
           />
-          <div className="absolute inset-0 rounded-full peer-checked:bg-blue-600 transition-colors duration-200" />
+          <div className="absolute inset-0 rounded-full peer-checked:bg-violet-600 transition-colors duration-200" />
           <div className="absolute inset-0 flex items-center justify-center">
             <svg
               className="h-3 w-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
@@ -124,7 +124,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
               onChange={(e) => setEditedName(e.target.value)}
               onBlur={handleNameUpdate}
               onKeyDown={handleKeyDown}
-              className="flex-1 px-0 border-0 border-b-2 border-blue-500 focus:ring-0 bg-transparent text-slate-900"
+              className="flex-1 px-0 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-zinc-900"
               autoFocus
             />
           ) : (
@@ -132,15 +132,15 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
               onClick={() => setIsEditing(true)}
               className={`font-medium cursor-text transition-colors ${
                 item.checked 
-                  ? 'line-through text-slate-400' 
-                  : 'text-slate-900 hover:text-blue-600'
+                  ? 'line-through text-zinc-400' 
+                  : 'text-zinc-900 hover:text-violet-600'
               }`}
             >
               {item.name}
             </span>
           )}
           {item.quantity > 1 && (
-            <span className="text-sm text-slate-500 tabular-nums whitespace-nowrap">
+            <span className="text-sm text-zinc-500 tabular-nums whitespace-nowrap">
               × {item.quantity}{item.unit ? ` ${item.unit}` : ''}
             </span>
           )}
@@ -155,7 +155,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
           <button
             onClick={handleRemove}
             disabled={isUpdating}
-            className="p-1.5 text-slate-400 hover:text-red-600 transition-colors"
+            className="p-1.5 text-zinc-400 hover:text-red-600 transition-colors"
             title="Delete item"
           >
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">

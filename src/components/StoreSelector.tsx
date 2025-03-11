@@ -40,7 +40,7 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
 
   return (
     <select
-      className={`block w-full rounded-md border-slate-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 text-sm ${className}`}
+      className={`block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm ${className}`}
       value={selectedStore?.id || (allowAllStores ? 'all' : '')}
       onChange={(e) => {
         if (e.target.value === 'all') {
