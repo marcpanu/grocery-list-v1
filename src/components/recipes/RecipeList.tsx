@@ -1,5 +1,10 @@
 import { useState, useEffect } from 'react';
-import { PlusIcon, MagnifyingGlassIcon } from '@heroicons/react/24/outline';
+import { 
+  PlusIcon, 
+  MagnifyingGlassIcon,
+  Squares2X2Icon,
+  ListBulletIcon 
+} from '@heroicons/react/24/outline';
 import { RecipePreview } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
 import { getAllRecipes, toggleRecipeFavorite } from '../../firebase/firestore';
@@ -8,10 +13,13 @@ interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
 }
 
+type ViewMode = 'grid' | 'compact';
+
 export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [recipes, setRecipes] = useState<RecipePreview[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
+  const [viewMode, setViewMode] = useState<ViewMode>('grid');
 
   useEffect(() => {
     loadRecipes();
@@ -48,7 +56,33 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-white border-b border-zinc-200">
         <div className="px-4 py-4">
-          <h1 className="text-2xl font-bold text-zinc-900">Recipes</h1>
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-zinc-900">Recipes</h1>
+            
+            {/* View Toggle */}
+            <div className="flex items-center bg-zinc-100 rounded-lg p-1">
+              <button
+                onClick={() => setViewMode('grid')}
+                className={`p-1.5 rounded-md transition-colors duration-200 ${
+                  viewMode === 'grid'
+                    ? 'bg-white shadow text-violet-600'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+              >
+                <Squares2X2Icon className="w-5 h-5" />
+              </button>
+              <button
+                onClick={() => setViewMode('compact')}
+                className={`p-1.5 rounded-md transition-colors duration-200 ${
+                  viewMode === 'compact'
+                    ? 'bg-white shadow text-violet-600'
+                    : 'text-zinc-600 hover:text-zinc-900'
+                }`}
+              >
+                <ListBulletIcon className="w-5 h-5" />
+              </button>
+            </div>
+          </div>
           
           {/* Search Bar */}
           <div className="mt-4 relative">
@@ -70,7 +104,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
           <div className="flex justify-center items-center min-h-[200px]">
             <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
           </div>
-        ) : (
+        ) : viewMode === 'grid' ? (
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
             {filteredRecipes.map(recipe => (
               <RecipeCard
@@ -78,6 +112,19 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
                 recipe={recipe}
                 onFavoriteToggle={handleFavoriteToggle}
                 onClick={onRecipeSelect}
+                view={viewMode}
+              />
+            ))}
+          </div>
+        ) : (
+          <div className="flex flex-col gap-2">
+            {filteredRecipes.map(recipe => (
+              <RecipeCard
+                key={recipe.id}
+                recipe={recipe}
+                onFavoriteToggle={handleFavoriteToggle}
+                onClick={onRecipeSelect}
+                view={viewMode}
               />
             ))}
           </div>
