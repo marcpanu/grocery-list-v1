@@ -1,4 +1,4 @@
-//import * as React from 'react';
+import * as React from 'react';
 import { GroceryProvider } from './context/GroceryContext';
 import { ItemInput } from './components/ItemInput';
 import { GroceryList } from './components/GroceryList';

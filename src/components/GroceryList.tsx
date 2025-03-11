@@ -1,4 +1,4 @@
-//import React from 'react';
+import React from 'react';
 import { useGrocery } from '../context/GroceryContext';
 import { CATEGORIES, STORES, Store } from '../types';
 
