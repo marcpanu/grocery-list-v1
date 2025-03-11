@@ -173,110 +173,118 @@ export const ShoppingList: React.FC = () => {
   }, {} as Record<string, Record<string, typeof filteredItems>>);
 
   return (
-    <div className="h-full flex flex-col">
+    <div className="h-full flex flex-col bg-zinc-100">
       {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 shadow-sm">
-        <div className="px-4 py-3">
-          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-            <div className="flex flex-wrap gap-3">
-              <StoreSelector
-                selectedStore={list.stores.find(s => s.id === currentStore)}
-                onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
-                allowAllStores
-                className="w-44"
-              />
-              <select
-                value={viewMode}
-                onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
-                className="w-44 rounded-md border-zinc-300 bg-white text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500"
-              >
-                <option value="combined">Combined View</option>
-                <option value="sequential">Sequential View</option>
-              </select>
+      <div className="sticky top-0 z-10 bg-zinc-100 pt-4">
+        <div className="px-4">
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="px-4 py-3">
+              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+                <div className="flex flex-wrap gap-3">
+                  <StoreSelector
+                    selectedStore={list.stores.find(s => s.id === currentStore)}
+                    onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
+                    allowAllStores
+                    className="w-44"
+                  />
+                  <select
+                    value={viewMode}
+                    onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
+                    className="w-44 rounded-md border-zinc-300 bg-white text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500"
+                  >
+                    <option value="combined">Combined View</option>
+                    <option value="sequential">Sequential View</option>
+                  </select>
+                </div>
+                <button
+                  onClick={handleToggleCompleted}
+                  className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                >
+                  {showCompleted ? 'Hide Completed' : 'Show Completed'}
+                </button>
+              </div>
             </div>
-            <button
-              onClick={handleToggleCompleted}
-              className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
-            >
-              {showCompleted ? 'Hide Completed' : 'Show Completed'}
-            </button>
           </div>
         </div>
       </div>
 
       {/* List Content */}
-      <div className="flex-1 bg-white divide-y divide-zinc-200">
+      <div className="flex-1 p-4 pt-2">
         {viewMode === 'sequential' ? (
           // Sequential view: Group by store, then by category
-          <div className="divide-y divide-zinc-200">
+          <div className="space-y-4">
             {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
               const store = list.stores.find((s: Store) => s.id === storeId);
               return (
-                <div key={storeId}>
-                  <div className="px-4 py-3 bg-zinc-50 sm:px-6">
-                    <h2 className="text-sm font-semibold text-zinc-900">
+                <div key={storeId} className="bg-white rounded-lg shadow-sm">
+                  <div className="px-4 py-3 bg-zinc-50/80 sm:px-6">
+                    <h2 className="text-base font-bold text-zinc-900">
                       {store?.name || 'Unassigned Store'}
                     </h2>
                   </div>
-                  {Object.entries(categorizedItems).map(([categoryId, items]) => {
-                    const category = list.categories.find((c: Category) => c.id === categoryId);
-                    return (
-                      <div key={categoryId}>
-                        <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
-                          <h3 className="text-xs font-medium text-zinc-500">
-                            {category?.name || 'Uncategorized'}
-                          </h3>
+                  <div className="divide-y divide-zinc-200">
+                    {Object.entries(categorizedItems).map(([categoryId, items]) => {
+                      const category = list.categories.find((c: Category) => c.id === categoryId);
+                      return (
+                        <div key={categoryId}>
+                          <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                            <h3 className="text-sm font-medium text-zinc-700">
+                              {category?.name || 'Uncategorized'}
+                            </h3>
+                          </div>
+                          <div>
+                            {items.map(item => (
+                              <ShoppingListItem
+                                key={item.id}
+                                item={item}
+                                listId={list.id}
+                                onUpdate={refreshList}
+                              />
+                            ))}
+                          </div>
                         </div>
-                        <div>
-                          {items.map(item => (
-                            <ShoppingListItem
-                              key={item.id}
-                              item={item}
-                              listId={list.id}
-                              onUpdate={refreshList}
-                            />
-                          ))}
-                        </div>
-                      </div>
-                    );
-                  })}
+                      );
+                    })}
+                  </div>
                 </div>
               );
             })}
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="divide-y divide-zinc-200">
-            {Object.entries(itemsByCategory).map(([categoryId, items]) => {
-              const category = list.categories.find((c: Category) => c.id === categoryId);
-              return (
-                <div key={categoryId}>
-                  <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
-                    <h3 className="text-xs font-medium text-zinc-500">
-                      {category?.name || 'Uncategorized'}
-                    </h3>
+          <div className="bg-white rounded-lg shadow-sm">
+            <div className="divide-y divide-zinc-200">
+              {Object.entries(itemsByCategory).map(([categoryId, items]) => {
+                const category = list.categories.find((c: Category) => c.id === categoryId);
+                return (
+                  <div key={categoryId}>
+                    <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                      <h3 className="text-sm font-medium text-zinc-700">
+                        {category?.name || 'Uncategorized'}
+                      </h3>
+                    </div>
+                    <div>
+                      {items.map(item => (
+                        <ShoppingListItem
+                          key={item.id}
+                          item={item}
+                          listId={list.id}
+                          onUpdate={refreshList}
+                        />
+                      ))}
+                    </div>
                   </div>
-                  <div>
-                    {items.map(item => (
-                      <ShoppingListItem
-                        key={item.id}
-                        item={item}
-                        listId={list.id}
-                        onUpdate={refreshList}
-                      />
-                    ))}
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                );
+              })}
+            </div>
 
-        {filteredItems.length === 0 && (
-          <div className="px-4 py-12 text-center sm:px-6">
-            <p className="text-sm text-zinc-500">
-              No items in your shopping list
-            </p>
+            {filteredItems.length === 0 && (
+              <div className="px-4 py-12 text-center sm:px-6">
+                <p className="text-sm text-zinc-500">
+                  No items in your shopping list
+                </p>
+              </div>
+            )}
           </div>
         )}
       </div>
