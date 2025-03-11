@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Store } from '../types';
+import { Store } from '../types/index';
 import { getStores } from '../firebase/firestore';
 
 export interface StoreSelectorProps {

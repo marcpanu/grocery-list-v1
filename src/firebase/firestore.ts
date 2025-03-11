@@ -23,7 +23,7 @@ import {
   Store,
   Category,
   ViewMode
-} from '../types';
+} from '../types/index';
 
 // Collection names
 const COLLECTIONS = {
