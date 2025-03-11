@@ -35,12 +35,12 @@ export const StoreManager: React.FC = () => {
     try {
       const newStore: Omit<Store, 'id'> = {
         name: newStoreName.trim(),
-        order: stores.length, // Add to end of list
-        isActive: true // New stores are active by default
+        order: stores.length,
+        isActive: true
       };
       await addStore(newStore);
       setNewStoreName('');
-      loadStores(); // Refresh the list
+      loadStores();
     } catch (err) {
       setError('Failed to add store');
       console.error(err);
@@ -77,78 +77,78 @@ export const StoreManager: React.FC = () => {
     } catch (err) {
       setError('Failed to reorder stores');
       console.error(err);
-      loadStores(); // Reload original order on error
+      loadStores();
     }
   };
 
-  if (isLoading) return <div className="p-4">Loading stores...</div>;
+  if (isLoading) return <div>Loading stores...</div>;
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Manage Stores</h2>
-      
+    <div>
       {/* Add new store form */}
-      <form onSubmit={handleAddStore} className="mb-6">
-        <div className="flex gap-2">
+      <form onSubmit={handleAddStore} className="mb-8">
+        <div className="flex gap-3">
           <input
             type="text"
             value={newStoreName}
             onChange={(e) => setNewStoreName(e.target.value)}
-            placeholder="Enter store name"
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="Add a new store"
+            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
             disabled={isAdding}
           />
           <button
             type="submit"
             disabled={isAdding || !newStoreName.trim()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {isAdding ? 'Adding...' : 'Add Store'}
           </button>
         </div>
-        {error && <p className="mt-2 text-red-500">{error}</p>}
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
 
       {/* List existing stores */}
-      <div className="mt-4">
-        <h3 className="text-lg font-medium mb-2">Existing Stores</h3>
-        <div className="space-y-2">
-          {stores.map((store, index) => (
-            <div
-              key={store.id}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
-            >
-              <span>{store.name}</span>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleMoveStore(index, 'up')}
-                    disabled={index === 0}
-                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => handleMoveStore(index, 'down')}
-                    disabled={index === stores.length - 1}
-                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
-                  >
-                    ↓
-                  </button>
-                </div>
+      <div className="space-y-2">
+        {stores.map((store, index) => (
+          <div
+            key={store.id}
+            className="flex items-center justify-between py-2 group"
+          >
+            <span className="text-sm text-gray-900">{store.name}</span>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
                 <button
-                  onClick={() => handleDeleteStore(store.id)}
-                  className="p-1 text-red-600 hover:text-red-800"
+                  onClick={() => handleMoveStore(index, 'up')}
+                  disabled={index === 0}
+                  className="p-1 text-gray-400 hover:text-gray-600 disabled:text-gray-200 disabled:cursor-not-allowed"
+                  title="Move up"
                 >
-                  ×
+                  ↑
+                </button>
+                <button
+                  onClick={() => handleMoveStore(index, 'down')}
+                  disabled={index === stores.length - 1}
+                  className="p-1 text-gray-400 hover:text-gray-600 disabled:text-gray-200 disabled:cursor-not-allowed"
+                  title="Move down"
+                >
+                  ↓
                 </button>
               </div>
+              <button
+                onClick={() => handleDeleteStore(store.id)}
+                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                title="Delete store"
+              >
+                ×
+              </button>
             </div>
-          ))}
-          {stores.length === 0 && (
-            <p className="text-gray-500">No stores added yet</p>
-          )}
-        </div>
+          </div>
+        ))}
+        {stores.length === 0 && (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No stores added yet
+          </p>
+        )}
       </div>
     </div>
   );

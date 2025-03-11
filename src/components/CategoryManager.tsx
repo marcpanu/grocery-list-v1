@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
-import { collection, getDocs, query, orderBy, addDoc } from 'firebase/firestore';
-import { db } from '../firebase/config';
+import { addCategory, getCategories, deleteCategory, reorderCategories } from '../firebase/firestore';
 import { Category } from '../types';
-import { deleteCategory, reorderCategories } from '../firebase/firestore';
 
 export const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -17,13 +15,7 @@ export const CategoryManager: React.FC = () => {
 
   const loadCategories = async () => {
     try {
-      const categoriesRef = collection(db, 'categories');
-      const q = query(categoriesRef, orderBy('order', 'asc'));
-      const querySnapshot = await getDocs(q);
-      const fetchedCategories = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Category[];
+      const fetchedCategories = await getCategories();
       setCategories(fetchedCategories);
     } catch (err) {
       console.error('Failed to load categories:', err);
@@ -41,18 +33,16 @@ export const CategoryManager: React.FC = () => {
     setError(null);
 
     try {
-      const categoriesRef = collection(db, 'categories');
-      const newCategory = {
+      const newCategory: Omit<Category, 'id'> = {
         name: newCategoryName.trim(),
-        order: categories.length // Add to end of list
+        order: categories.length
       };
-      
-      await addDoc(categoriesRef, newCategory);
+      await addCategory(newCategory);
       setNewCategoryName('');
-      loadCategories(); // Refresh the list
+      loadCategories();
     } catch (err) {
-      console.error('Error adding category:', err);
       setError('Failed to add category');
+      console.error(err);
     } finally {
       setIsAdding(false);
     }
@@ -86,78 +76,78 @@ export const CategoryManager: React.FC = () => {
     } catch (err) {
       setError('Failed to reorder categories');
       console.error(err);
-      loadCategories(); // Reload original order on error
+      loadCategories();
     }
   };
 
-  if (isLoading) return <div className="p-4">Loading categories...</div>;
+  if (isLoading) return <div>Loading categories...</div>;
 
   return (
-    <div className="p-4">
-      <h2 className="text-xl font-semibold mb-4">Manage Categories</h2>
-      
+    <div>
       {/* Add new category form */}
-      <form onSubmit={handleAddCategory} className="mb-6">
-        <div className="flex gap-2">
+      <form onSubmit={handleAddCategory} className="mb-8">
+        <div className="flex gap-3">
           <input
             type="text"
             value={newCategoryName}
             onChange={(e) => setNewCategoryName(e.target.value)}
-            placeholder="Enter category name"
-            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+            placeholder="Add a new category"
+            className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500 text-sm"
             disabled={isAdding}
           />
           <button
             type="submit"
             disabled={isAdding || !newCategoryName.trim()}
-            className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+            className="px-4 py-2 bg-indigo-600 text-white text-sm font-medium rounded-md hover:bg-indigo-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors"
           >
             {isAdding ? 'Adding...' : 'Add Category'}
           </button>
         </div>
-        {error && <p className="mt-2 text-red-500">{error}</p>}
+        {error && <p className="mt-2 text-sm text-red-600">{error}</p>}
       </form>
 
       {/* List existing categories */}
-      <div className="mt-4">
-        <h3 className="text-lg font-medium mb-2">Existing Categories</h3>
-        <div className="space-y-2">
-          {categories.map((category, index) => (
-            <div
-              key={category.id}
-              className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
-            >
-              <span>{category.name}</span>
-              <div className="flex items-center gap-2">
-                <div className="flex gap-1">
-                  <button
-                    onClick={() => handleMoveCategory(index, 'up')}
-                    disabled={index === 0}
-                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
-                  >
-                    ↑
-                  </button>
-                  <button
-                    onClick={() => handleMoveCategory(index, 'down')}
-                    disabled={index === categories.length - 1}
-                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
-                  >
-                    ↓
-                  </button>
-                </div>
+      <div className="space-y-2">
+        {categories.map((category, index) => (
+          <div
+            key={category.id}
+            className="flex items-center justify-between py-2 group"
+          >
+            <span className="text-sm text-gray-900">{category.name}</span>
+            <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
+              <div className="flex gap-1">
                 <button
-                  onClick={() => handleDeleteCategory(category.id)}
-                  className="p-1 text-red-600 hover:text-red-800"
+                  onClick={() => handleMoveCategory(index, 'up')}
+                  disabled={index === 0}
+                  className="p-1 text-gray-400 hover:text-gray-600 disabled:text-gray-200 disabled:cursor-not-allowed"
+                  title="Move up"
                 >
-                  ×
+                  ↑
+                </button>
+                <button
+                  onClick={() => handleMoveCategory(index, 'down')}
+                  disabled={index === categories.length - 1}
+                  className="p-1 text-gray-400 hover:text-gray-600 disabled:text-gray-200 disabled:cursor-not-allowed"
+                  title="Move down"
+                >
+                  ↓
                 </button>
               </div>
+              <button
+                onClick={() => handleDeleteCategory(category.id)}
+                className="p-1 text-gray-400 hover:text-red-600 transition-colors"
+                title="Delete category"
+              >
+                ×
+              </button>
             </div>
-          ))}
-          {categories.length === 0 && (
-            <p className="text-gray-500">No categories added yet</p>
-          )}
-        </div>
+          </div>
+        ))}
+        {categories.length === 0 && (
+          <p className="text-sm text-gray-500 text-center py-4">
+            No categories added yet
+          </p>
+        )}
       </div>
     </div>
   );
