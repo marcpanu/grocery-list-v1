@@ -7,11 +7,13 @@ export const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [newCategoryName, setNewCategoryName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     const fetchCategories = async () => {
       try {
+        console.log('Loading categories...');
         const categoriesRef = collection(db, 'categories');
         const q = query(categoriesRef, orderBy('order', 'asc'));
         const querySnapshot = await getDocs(q);
@@ -19,10 +21,13 @@ export const CategoryManager: React.FC = () => {
           id: doc.id,
           ...doc.data()
         })) as Category[];
+        console.log('Fetched categories:', fetchedCategories);
         setCategories(fetchedCategories);
       } catch (err) {
-        console.error('Error fetching categories:', err);
+        console.error('Error loading categories:', err);
         setError('Failed to load categories');
+      } finally {
+        setLoading(false);
       }
     };
 
@@ -43,17 +48,10 @@ export const CategoryManager: React.FC = () => {
         order: categories.length // Add to end of list
       };
       
-      await addDoc(categoriesRef, newCategory);
+      const docRef = await addDoc(categoriesRef, newCategory);
+      console.log('Added category:', { id: docRef.id, ...newCategory });
+      setCategories([...categories, { id: docRef.id, ...newCategory }]);
       setNewCategoryName('');
-      
-      // Refresh categories
-      const q = query(categoriesRef, orderBy('order', 'asc'));
-      const querySnapshot = await getDocs(q);
-      const updatedCategories = querySnapshot.docs.map(doc => ({
-        id: doc.id,
-        ...doc.data()
-      })) as Category[];
-      setCategories(updatedCategories);
     } catch (err) {
       console.error('Error adding category:', err);
       setError('Failed to add category');
@@ -61,6 +59,24 @@ export const CategoryManager: React.FC = () => {
       setIsAdding(false);
     }
   };
+
+  if (loading) {
+    return <div className="p-4">Loading categories...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="text-blue-500 underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">

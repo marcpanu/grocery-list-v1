@@ -1,12 +1,32 @@
-import React, { useState } from 'react';
-import { addStore } from '../firebase/firestore';
+import React, { useState, useEffect } from 'react';
+import { addStore, getStores } from '../firebase/firestore';
 import { Store } from '../types';
 import { StoreSelector } from './StoreSelector';
 
 export const StoreManager: React.FC = () => {
+  const [stores, setStores] = useState<Store[]>([]);
   const [newStoreName, setNewStoreName] = useState('');
   const [isAdding, setIsAdding] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const loadStores = async () => {
+      try {
+        console.log('Loading stores...');
+        const fetchedStores = await getStores();
+        console.log('Fetched stores:', fetchedStores);
+        setStores(fetchedStores);
+      } catch (err) {
+        console.error('Error loading stores:', err);
+        setError('Failed to load stores');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    loadStores();
+  }, []);
 
   const handleAddStore = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -18,17 +38,38 @@ export const StoreManager: React.FC = () => {
     try {
       const newStore: Omit<Store, 'id'> = {
         name: newStoreName.trim(),
-        order: 0 // Default order
+        order: stores.length // Add to end of list
       };
-      await addStore(newStore);
+      
+      const addedStore = await addStore(newStore);
+      console.log('Added store:', addedStore);
+      setStores([...stores, addedStore]);
       setNewStoreName('');
     } catch (err) {
+      console.error('Error adding store:', err);
       setError('Failed to add store');
-      console.error(err);
     } finally {
       setIsAdding(false);
     }
   };
+
+  if (loading) {
+    return <div className="p-4">Loading stores...</div>;
+  }
+
+  if (error) {
+    return (
+      <div className="p-4">
+        <div className="text-red-500 mb-4">{error}</div>
+        <button 
+          onClick={() => window.location.reload()}
+          className="text-blue-500 underline"
+        >
+          Retry
+        </button>
+      </div>
+    );
+  }
 
   return (
     <div className="p-4">
@@ -56,14 +97,23 @@ export const StoreManager: React.FC = () => {
         {error && <p className="mt-2 text-red-500">{error}</p>}
       </form>
 
-      {/* View existing stores */}
+      {/* List existing stores */}
       <div className="mt-4">
         <h3 className="text-lg font-medium mb-2">Existing Stores</h3>
-        <StoreSelector
-          selectedStore={undefined}
-          onStoreSelect={() => {}}
-          className="max-w-md"
-        />
+        <div className="space-y-2">
+          {stores.map((store) => (
+            <div
+              key={store.id}
+              className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
+            >
+              <span>{store.name}</span>
+              <span className="text-gray-500">Order: {store.order}</span>
+            </div>
+          ))}
+          {stores.length === 0 && (
+            <p className="text-gray-500">No stores added yet</p>
+          )}
+        </div>
       </div>
     </div>
   );
