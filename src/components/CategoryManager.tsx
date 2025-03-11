@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { addCategory, getCategories, deleteCategory, reorderCategories } from '../firebase/firestore';
 import { Category } from '../types';
 

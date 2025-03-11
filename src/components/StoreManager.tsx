@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { addStore, getStores, deleteStore, reorderStores } from '../firebase/firestore';
 import { Store } from '../types';
 
