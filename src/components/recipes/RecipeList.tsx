@@ -19,6 +19,9 @@ import {
   updateUserPreferences
 } from '../../firebase/firestore';
 import { UserPreferences } from '../../types';
+import { RecipeImportModal } from './RecipeImportModal';
+import { RecipeUrlImport } from './RecipeUrlImport';
+import { importRecipeFromUrl } from '../../services/recipeImport';
 
 interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
@@ -40,6 +43,8 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSortOptions, setShowSortOptions] = useState(false);
+  const [showImportModal, setShowImportModal] = useState(false);
+  const [showUrlImportModal, setShowUrlImportModal] = useState(false);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -173,6 +178,31 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       ));
     } catch (error) {
       console.error('Error toggling favorite:', error);
+    }
+  };
+
+  const handleImportOptionSelect = (optionId: string) => {
+    switch (optionId) {
+      case 'url':
+        setShowUrlImportModal(true);
+        break;
+      // Add other cases as we implement them
+      default:
+        console.log('Import option not implemented:', optionId);
+    }
+  };
+
+  const handleUrlImport = async (data: { url: string; username?: string; password?: string }) => {
+    try {
+      const { recipe } = await importRecipeFromUrl(data);
+      
+      // Add the imported recipe to the list
+      setRecipes(prevRecipes => [recipe, ...prevRecipes]);
+
+      // Show success message (you might want to add a toast notification system)
+      console.log('Recipe imported successfully:', recipe.name);
+    } catch (error) {
+      throw error; // Re-throw to be handled by the URL import component
     }
   };
 
@@ -453,11 +483,24 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
 
       {/* FAB */}
       <button
-        onClick={() => console.log('Open recipe creation modal')}
+        onClick={() => setShowImportModal(true)}
         className="fixed bottom-20 right-4 w-14 h-14 bg-violet-600 text-white rounded-full shadow-lg hover:bg-violet-700 transition-colors duration-200 flex items-center justify-center"
       >
         <PlusIcon className="w-6 h-6" />
       </button>
+
+      {/* Import Modals */}
+      <RecipeImportModal
+        isOpen={showImportModal}
+        onClose={() => setShowImportModal(false)}
+        onSelectOption={handleImportOptionSelect}
+      />
+
+      <RecipeUrlImport
+        isOpen={showUrlImportModal}
+        onClose={() => setShowUrlImportModal(false)}
+        onImport={handleUrlImport}
+      />
     </div>
   );
 }; 

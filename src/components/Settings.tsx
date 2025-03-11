@@ -1,10 +1,51 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { StoreManager } from './StoreManager';
 import { CategoryManager } from './CategoryManager';
 import { SettingsMenuItem } from './SettingsMenuItem';
+import { DataManagement } from './settings/DataManagement';
+import { getUserData, addStoredCredential, deleteStoredCredential, deleteAllImages } from '../firebase/firestore';
+import { formatBytes } from '../utils/format';
+import { UserData, StoredCredential } from '../types';
+
+type SettingsSection = 'main' | 'stores' | 'categories' | 'data';
 
 export const Settings = () => {
-  const [activeSection, setActiveSection] = useState<'main' | 'stores' | 'categories'>('main');
+  const [activeSection, setActiveSection] = useState<SettingsSection>('main');
+  const [userData, setUserData] = useState<UserData | null>(null);
+  const [isLoading, setIsLoading] = useState(true);
+
+  useEffect(() => {
+    const loadUserData = async () => {
+      try {
+        const data = await getUserData();
+        setUserData(data);
+      } catch (error) {
+        console.error('Error loading user data:', error);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadUserData();
+  }, []);
+
+  const handleAddCredential = async (domain: string, username: string, password: string) => {
+    await addStoredCredential(domain, username, password);
+    const updatedData = await getUserData();
+    setUserData(updatedData);
+  };
+
+  const handleDeleteCredential = async (id: string) => {
+    await deleteStoredCredential(id);
+    const updatedData = await getUserData();
+    setUserData(updatedData);
+  };
+
+  const handleDeleteImages = async () => {
+    await deleteAllImages();
+    const updatedData = await getUserData();
+    setUserData(updatedData);
+  };
 
   if (activeSection === 'stores') {
     return (
@@ -48,6 +89,45 @@ export const Settings = () => {
     );
   }
 
+  if (activeSection === 'data') {
+    return (
+      <div className="h-full bg-zinc-100">
+        <button
+          onClick={() => setActiveSection('main')}
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Settings
+        </button>
+        <div className="p-4">
+          {isLoading ? (
+            <div className="flex justify-center items-center min-h-[200px]">
+              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
+            </div>
+          ) : userData ? (
+            <DataManagement
+              imageCount={userData.imageStorage.imageCount}
+              totalImageSize={formatBytes(userData.imageStorage.totalSize)}
+              storedCredentials={userData.credentials.map((cred: StoredCredential) => ({
+                ...cred,
+                lastUsed: cred.lastUsed.toDate()
+              }))}
+              onDeleteImages={handleDeleteImages}
+              onDeleteCredential={handleDeleteCredential}
+              onAddCredential={handleAddCredential}
+            />
+          ) : (
+            <div className="text-center py-12 text-gray-500">
+              Failed to load user data
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full bg-zinc-100">
       <div className="p-4 space-y-4">
@@ -75,6 +155,23 @@ export const Settings = () => {
               title="Manage Categories"
               description="Customize item categories and their order"
               onClick={() => setActiveSection('categories')}
+            />
+          </div>
+        </div>
+
+        {/* Data Management Section */}
+        <div>
+          <h2 className="px-4 text-base font-bold text-zinc-900 mb-2">Data Management</h2>
+          <div className="bg-white rounded-lg shadow-sm">
+            <SettingsMenuItem
+              icon={
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 7v10c0 2.21 3.582 4 8 4s8-1.79 8-4V7M4 7c0 2.21 3.582 4 8 4s8-1.79 8-4M4 7c0-2.21 3.582-4 8-4s8 1.79 8 4m0 5c0 2.21-3.582 4-8 4s-8-1.79-8-4" />
+                </svg>
+              }
+              title="Manage Data"
+              description="Manage recipe images and website credentials"
+              onClick={() => setActiveSection('data')}
             />
           </div>
         </div>

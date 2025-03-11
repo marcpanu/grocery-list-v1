@@ -77,4 +77,21 @@ export interface UserPreferences {
   lastUpdated: Timestamp;
 }
 
+export interface StoredCredential {
+  id: string;
+  domain: string;
+  username: string;
+  encryptedPassword: string;  // We'll encrypt passwords before storing
+  lastUsed: Timestamp;
+}
+
+export interface UserData {
+  id: string;
+  imageStorage: {
+    totalSize: number;  // in bytes
+    imageCount: number;
+  };
+  credentials: StoredCredential[];
+}
+
 export * from './recipe'; 

@@ -14,7 +14,8 @@ import {
   QueryDocumentSnapshot,
   writeBatch,
   limit,
-  setDoc
+  setDoc,
+  arrayUnion
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -27,7 +28,9 @@ import {
   ViewMode,
   Recipe,
   RecipePreview,
-  UserPreferences
+  UserPreferences,
+  UserData,
+  StoredCredential
 } from '../types/index';
 
 // Collection names
@@ -39,6 +42,23 @@ const COLLECTIONS = {
   CATEGORIES: 'categories',
   USER_PREFERENCES: 'userPreferences'
 } as const;
+
+// User data collection reference
+const userDataCollection = collection(db, 'userData');
+
+// Helper function to encrypt passwords
+const encryptPassword = async (password: string): Promise<string> => {
+  // In a real application, you would use a proper encryption method
+  // For now, we'll just do a simple base64 encoding as a placeholder
+  return btoa(password);
+};
+
+// Helper function to decrypt passwords
+const decryptPassword = async (encryptedPassword: string): Promise<string> => {
+  // In a real application, you would use a proper decryption method
+  // For now, we'll just do a simple base64 decoding as a placeholder
+  return atob(encryptedPassword);
+};
 
 // Helper function to convert Firestore data to our types
 const convertDoc = <T extends DocumentData>(
@@ -526,4 +546,87 @@ export const updateUserPreferences = async (
     ...updates,
     lastUpdated: Timestamp.now()
   });
+};
+
+export const getUserData = async (): Promise<UserData> => {
+  const userDataDoc = doc(userDataCollection, 'default');
+  const docSnap = await getDoc(userDataDoc);
+
+  if (!docSnap.exists()) {
+    // Initialize with default values
+    const defaultData: UserData = {
+      id: 'default',
+      imageStorage: {
+        totalSize: 0,
+        imageCount: 0
+      },
+      credentials: []
+    };
+
+    await setDoc(userDataDoc, defaultData);
+    return defaultData;
+  }
+
+  return docSnap.data() as UserData;
+};
+
+export const addStoredCredential = async (
+  domain: string,
+  username: string,
+  password: string
+): Promise<void> => {
+  const userDataDoc = doc(userDataCollection, 'default');
+  const userData = await getUserData();
+
+  // Check if credentials already exist for this domain
+  if (userData.credentials.some(cred => cred.domain === domain)) {
+    throw new Error('Credentials already exist for this domain');
+  }
+
+  const newCredential: StoredCredential = {
+    id: crypto.randomUUID(),
+    domain,
+    username,
+    encryptedPassword: await encryptPassword(password),
+    lastUsed: Timestamp.now()
+  };
+
+  await updateDoc(userDataDoc, {
+    credentials: arrayUnion(newCredential)
+  });
+};
+
+export const deleteStoredCredential = async (credentialId: string): Promise<void> => {
+  const userDataDoc = doc(userDataCollection, 'default');
+  const userData = await getUserData();
+
+  const updatedCredentials = userData.credentials.filter(cred => cred.id !== credentialId);
+
+  await updateDoc(userDataDoc, {
+    credentials: updatedCredentials
+  });
+};
+
+export const updateImageStorageStats = async (
+  totalSize: number,
+  imageCount: number
+): Promise<void> => {
+  const userDataDoc = doc(userDataCollection, 'default');
+  await updateDoc(userDataDoc, {
+    'imageStorage.totalSize': totalSize,
+    'imageStorage.imageCount': imageCount
+  });
+};
+
+export const deleteAllImages = async (): Promise<void> => {
+  const userDataDoc = doc(userDataCollection, 'default');
+  
+  // Reset image storage stats
+  await updateDoc(userDataDoc, {
+    'imageStorage.totalSize': 0,
+    'imageStorage.imageCount': 0
+  });
+
+  // TODO: Actually delete the images from Firebase Storage
+  // This will be implemented when we add image upload functionality
 }; 
