@@ -1,12 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
-import { StoreManager } from './StoreManager';
 import { CategorySelector } from './CategorySelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category } from '../types';
-
-// TODO: Replace with actual user ID from authentication
-const TEST_USER_ID = 'testUser';
+import { ensureSignedIn } from '../firebase/auth';
 
 export const ShoppingList: React.FC = () => {
   const [list, setList] = useState<ShoppingListType | null>(null);
@@ -20,15 +17,18 @@ export const ShoppingList: React.FC = () => {
   useEffect(() => {
     const initializeList = async () => {
       try {
+        // Ensure user is signed in
+        const user = await ensureSignedIn();
+        
         // Get user's active shopping lists
-        const userLists = await getUserShoppingLists(TEST_USER_ID);
+        const userLists = await getUserShoppingLists(user.uid);
         
         // Use the most recent active list or create a new one
         let activeList: ShoppingListType;
         if (userLists.length > 0) {
           activeList = userLists[0];
         } else {
-          activeList = await createShoppingList(TEST_USER_ID, 'Shopping List');
+          activeList = await createShoppingList(user.uid, 'Shopping List');
         }
         
         setList(activeList);
@@ -90,14 +90,9 @@ export const ShoppingList: React.FC = () => {
 
   return (
     <div className="max-w-4xl mx-auto p-4">
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        {/* Store Management */}
-        <div className="md:col-span-1">
-          <StoreManager />
-        </div>
-
+      <div className="grid grid-cols-1 gap-6">
         {/* Shopping List */}
-        <div className="md:col-span-2">
+        <div>
           <h1 className="text-2xl font-bold mb-4">{list.name}</h1>
 
           {/* Add Item Form */}

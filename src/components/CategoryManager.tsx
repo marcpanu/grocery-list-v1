@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { collection, getDocs, query, orderBy, addDoc } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { Category } from '../types';
+import { deleteCategory, reorderCategories } from '../firebase/firestore';
 
 export const CategoryManager: React.FC = () => {
   const [categories, setCategories] = useState<Category[]>([]);
@@ -57,6 +58,38 @@ export const CategoryManager: React.FC = () => {
     }
   };
 
+  const handleDeleteCategory = async (categoryId: string) => {
+    try {
+      await deleteCategory(categoryId);
+      loadCategories();
+    } catch (err) {
+      setError('Failed to delete category');
+      console.error(err);
+    }
+  };
+
+  const handleMoveCategory = async (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === categories.length - 1)
+    ) {
+      return;
+    }
+
+    const newCategories = [...categories];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    [newCategories[index], newCategories[newIndex]] = [newCategories[newIndex], newCategories[index]];
+
+    try {
+      await reorderCategories(newCategories);
+      setCategories(newCategories);
+    } catch (err) {
+      setError('Failed to reorder categories');
+      console.error(err);
+      loadCategories(); // Reload original order on error
+    }
+  };
+
   if (isLoading) return <div className="p-4">Loading categories...</div>;
 
   return (
@@ -89,13 +122,36 @@ export const CategoryManager: React.FC = () => {
       <div className="mt-4">
         <h3 className="text-lg font-medium mb-2">Existing Categories</h3>
         <div className="space-y-2">
-          {categories.map((category) => (
+          {categories.map((category, index) => (
             <div
               key={category.id}
               className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
             >
               <span>{category.name}</span>
-              <span className="text-gray-500">#{category.order + 1}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleMoveCategory(index, 'up')}
+                    disabled={index === 0}
+                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => handleMoveCategory(index, 'down')}
+                    disabled={index === categories.length - 1}
+                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <button
+                  onClick={() => handleDeleteCategory(category.id)}
+                  className="p-1 text-red-600 hover:text-red-800"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
           {categories.length === 0 && (

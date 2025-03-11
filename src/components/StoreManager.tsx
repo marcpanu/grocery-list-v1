@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { addStore, getStores } from '../firebase/firestore';
+import { addStore, getStores, deleteStore, reorderStores } from '../firebase/firestore';
 import { Store } from '../types';
 
 export const StoreManager: React.FC = () => {
@@ -48,6 +48,38 @@ export const StoreManager: React.FC = () => {
     }
   };
 
+  const handleDeleteStore = async (storeId: string) => {
+    try {
+      await deleteStore(storeId);
+      loadStores();
+    } catch (err) {
+      setError('Failed to delete store');
+      console.error(err);
+    }
+  };
+
+  const handleMoveStore = async (index: number, direction: 'up' | 'down') => {
+    if (
+      (direction === 'up' && index === 0) ||
+      (direction === 'down' && index === stores.length - 1)
+    ) {
+      return;
+    }
+
+    const newStores = [...stores];
+    const newIndex = direction === 'up' ? index - 1 : index + 1;
+    [newStores[index], newStores[newIndex]] = [newStores[newIndex], newStores[index]];
+
+    try {
+      await reorderStores(newStores);
+      setStores(newStores);
+    } catch (err) {
+      setError('Failed to reorder stores');
+      console.error(err);
+      loadStores(); // Reload original order on error
+    }
+  };
+
   if (isLoading) return <div className="p-4">Loading stores...</div>;
 
   return (
@@ -80,13 +112,36 @@ export const StoreManager: React.FC = () => {
       <div className="mt-4">
         <h3 className="text-lg font-medium mb-2">Existing Stores</h3>
         <div className="space-y-2">
-          {stores.map((store) => (
+          {stores.map((store, index) => (
             <div
               key={store.id}
               className="flex items-center justify-between p-2 bg-gray-50 rounded-md"
             >
               <span>{store.name}</span>
-              <span className="text-gray-500">#{store.order + 1}</span>
+              <div className="flex items-center gap-2">
+                <div className="flex gap-1">
+                  <button
+                    onClick={() => handleMoveStore(index, 'up')}
+                    disabled={index === 0}
+                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
+                  >
+                    ↑
+                  </button>
+                  <button
+                    onClick={() => handleMoveStore(index, 'down')}
+                    disabled={index === stores.length - 1}
+                    className="p-1 text-gray-600 hover:text-gray-800 disabled:text-gray-400"
+                  >
+                    ↓
+                  </button>
+                </div>
+                <button
+                  onClick={() => handleDeleteStore(store.id)}
+                  className="p-1 text-red-600 hover:text-red-800"
+                >
+                  ×
+                </button>
+              </div>
             </div>
           ))}
           {stores.length === 0 && (

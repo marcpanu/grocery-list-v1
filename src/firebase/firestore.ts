@@ -11,7 +11,8 @@ import {
   orderBy,
   DocumentData,
   Timestamp,
-  QueryDocumentSnapshot
+  QueryDocumentSnapshot,
+  writeBatch
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -19,7 +20,8 @@ import {
   ShoppingItem, 
   NewShoppingItem, 
   UpdateShoppingItem,
-  Store 
+  Store,
+  Category
 } from '../types';
 
 // Collection names
@@ -27,7 +29,8 @@ const COLLECTIONS = {
   RECIPES: 'recipes',
   MEAL_PLANS: 'mealPlans',
   SHOPPING_LISTS: 'shoppingLists',
-  STORES: 'stores'
+  STORES: 'stores',
+  CATEGORIES: 'categories'
 } as const;
 
 // Helper function to convert Firestore data to our types
@@ -121,6 +124,27 @@ export const getStores = async (): Promise<Store[]> => {
   const q = query(storesRef, orderBy('order', 'asc'));
   const querySnapshot = await getDocs(q);
   return querySnapshot.docs.map(doc => convertDoc<Store>(doc));
+};
+
+export const deleteStore = async (storeId: string): Promise<void> => {
+  const storeRef = doc(db, COLLECTIONS.STORES, storeId);
+  await deleteDoc(storeRef);
+};
+
+export const updateStoreOrder = async (storeId: string, newOrder: number): Promise<void> => {
+  const storeRef = doc(db, COLLECTIONS.STORES, storeId);
+  await updateDoc(storeRef, { order: newOrder });
+};
+
+export const reorderStores = async (stores: Store[]): Promise<void> => {
+  const batch = writeBatch(db);
+  
+  stores.forEach((store, index) => {
+    const storeRef = doc(db, COLLECTIONS.STORES, store.id);
+    batch.update(storeRef, { order: index });
+  });
+  
+  await batch.commit();
 };
 
 // Shopping List Operations
@@ -278,4 +302,21 @@ export const updateItemStore = async (
 export const updateShoppingList = async (shoppingListId: string, shoppingListData: Partial<DocumentData>) => {
   const shoppingListRef = doc(db, COLLECTIONS.SHOPPING_LISTS, shoppingListId);
   return updateDoc(shoppingListRef, shoppingListData);
+};
+
+// Category Operations
+export const deleteCategory = async (categoryId: string): Promise<void> => {
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
+  await deleteDoc(categoryRef);
+};
+
+export const reorderCategories = async (categories: Category[]): Promise<void> => {
+  const batch = writeBatch(db);
+  
+  categories.forEach((category, index) => {
+    const categoryRef = doc(db, COLLECTIONS.CATEGORIES, category.id);
+    batch.update(categoryRef, { order: index });
+  });
+  
+  await batch.commit();
 }; 
