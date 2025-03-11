@@ -35,14 +35,14 @@ export const AppLayout: React.FC = () => {
   };
 
   return (
-    <div className="h-screen flex flex-col bg-white">
+    <div className="fixed inset-0 flex flex-col bg-white">
       {/* Main Content */}
       <main className="flex-1 overflow-y-auto">
         {renderContent()}
       </main>
 
       {/* Bottom Navigation */}
-      <nav className="border-t border-zinc-200 bg-white">
+      <nav className="flex-shrink-0 border-t border-zinc-200 bg-white">
         <div className="max-w-screen-xl mx-auto">
           <div className="flex justify-around">
             <button
