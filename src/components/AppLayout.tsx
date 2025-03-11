@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { ShoppingList } from './ShoppingList';
 import { StoreManager } from './StoreManager';
 import { CategoryManager } from './CategoryManager';
+import { PageHeader } from './PageHeader';
 
 type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 
@@ -12,24 +13,38 @@ export const AppLayout: React.FC = () => {
     switch (activeTab) {
       case 'recipes':
         return (
-          <div className="flex items-center justify-center h-full text-zinc-500">
-            Under construction
-          </div>
+          <>
+            <PageHeader title="Recipes" />
+            <div className="p-4">
+              {/* Recipe content */}
+            </div>
+          </>
         );
       case 'plan':
         return (
-          <div className="flex items-center justify-center h-full text-zinc-500">
-            Under construction
-          </div>
+          <>
+            <PageHeader title="Plan your meals" />
+            <div className="p-4">
+              {/* Meal planning content */}
+            </div>
+          </>
         );
       case 'list':
-        return <ShoppingList />;
+        return (
+          <>
+            <PageHeader title="Grocery List" />
+            <ShoppingList />
+          </>
+        );
       case 'settings':
         return (
-          <div className="space-y-8 p-4">
-            <StoreManager />
-            <CategoryManager />
-          </div>
+          <>
+            <PageHeader title="Settings" />
+            <div className="p-4">
+              <StoreManager />
+              <CategoryManager />
+            </div>
+          </>
         );
     }
   };
