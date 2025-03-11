@@ -4,6 +4,7 @@ import { CategorySelector } from './CategorySelector';
 import { StoreSelector } from './StoreSelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
+import { AddItemModal } from './AddItemModal';
 
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default-user';
@@ -22,6 +23,8 @@ export const ShoppingList: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
   const [showCompleted, setShowCompleted] = useState(true);
   const [currentStore, setCurrentStore] = useState<string>('all');
+
+  const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -67,20 +70,10 @@ export const ShoppingList: React.FC = () => {
     }
   };
 
-  const handleAddItem = async (e: React.FormEvent) => {
-    e.preventDefault();
-    if (!list?.id || !newItemName.trim()) return;
+  const handleAddItem = async (newItem: NewShoppingItem) => {
+    if (!list?.id) return;
 
     try {
-      const newItem: NewShoppingItem = {
-        name: newItemName.trim(),
-        quantity: Number(newItemQuantity),
-        unit: newItemUnit.trim() || undefined,
-        category: selectedCategory,
-        store: selectedStore,
-        checked: false
-      };
-
       await addItemToList(list.id, newItem);
       setNewItemName('');
       setNewItemQuantity('1');
@@ -209,55 +202,6 @@ export const ShoppingList: React.FC = () => {
               {showCompleted ? 'Hide Completed' : 'Show Completed'}
             </button>
           </div>
-
-          {/* Add Item Form */}
-          <form onSubmit={handleAddItem} className="mt-3">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <div className="flex-1 flex gap-2">
-                <input
-                  type="text"
-                  value={newItemName}
-                  onChange={(e) => setNewItemName(e.target.value)}
-                  placeholder="Add an item"
-                  className="flex-1 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
-                />
-                <input
-                  type="number"
-                  value={newItemQuantity}
-                  onChange={(e) => setNewItemQuantity(e.target.value)}
-                  min="1"
-                  placeholder="Qty"
-                  className="w-20 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
-                />
-                <input
-                  type="text"
-                  value={newItemUnit}
-                  onChange={(e) => setNewItemUnit(e.target.value)}
-                  placeholder="Unit"
-                  className="w-24 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
-                />
-              </div>
-              <div className="flex flex-wrap gap-2">
-                <CategorySelector
-                  selectedCategory={selectedCategory}
-                  onCategorySelect={setSelectedCategory}
-                  className="w-44"
-                />
-                <StoreSelector
-                  selectedStore={selectedStore}
-                  onStoreSelect={setSelectedStore}
-                  className="w-44"
-                />
-                <button
-                  type="submit"
-                  disabled={!newItemName.trim()}
-                  className="px-4 py-2 bg-violet-600 text-white text-sm font-medium rounded-md hover:bg-violet-700 disabled:bg-zinc-400 disabled:cursor-not-allowed transition-colors"
-                >
-                  Add Item
-                </button>
-              </div>
-            </div>
-          </form>
         </div>
       </div>
 
@@ -337,6 +281,33 @@ export const ShoppingList: React.FC = () => {
           </div>
         )}
       </div>
+
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsAddModalOpen(true)}
+        className="fixed right-4 bottom-20 w-14 h-14 bg-violet-600 text-white rounded-full shadow-lg hover:bg-violet-700 transition-colors flex items-center justify-center"
+      >
+        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        </svg>
+      </button>
+
+      {/* Add Item Modal */}
+      <AddItemModal
+        isOpen={isAddModalOpen}
+        onClose={() => setIsAddModalOpen(false)}
+        onSubmit={handleAddItem}
+        newItemName={newItemName}
+        setNewItemName={setNewItemName}
+        newItemQuantity={newItemQuantity}
+        setNewItemQuantity={setNewItemQuantity}
+        newItemUnit={newItemUnit}
+        setNewItemUnit={setNewItemUnit}
+        selectedCategory={selectedCategory}
+        setSelectedCategory={setSelectedCategory}
+        selectedStore={selectedStore}
+        setSelectedStore={setSelectedStore}
+      />
     </div>
   );
 }; 
