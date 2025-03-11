@@ -114,20 +114,6 @@ App
     └── Preferences
 ```
 
-Directory structure
-```
-├── src/
-│   ├── components/
-│   ├── context/
-│   ├── types/
-│   ├── App.tsx
-│   └── main.tsx
-├── index.html
-├── package.json
-├── tsconfig.json
-└── vite.config.ts
-```
-
 ## Performance Considerations
 
 - Lazy loading for recipe images
