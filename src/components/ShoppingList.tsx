@@ -184,7 +184,7 @@ export const ShoppingList: React.FC = () => {
     <div className="h-full flex flex-col">
       {/* Sticky Header */}
       <div className="sticky top-0 z-10 bg-white border-b border-zinc-200 shadow-sm">
-        <div className="px-4 py-3 sm:px-6">
+        <div className="px-4 py-3">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
             <div className="flex flex-wrap gap-3">
               <StoreSelector
