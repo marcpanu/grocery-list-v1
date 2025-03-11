@@ -3,7 +3,9 @@ import { ShoppingListItem } from './ShoppingListItem';
 import { CategorySelector } from './CategorySelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category } from '../types';
-import { ensureSignedIn } from '../firebase/auth';
+
+// Since this is a single-user app, we'll use a constant ID
+const USER_ID = 'default-user';
 
 export const ShoppingList: React.FC = () => {
   const [list, setList] = useState<ShoppingListType | null>(null);
@@ -17,18 +19,15 @@ export const ShoppingList: React.FC = () => {
   useEffect(() => {
     const initializeList = async () => {
       try {
-        // Ensure user is signed in
-        const user = await ensureSignedIn();
-        
         // Get user's active shopping lists
-        const userLists = await getUserShoppingLists(user.uid);
+        const userLists = await getUserShoppingLists(USER_ID);
         
         // Use the most recent active list or create a new one
         let activeList: ShoppingListType;
         if (userLists.length > 0) {
           activeList = userLists[0];
         } else {
-          activeList = await createShoppingList(user.uid, 'Shopping List');
+          activeList = await createShoppingList(USER_ID, 'Shopping List');
         }
         
         setList(activeList);
