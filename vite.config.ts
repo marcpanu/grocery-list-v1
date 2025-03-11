@@ -7,9 +7,6 @@ export default defineConfig({
   build: {
     outDir: 'dist',
     sourcemap: true,
-    commonjsOptions: {
-      include: [],
-    },
   },
   optimizeDeps: {
     disabled: false,
@@ -18,4 +15,7 @@ export default defineConfig({
     port: 3000,
     strictPort: true,
   },
+  esbuild: {
+    logOverride: { 'this-is-undefined-in-esm': 'silent' }
+  }
 }); 
