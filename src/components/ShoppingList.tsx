@@ -186,7 +186,7 @@ export const ShoppingList: React.FC = () => {
       <div className="flex justify-between items-center mb-6">
         <div className="flex gap-2">
           <StoreSelector
-            selectedStore={undefined}
+            selectedStore={list.stores.find(s => s.id === currentStore)}
             onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
             allowAllStores
             className="w-40"
