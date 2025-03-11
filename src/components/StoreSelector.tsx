@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { Store } from '../types/shopping-list';
+import { Store } from '../types';
 import { getStores } from '../firebase/firestore';
 
 interface StoreSelectorProps {

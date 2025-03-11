@@ -1,8 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
 import { StoreManager } from './StoreManager';
+import { CategorySelector } from './CategorySelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists } from '../firebase/firestore';
-import { ShoppingList as ShoppingListType, NewShoppingItem } from '../types/shopping-list';
+import { ShoppingList as ShoppingListType, NewShoppingItem, Category } from '../types';
 
 // TODO: Replace with actual user ID from authentication
 const TEST_USER_ID = 'testUser';
@@ -14,6 +15,7 @@ export const ShoppingList: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnit, setNewItemUnit] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<Category>();
 
   useEffect(() => {
     const initializeList = async () => {
@@ -65,8 +67,8 @@ export const ShoppingList: React.FC = () => {
       const newItem: NewShoppingItem = {
         name: newItemName.trim(),
         quantity: Number(newItemQuantity),
-        unit: newItemUnit.trim(),
-        category: '', // Add category selection later
+        unit: newItemUnit.trim() || undefined,
+        category: selectedCategory,
         checked: false
       };
 
@@ -74,6 +76,7 @@ export const ShoppingList: React.FC = () => {
       setNewItemName('');
       setNewItemQuantity('1');
       setNewItemUnit('');
+      setSelectedCategory(undefined);
       refreshList();
     } catch (err) {
       setError('Failed to add item');
@@ -99,35 +102,44 @@ export const ShoppingList: React.FC = () => {
 
           {/* Add Item Form */}
           <form onSubmit={handleAddItem} className="mb-6">
-            <div className="flex gap-2">
-              <input
-                type="text"
-                value={newItemName}
-                onChange={(e) => setNewItemName(e.target.value)}
-                placeholder="Item name"
-                className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              />
-              <input
-                type="number"
-                value={newItemQuantity}
-                onChange={(e) => setNewItemQuantity(e.target.value)}
-                min="1"
-                className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              />
-              <input
-                type="text"
-                value={newItemUnit}
-                onChange={(e) => setNewItemUnit(e.target.value)}
-                placeholder="Unit"
-                className="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
-              />
-              <button
-                type="submit"
-                disabled={!newItemName.trim()}
-                className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
-              >
-                Add
-              </button>
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newItemName}
+                  onChange={(e) => setNewItemName(e.target.value)}
+                  placeholder="Item name"
+                  className="flex-1 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <input
+                  type="number"
+                  value={newItemQuantity}
+                  onChange={(e) => setNewItemQuantity(e.target.value)}
+                  min="1"
+                  className="w-20 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+                <input
+                  type="text"
+                  value={newItemUnit}
+                  onChange={(e) => setNewItemUnit(e.target.value)}
+                  placeholder="Unit"
+                  className="w-24 rounded-md border-gray-300 shadow-sm focus:border-indigo-500 focus:ring-indigo-500"
+                />
+              </div>
+              <div className="flex gap-2">
+                <CategorySelector
+                  selectedCategory={selectedCategory}
+                  onCategorySelect={setSelectedCategory}
+                  className="flex-1"
+                />
+                <button
+                  type="submit"
+                  disabled={!newItemName.trim()}
+                  className="px-4 py-2 bg-indigo-600 text-white rounded-md hover:bg-indigo-700 disabled:bg-gray-400"
+                >
+                  Add
+                </button>
+              </div>
             </div>
           </form>
 

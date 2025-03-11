@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { addStore } from '../firebase/firestore';
-import { Store } from '../types/shopping-list';
+import { Store } from '../types';
 import { StoreSelector } from './StoreSelector';
 
 export const StoreManager: React.FC = () => {

@@ -20,7 +20,7 @@ import {
   NewShoppingItem, 
   UpdateShoppingItem,
   Store 
-} from '../types/shopping-list';
+} from '../types';
 
 // Collection names
 const COLLECTIONS = {

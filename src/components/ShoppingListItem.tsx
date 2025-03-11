@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
-import { ShoppingItem, Store } from '../types/shopping-list';
+import { ShoppingItem, Store, Category } from '../types';
 import { StoreSelector } from './StoreSelector';
+import { CategorySelector } from './CategorySelector';
 import { updateItemInList, removeItemFromList, toggleItemCheck } from '../firebase/firestore';
 
 interface ShoppingListItemProps {
@@ -23,6 +24,18 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
       onUpdate();
     } catch (err) {
       console.error('Failed to update store:', err);
+    } finally {
+      setIsUpdating(false);
+    }
+  };
+
+  const handleCategorySelect = async (category: Category | undefined) => {
+    setIsUpdating(true);
+    try {
+      await updateItemInList(listId, item.id, { category });
+      onUpdate();
+    } catch (err) {
+      console.error('Failed to update category:', err);
     } finally {
       setIsUpdating(false);
     }
@@ -73,7 +86,12 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
             </span>
           </div>
           
-          <div className="mt-2">
+          <div className="mt-2 space-y-2">
+            <CategorySelector
+              selectedCategory={item.category}
+              onCategorySelect={handleCategorySelect}
+              className="text-sm"
+            />
             <StoreSelector
               selectedStore={item.store}
               onStoreSelect={handleStoreSelect}
