@@ -4,6 +4,7 @@ import { StoreSelector } from './StoreSelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
 import { AddItemModal } from './AddItemModal';
+import { PageHeader } from './PageHeader';
 
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default-user';
@@ -17,6 +18,7 @@ export const ShoppingList: React.FC = () => {
   const [newItemUnit, setNewItemUnit] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category>();
   const [selectedStore, setSelectedStore] = useState<Store>();
+  const [showConfig, setShowConfig] = useState(false);
 
   // View state
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
@@ -174,15 +176,26 @@ export const ShoppingList: React.FC = () => {
 
   return (
     <div className="h-full flex flex-col bg-zinc-100">
-      {/* Sticky Header */}
-      <div className="sticky top-0 z-10 bg-zinc-100 pt-4">
+      <PageHeader 
+        title="Grocery List" 
+        onToggleConfig={() => setShowConfig(!showConfig)}
+        showConfig={showConfig}
+      />
+
+      {/* Config Panel */}
+      <div 
+        className={`
+          fixed left-0 right-0 z-20 bg-zinc-100 pt-4 transition-all duration-200 ease-in-out
+          ${showConfig ? 'top-[72px] opacity-100' : 'top-[52px] opacity-0 pointer-events-none'}
+        `}
+      >
         <div className="px-4">
           <div className="bg-white rounded-lg shadow-sm">
             <div className="px-4 py-3">
               <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
                 <div className="flex flex-wrap gap-3">
                   <StoreSelector
-                    selectedStore={list.stores.find(s => s.id === currentStore)}
+                    selectedStore={list?.stores.find(s => s.id === currentStore)}
                     onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
                     allowAllStores
                     className="w-44"
@@ -198,7 +211,7 @@ export const ShoppingList: React.FC = () => {
                 </div>
                 <button
                   onClick={handleToggleCompleted}
-                  className="text-sm font-medium text-zinc-700 hover:text-zinc-900"
+                  className="text-sm font-medium text-violet-600 hover:text-violet-700"
                 >
                   {showCompleted ? 'Hide Completed' : 'Show Completed'}
                 </button>
@@ -209,25 +222,30 @@ export const ShoppingList: React.FC = () => {
       </div>
 
       {/* List Content */}
-      <div className="flex-1 p-4 pt-2">
+      <div className={`flex-1 p-4 pt-2 overflow-y-auto transition-all duration-200 ${showConfig ? 'mt-[88px]' : ''}`}>
         {viewMode === 'sequential' ? (
           // Sequential view: Group by store, then by category
           <div className="space-y-4">
             {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
               const store = list.stores.find((s: Store) => s.id === storeId);
               return (
-                <div key={storeId} className="bg-white rounded-lg shadow-sm">
-                  <div className="px-4 py-3 bg-zinc-50/80 sm:px-6">
-                    <h2 className="text-base font-bold text-zinc-900">
-                      {store?.name || 'Unassigned Store'}
-                    </h2>
+                <div key={storeId} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="px-4 py-3 bg-white border-b border-zinc-200 sm:px-6">
+                    <div className="flex items-center">
+                      <svg className="w-5 h-5 text-violet-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                      </svg>
+                      <h2 className="text-base font-semibold text-zinc-900">
+                        {store?.name || 'Unassigned Store'}
+                      </h2>
+                    </div>
                   </div>
                   <div className="divide-y divide-zinc-200">
                     {Object.entries(categorizedItems).map(([categoryId, items]) => {
                       const category = list.categories.find((c: Category) => c.id === categoryId);
                       return (
                         <div key={categoryId}>
-                          <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                          <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
                             <h3 className="text-sm font-medium text-zinc-700">
                               {category?.name || 'Uncategorized'}
                             </h3>
@@ -252,13 +270,13 @@ export const ShoppingList: React.FC = () => {
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="bg-white rounded-lg shadow-sm">
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
             <div className="divide-y divide-zinc-200">
               {Object.entries(itemsByCategory).map(([categoryId, items]) => {
                 const category = list.categories.find((c: Category) => c.id === categoryId);
                 return (
                   <div key={categoryId}>
-                    <div className="px-4 py-2 bg-zinc-50/50 sm:px-6">
+                    <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
                       <h3 className="text-sm font-medium text-zinc-700">
                         {category?.name || 'Uncategorized'}
                       </h3>
