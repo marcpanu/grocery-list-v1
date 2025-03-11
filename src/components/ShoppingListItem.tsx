@@ -89,18 +89,15 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
       }`}
     >
       <div className="flex items-center gap-4 sm:gap-6">
-        <div className="relative flex items-center">
-          <input
-            type="checkbox"
-            checked={item.checked}
-            onChange={handleToggleCheck}
-            disabled={isUpdating}
-            className="peer h-5 w-5 rounded-full border-2 border-zinc-300 text-violet-600 focus:ring-violet-500 focus:ring-offset-0 transition-colors"
-          />
-          <div className="absolute inset-0 rounded-full peer-checked:bg-violet-600 transition-colors duration-200" />
-          <div className="absolute inset-0 flex items-center justify-center">
+        <button
+          onClick={handleToggleCheck}
+          disabled={isUpdating}
+          className="relative flex items-center justify-center w-5 h-5 rounded-full border-2 border-zinc-300 hover:border-violet-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+        >
+          <div className={`absolute inset-0.5 rounded-full transition-colors ${item.checked ? 'bg-violet-600' : ''}`} />
+          {item.checked && (
             <svg
-              className="h-3 w-3 text-white opacity-0 peer-checked:opacity-100 transition-opacity"
+              className="w-3 h-3 text-white relative"
               viewBox="0 0 12 12"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -113,9 +110,9 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
                 strokeLinejoin="round"
               />
             </svg>
-          </div>
-        </div>
-        
+          )}
+        </button>
+
         <div className="flex-1 min-w-0 flex items-baseline gap-2">
           {isEditing ? (
             <input

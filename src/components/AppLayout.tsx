@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { ShoppingList } from './ShoppingList';
-import { StoreManager } from './StoreManager';
-import { CategoryManager } from './CategoryManager';
 import { PageHeader } from './PageHeader';
+import { Settings } from './Settings';
 
 type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 
@@ -40,10 +39,7 @@ export const AppLayout: React.FC = () => {
         return (
           <>
             <PageHeader title="Settings" />
-            <div className="p-4">
-              <StoreManager />
-              <CategoryManager />
-            </div>
+            <Settings />
           </>
         );
     }
