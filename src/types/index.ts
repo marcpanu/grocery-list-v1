@@ -63,4 +63,18 @@ export type ViewMode = 'combined' | 'sequential';
 export type NewShoppingItem = Omit<ShoppingItem, 'id' | 'addedAt'>;
 export type UpdateShoppingItem = Partial<Omit<ShoppingItem, 'id' | 'addedAt'>>;
 
+export interface UserPreferences {
+  id: string;
+  recipeViewMode: 'grid' | 'compact';
+  recipeSortBy: 'name' | 'dateAdded' | 'rating';
+  recipeSortOrder: 'asc' | 'desc';
+  recipeFilters: {
+    mealTypes: string[];
+    cuisines: string[];
+    showFavorites: boolean;
+  };
+  // We can add more preferences here later
+  lastUpdated: Timestamp;
+}
+
 export * from './recipe'; 

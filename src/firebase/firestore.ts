@@ -13,7 +13,8 @@ import {
   Timestamp,
   QueryDocumentSnapshot,
   writeBatch,
-  limit
+  limit,
+  setDoc
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -25,7 +26,8 @@ import {
   Category,
   ViewMode,
   Recipe,
-  RecipePreview
+  RecipePreview,
+  UserPreferences
 } from '../types/index';
 
 // Collection names
@@ -34,7 +36,8 @@ const COLLECTIONS = {
   MEAL_PLANS: 'mealPlans',
   SHOPPING_LISTS: 'shoppingLists',
   STORES: 'stores',
-  CATEGORIES: 'categories'
+  CATEGORIES: 'categories',
+  USER_PREFERENCES: 'userPreferences'
 } as const;
 
 // Helper function to convert Firestore data to our types
@@ -88,7 +91,10 @@ export const getAllRecipes = async (): Promise<RecipePreview[]> => {
       imageUrl: data.imageUrl,
       prepTime: data.prepTime,
       mealTypes: data.mealTypes,
-      isFavorite: data.isFavorite
+      isFavorite: data.isFavorite,
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
+      rating: data.rating,
+      dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
   });
 };
@@ -109,7 +115,10 @@ export const getFavoriteRecipes = async (): Promise<RecipePreview[]> => {
       imageUrl: data.imageUrl,
       prepTime: data.prepTime,
       mealTypes: data.mealTypes,
-      isFavorite: data.isFavorite
+      isFavorite: data.isFavorite,
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
+      rating: data.rating,
+      dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
   });
 };
@@ -130,7 +139,10 @@ export const getRecentRecipes = async (count: number = 5): Promise<RecipePreview
       imageUrl: data.imageUrl,
       prepTime: data.prepTime,
       mealTypes: data.mealTypes,
-      isFavorite: data.isFavorite
+      isFavorite: data.isFavorite,
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
+      rating: data.rating,
+      dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
   });
 };
@@ -469,4 +481,49 @@ export const updateItemStore = async (
 export const updateShoppingList = async (shoppingListId: string, shoppingListData: Partial<DocumentData>) => {
   const shoppingListRef = doc(db, COLLECTIONS.SHOPPING_LISTS, shoppingListId);
   return updateDoc(shoppingListRef, shoppingListData);
+};
+
+// User Preferences Operations
+export const getUserPreferences = async (): Promise<UserPreferences | null> => {
+  // For now, we'll use a fixed ID since this is a single-user app
+  const DEFAULT_USER_ID = 'default';
+  const prefsRef = doc(db, COLLECTIONS.USER_PREFERENCES, DEFAULT_USER_ID);
+  const prefsSnap = await getDoc(prefsRef);
+  
+  if (!prefsSnap.exists()) {
+    // Create default preferences if they don't exist
+    const defaultPrefs: Omit<UserPreferences, 'id'> = {
+      recipeViewMode: 'grid',
+      recipeSortBy: 'dateAdded',
+      recipeSortOrder: 'desc',
+      recipeFilters: {
+        mealTypes: [],
+        cuisines: []
+      },
+      lastUpdated: Timestamp.now()
+    };
+    
+    await setDoc(prefsRef, defaultPrefs);
+    return {
+      id: DEFAULT_USER_ID,
+      ...defaultPrefs
+    };
+  }
+  
+  return {
+    id: prefsSnap.id,
+    ...prefsSnap.data()
+  } as UserPreferences;
+};
+
+export const updateUserPreferences = async (
+  updates: Partial<Omit<UserPreferences, 'id' | 'lastUpdated'>>
+): Promise<void> => {
+  const DEFAULT_USER_ID = 'default';
+  const prefsRef = doc(db, COLLECTIONS.USER_PREFERENCES, DEFAULT_USER_ID);
+  
+  await updateDoc(prefsRef, {
+    ...updates,
+    lastUpdated: Timestamp.now()
+  });
 }; 

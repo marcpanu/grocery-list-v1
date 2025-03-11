@@ -1,3 +1,5 @@
+import { Timestamp } from 'firebase/firestore';
+
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
 
 export type PrepTime = '<30' | '30-60' | '60+';
@@ -36,8 +38,8 @@ export interface Recipe {
   
   // Metadata
   isFavorite: boolean;
-  dateAdded: Date;
-  lastModified: Date;
+  dateAdded: Timestamp;
+  lastModified: Timestamp;
   
   // User specific data
   notes?: string;
@@ -52,6 +54,9 @@ export interface RecipePreview {
   prepTime: PrepTime;
   mealTypes: MealType[];
   isFavorite: boolean;
+  cuisine?: string;
+  rating?: number;
+  dateAdded: Date;
 }
 
 // For form handling
