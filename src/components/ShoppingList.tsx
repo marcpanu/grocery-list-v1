@@ -165,7 +165,15 @@ export const ShoppingList: React.FC = () => {
     });
   };
 
-  if (loading) return <div>Loading...</div>;
+  // Loading state
+  if (loading) {
+    return (
+      <div className="flex justify-center items-center min-h-[200px]">
+        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
+      </div>
+    );
+  }
+
   if (error) return <div className="text-red-500">{error}</div>;
   if (!list) return <div>No list found</div>;
 
