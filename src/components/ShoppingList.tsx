@@ -1,9 +1,15 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
 import { StoreSelector } from './StoreSelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
 import { AddItemModal } from './AddItemModal';
+import { 
+  Squares2X2Icon,
+  ListBulletIcon,
+  FunnelIcon,
+  XMarkIcon
+} from '@heroicons/react/24/outline';
 import { PageHeader } from './PageHeader';
 
 // Since this is a single-user app, we'll use a constant ID
@@ -16,8 +22,8 @@ export const ShoppingList: React.FC = () => {
   const [newItemName, setNewItemName] = useState('');
   const [newItemQuantity, setNewItemQuantity] = useState('1');
   const [newItemUnit, setNewItemUnit] = useState('');
-  const [selectedCategory, setSelectedCategory] = useState<Category>();
-  const [selectedStore, setSelectedStore] = useState<Store>();
+  const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
+  const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [showConfig, setShowConfig] = useState(false);
 
   // View state
@@ -26,6 +32,9 @@ export const ShoppingList: React.FC = () => {
   const [currentStore, setCurrentStore] = useState<string>('all');
 
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+
+  // Refs for click outside handling
+  const configButtonRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -55,6 +64,19 @@ export const ShoppingList: React.FC = () => {
     initializeList();
   }, []);
 
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (configButtonRef.current && !configButtonRef.current.contains(event.target as Node)) {
+        setShowConfig(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
+
   const refreshList = async () => {
     if (!list?.id) return;
     
@@ -71,11 +93,11 @@ export const ShoppingList: React.FC = () => {
     }
   };
 
-  const handleAddItem = async (newItem: NewShoppingItem) => {
+  const handleAddItem = async (item: NewShoppingItem) => {
     if (!list?.id) return;
 
     try {
-      await addItemToList(list.id, newItem);
+      await addItemToList(list.id, item);
       setNewItemName('');
       setNewItemQuantity('1');
       setNewItemUnit('');
@@ -83,8 +105,7 @@ export const ShoppingList: React.FC = () => {
       setSelectedStore(undefined);
       refreshList();
     } catch (err) {
-      setError('Failed to add item');
-      console.error(err);
+      console.error('Failed to add item:', err);
     }
   };
 
@@ -175,54 +196,83 @@ export const ShoppingList: React.FC = () => {
   }, {} as Record<string, Record<string, typeof filteredItems>>);
 
   return (
-    <div className="h-full flex flex-col bg-zinc-100">
+    <div className="min-h-screen bg-zinc-50 pb-16">
       <PageHeader 
-        title="Grocery List" 
+        title="Grocery List"
         onToggleConfig={() => setShowConfig(!showConfig)}
         showConfig={showConfig}
       />
 
-      {/* Config Panel */}
-      <div 
-        className={`
-          fixed left-0 right-0 z-20 bg-zinc-100 pt-4 transition-all duration-200 ease-in-out
-          ${showConfig ? 'top-[72px] opacity-100' : 'top-[52px] opacity-0 pointer-events-none'}
-        `}
-      >
-        <div className="px-4">
-          <div className="bg-white rounded-lg shadow-sm">
-            <div className="px-4 py-3">
-              <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
-                <div className="flex flex-wrap gap-3">
-                  <StoreSelector
-                    selectedStore={list?.stores.find(s => s.id === currentStore)}
-                    onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
-                    allowAllStores
-                    className="w-44"
-                  />
-                  <select
-                    value={viewMode}
-                    onChange={(e) => handleViewModeChange(e.target.value as ViewMode)}
-                    className="w-44 rounded-md border-zinc-300 bg-white text-sm shadow-sm focus:border-violet-500 focus:ring-violet-500"
-                  >
-                    <option value="combined">Combined View</option>
-                    <option value="sequential">Sequential View</option>
-                  </select>
-                </div>
+      {/* View Options Dropdown */}
+      {showConfig && (
+        <div className="fixed top-[72px] right-4 w-72 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
+          <div className="p-4 space-y-4">
+            {/* Store Filter */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">
+                Store Filter
+              </label>
+              <StoreSelector
+                selectedStore={list?.stores.find(s => s.id === currentStore)}
+                onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
+                allowAllStores
+                className="w-full"
+              />
+            </div>
+
+            {/* View Mode */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">
+                View Mode
+              </label>
+              <div className="flex rounded-md shadow-sm">
                 <button
-                  onClick={handleToggleCompleted}
-                  className="text-sm font-medium text-violet-600 hover:text-violet-700"
+                  onClick={() => handleViewModeChange('combined')}
+                  className={`flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-l-md border ${
+                    viewMode === 'combined'
+                      ? 'bg-violet-100 border-violet-200 text-violet-700'
+                      : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                  }`}
                 >
-                  {showCompleted ? 'Hide Completed' : 'Show Completed'}
+                  <Squares2X2Icon className="w-5 h-5 mr-2" />
+                  Combined
+                </button>
+                <button
+                  onClick={() => handleViewModeChange('sequential')}
+                  className={`flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                    viewMode === 'sequential'
+                      ? 'bg-violet-100 border-violet-200 text-violet-700'
+                      : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                  }`}
+                >
+                  <ListBulletIcon className="w-5 h-5 mr-2" />
+                  Sequential
                 </button>
               </div>
             </div>
+
+            {/* Show/Hide Completed */}
+            <div>
+              <label className="block text-sm font-medium text-zinc-700 mb-1">
+                Completed Items
+              </label>
+              <button
+                onClick={handleToggleCompleted}
+                className={`w-full inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium ${
+                  showCompleted
+                    ? 'bg-violet-100 border-violet-200 text-violet-700'
+                    : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                }`}
+              >
+                {showCompleted ? 'Showing Completed' : 'Hiding Completed'}
+              </button>
+            </div>
           </div>
         </div>
-      </div>
+      )}
 
       {/* List Content */}
-      <div className={`flex-1 p-4 pt-2 overflow-y-auto transition-all duration-200 ${showConfig ? 'mt-[88px]' : ''}`}>
+      <div className="px-4 pt-4">
         {viewMode === 'sequential' ? (
           // Sequential view: Group by store, then by category
           <div className="space-y-4">
@@ -250,15 +300,17 @@ export const ShoppingList: React.FC = () => {
                               {category?.name || 'Uncategorized'}
                             </h3>
                           </div>
-                          <div>
-                            {items.map(item => (
-                              <ShoppingListItem
-                                key={item.id}
-                                item={item}
-                                listId={list.id}
-                                onUpdate={refreshList}
-                              />
-                            ))}
+                          <div className="px-4 py-2 sm:px-6">
+                            <div className="space-y-2">
+                              {items.map(item => (
+                                <ShoppingListItem
+                                  key={item.id}
+                                  item={item}
+                                  listId={list.id}
+                                  onUpdate={refreshList}
+                                />
+                              ))}
+                            </div>
                           </div>
                         </div>
                       );
@@ -270,18 +322,18 @@ export const ShoppingList: React.FC = () => {
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="bg-white rounded-lg shadow-sm overflow-hidden">
-            <div className="divide-y divide-zinc-200">
-              {Object.entries(itemsByCategory).map(([categoryId, items]) => {
-                const category = list.categories.find((c: Category) => c.id === categoryId);
-                return (
-                  <div key={categoryId}>
-                    <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
-                      <h3 className="text-sm font-medium text-zinc-700">
-                        {category?.name || 'Uncategorized'}
-                      </h3>
-                    </div>
-                    <div>
+          <div className="space-y-4">
+            {Object.entries(itemsByCategory).map(([categoryId, items]) => {
+              const category = list.categories.find((c: Category) => c.id === categoryId);
+              return (
+                <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                  <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
+                    <h3 className="text-sm font-medium text-zinc-700">
+                      {category?.name || 'Uncategorized'}
+                    </h3>
+                  </div>
+                  <div className="px-4 py-2 sm:px-6">
+                    <div className="space-y-2">
                       {items.map(item => (
                         <ShoppingListItem
                           key={item.id}
@@ -292,17 +344,9 @@ export const ShoppingList: React.FC = () => {
                       ))}
                     </div>
                   </div>
-                );
-              })}
-            </div>
-
-            {filteredItems.length === 0 && (
-              <div className="px-4 py-12 text-center sm:px-6">
-                <p className="text-sm text-zinc-500">
-                  No items in your shopping list
-                </p>
-              </div>
-            )}
+                </div>
+              );
+            })}
           </div>
         )}
       </div>
@@ -310,10 +354,10 @@ export const ShoppingList: React.FC = () => {
       {/* Floating Action Button */}
       <button
         onClick={() => setIsAddModalOpen(true)}
-        className="fixed right-4 bottom-20 w-14 h-14 bg-violet-600 text-white rounded-full shadow-lg hover:bg-violet-700 transition-colors flex items-center justify-center"
+        className="fixed right-4 bottom-20 inline-flex items-center justify-center w-14 h-14 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
       >
-        <svg className="w-8 h-8" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 4v16m8-8H4" />
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
         </svg>
       </button>
 

@@ -12,7 +12,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
   return (
     <>
       <div className="fixed top-0 left-0 right-0 z-30 bg-white border-b border-zinc-200">
-        <div className="px-4 py-5">
+        <div className="px-4 py-4">
           <div className="flex items-center justify-between">
             <h1 className="text-2xl font-bold text-zinc-900">{title}</h1>
             {onToggleConfig && (
@@ -30,7 +30,7 @@ export const PageHeader: React.FC<PageHeaderProps> = ({
         </div>
       </div>
       {/* Spacer to prevent content from going under the fixed header */}
-      <div className="h-[72px]" />
+      <div className="h-[60px]" />
     </>
   );
 }; 
