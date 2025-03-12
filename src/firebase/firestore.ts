@@ -32,7 +32,7 @@ import {
   UserData,
   StoredCredential
 } from '../types/index';
-import { encryptPassword, decryptPassword } from '../utils/encryption';
+import { encryptPassword } from '../utils/encryption';
 
 // Collection names
 const COLLECTIONS = {
@@ -63,22 +63,25 @@ const convertDoc = <T extends DocumentData>(
 };
 
 // Recipe Operations
-export const addRecipe = async (recipe: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>): Promise<Recipe> => {
-  const recipesRef = collection(db, COLLECTIONS.RECIPES);
-  const now = Timestamp.now();
-  
-  const recipeWithDates = {
-    ...recipe,
-    dateAdded: now,
-    lastModified: now
-  };
-  
-  const docRef = await addDoc(recipesRef, recipeWithDates);
-  return {
-    ...recipeWithDates,
-    id: docRef.id
-  } as Recipe;
-};
+export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
+  try {
+    const recipesRef = collection(db, 'recipes');
+    const docRef = await addDoc(recipesRef, {
+      ...recipe,
+      dateAdded: new Date(),
+    });
+
+    const newRecipe: Recipe = {
+      ...recipe,
+      id: docRef.id,
+    };
+
+    return newRecipe;
+  } catch (error) {
+    console.error('Error adding recipe:', error);
+    throw new Error('Failed to add recipe');
+  }
+}
 
 export const getRecipe = async (recipeId: string): Promise<Recipe | null> => {
   const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);

@@ -1,21 +1,21 @@
-import { useState } from 'react';
-import { Dialog, Transition } from '@headlessui/react';
-import { Fragment } from 'react';
+import React, { useState } from 'react';
+import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
+import { RecipeParseError } from '../../types/recipe';
 
 interface RecipeUrlImportProps {
   isOpen: boolean;
   onClose: () => void;
-  onImport: (data: { url: string; username?: string; password?: string }) => Promise<void>;
+  onImport: (recipe: { url: string; username?: string; password?: string }) => Promise<void>;
 }
 
-export const RecipeUrlImport = ({ isOpen, onClose, onImport }: RecipeUrlImportProps) => {
+export const RecipeUrlImport: React.FC<RecipeUrlImportProps> = ({ isOpen, onClose, onImport }) => {
   const [url, setUrl] = useState('');
-  const [requiresAuth, setRequiresAuth] = useState(false);
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [requiresAuth, setRequiresAuth] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -27,170 +27,130 @@ export const RecipeUrlImport = ({ isOpen, onClose, onImport }: RecipeUrlImportPr
         url,
         ...(requiresAuth ? { username, password } : {})
       });
+      setUrl('');
+      setUsername('');
+      setPassword('');
+      setRequiresAuth(false);
       onClose();
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Failed to import recipe');
+      const error = err as RecipeParseError;
+      if (error.code === 'AUTH_REQUIRED') {
+        setRequiresAuth(true);
+        setError('This recipe requires authentication. Please enter your credentials.');
+      } else {
+        setError(error.message);
+      }
     } finally {
       setIsLoading(false);
     }
   };
 
-  const resetForm = () => {
+  const handleClose = () => {
     setUrl('');
-    setRequiresAuth(false);
     setUsername('');
     setPassword('');
     setError(null);
+    setRequiresAuth(false);
+    onClose();
   };
 
   return (
-    <Transition.Root show={isOpen} as={Fragment}>
-      <Dialog 
-        as="div" 
-        className="relative z-50" 
-        onClose={() => {
-          onClose();
-          resetForm();
-        }}
-      >
-        <Transition.Child
-          as={Fragment}
-          enter="ease-out duration-300"
-          enterFrom="opacity-0"
-          enterTo="opacity-100"
-          leave="ease-in duration-200"
-          leaveFrom="opacity-100"
-          leaveTo="opacity-0"
-        >
-          <div className="fixed inset-0 bg-gray-500 bg-opacity-75 transition-opacity" />
-        </Transition.Child>
+    <Dialog open={isOpen} onClose={handleClose} className="relative z-50">
+      {/* Backdrop */}
+      <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
 
-        <div className="fixed inset-0 z-10 overflow-y-auto">
-          <div className="flex min-h-full items-end justify-center p-4 text-center sm:items-center sm:p-0">
-            <Transition.Child
-              as={Fragment}
-              enter="ease-out duration-300"
-              enterFrom="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
-              enterTo="opacity-100 translate-y-0 sm:scale-100"
-              leave="ease-in duration-200"
-              leaveFrom="opacity-100 translate-y-0 sm:scale-100"
-              leaveTo="opacity-0 translate-y-4 sm:translate-y-0 sm:scale-95"
+      {/* Full-screen container */}
+      <div className="fixed inset-0 flex items-center justify-center p-4">
+        <Dialog.Panel 
+          className="mx-auto max-w-lg w-full bg-white rounded-xl shadow-lg"
+          tabIndex={0}
+          autoFocus
+        >
+          <div className="flex items-center justify-between px-4 py-3 border-b border-zinc-200">
+            <Dialog.Title className="text-lg font-semibold text-zinc-900">
+              Import Recipe from URL
+            </Dialog.Title>
+            <button
+              onClick={handleClose}
+              className="p-1 rounded-md text-zinc-400 hover:text-zinc-500"
             >
-              <Dialog.Panel className="relative transform overflow-hidden rounded-lg bg-white px-4 pb-4 pt-5 text-left shadow-xl transition-all sm:my-8 sm:w-full sm:max-w-lg sm:p-6">
-                <div className="absolute right-0 top-0 pr-4 pt-4">
-                  <button
-                    type="button"
-                    className="rounded-md bg-white text-gray-400 hover:text-gray-500"
-                    onClick={() => {
-                      onClose();
-                      resetForm();
-                    }}
-                  >
-                    <span className="sr-only">Close</span>
-                    <XMarkIcon className="h-6 w-6" />
-                  </button>
+              <XMarkIcon className="w-5 h-5" />
+            </button>
+          </div>
+
+          <form onSubmit={handleSubmit} className="p-4 space-y-4">
+            <div>
+              <label htmlFor="url" className="block text-sm font-medium text-zinc-700">
+                Recipe URL
+              </label>
+              <input
+                type="url"
+                id="url"
+                value={url}
+                onChange={(e) => setUrl(e.target.value)}
+                placeholder="https://example.com/recipe"
+                required
+                className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500"
+              />
+            </div>
+
+            {requiresAuth && (
+              <>
+                <div>
+                  <label htmlFor="username" className="block text-sm font-medium text-zinc-700">
+                    Username
+                  </label>
+                  <input
+                    type="text"
+                    id="username"
+                    value={username}
+                    onChange={(e) => setUsername(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500"
+                  />
                 </div>
 
                 <div>
-                  <Dialog.Title as="h3" className="text-lg font-semibold leading-6 text-gray-900 mb-4">
-                    Import Recipe from URL
-                  </Dialog.Title>
-
-                  <form onSubmit={handleSubmit} className="space-y-4">
-                    {/* URL Input */}
-                    <div>
-                      <label htmlFor="url" className="block text-sm font-medium text-gray-700">
-                        Recipe URL
-                      </label>
-                      <input
-                        type="url"
-                        id="url"
-                        name="url"
-                        required
-                        value={url}
-                        onChange={(e) => setUrl(e.target.value)}
-                        placeholder="https://example.com/recipe"
-                        className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
-                      />
-                    </div>
-
-                    {/* Authentication Toggle */}
-                    <div className="flex items-center">
-                      <input
-                        type="checkbox"
-                        id="requiresAuth"
-                        checked={requiresAuth}
-                        onChange={(e) => setRequiresAuth(e.target.checked)}
-                        className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
-                      />
-                      <label htmlFor="requiresAuth" className="ml-2 block text-sm text-gray-700">
-                        This site requires authentication
-                      </label>
-                    </div>
-
-                    {/* Authentication Fields */}
-                    {requiresAuth && (
-                      <div className="space-y-4">
-                        <div>
-                          <label htmlFor="username" className="block text-sm font-medium text-gray-700">
-                            Username
-                          </label>
-                          <input
-                            type="text"
-                            id="username"
-                            name="username"
-                            required
-                            value={username}
-                            onChange={(e) => setUsername(e.target.value)}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
-                          />
-                        </div>
-                        <div>
-                          <label htmlFor="password" className="block text-sm font-medium text-gray-700">
-                            Password
-                          </label>
-                          <input
-                            type="password"
-                            id="password"
-                            name="password"
-                            required
-                            value={password}
-                            onChange={(e) => setPassword(e.target.value)}
-                            className="mt-1 block w-full rounded-md border border-gray-300 px-3 py-2 text-gray-900 placeholder-gray-400 focus:border-violet-500 focus:outline-none focus:ring-violet-500 sm:text-sm"
-                          />
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Error Message */}
-                    {error && (
-                      <div className="rounded-md bg-red-50 p-4">
-                        <div className="flex">
-                          <div className="ml-3">
-                            <h3 className="text-sm font-medium text-red-800">Import failed</h3>
-                            <div className="mt-2 text-sm text-red-700">{error}</div>
-                          </div>
-                        </div>
-                      </div>
-                    )}
-
-                    {/* Submit Button */}
-                    <div className="mt-5 sm:mt-6">
-                      <button
-                        type="submit"
-                        disabled={isLoading}
-                        className="inline-flex w-full justify-center rounded-md bg-violet-600 px-3 py-2 text-sm font-semibold text-white shadow-sm hover:bg-violet-500 focus-visible:outline focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-violet-600 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isLoading ? 'Importing...' : 'Import Recipe'}
-                      </button>
-                    </div>
-                  </form>
+                  <label htmlFor="password" className="block text-sm font-medium text-zinc-700">
+                    Password
+                  </label>
+                  <input
+                    type="password"
+                    id="password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500"
+                  />
                 </div>
-              </Dialog.Panel>
-            </Transition.Child>
-          </div>
-        </div>
-      </Dialog>
-    </Transition.Root>
+              </>
+            )}
+
+            {error && (
+              <div className="text-sm text-red-600 bg-red-50 rounded-md px-3 py-2">
+                {error}
+              </div>
+            )}
+
+            <div className="flex justify-end space-x-3">
+              <button
+                type="button"
+                onClick={handleClose}
+                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50"
+              >
+                Cancel
+              </button>
+              <button
+                type="submit"
+                disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 rounded-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50 disabled:cursor-not-allowed"
+              >
+                {isLoading ? 'Importing...' : 'Import Recipe'}
+              </button>
+            </div>
+          </form>
+        </Dialog.Panel>
+      </div>
+    </Dialog>
   );
 }; 

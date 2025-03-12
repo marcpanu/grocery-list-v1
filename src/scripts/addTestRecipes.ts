@@ -1,18 +1,14 @@
 import { addRecipe } from '../firebase/firestore';
-import { Recipe, MealType, PrepTime } from '../types/recipe';
+import { Recipe, PrepTime } from '../types/recipe';
 
-const testRecipes: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>[] = [
+const testRecipes: Omit<Recipe, 'id'>[] = [
   {
     name: 'Classic Spaghetti Carbonara',
     description: 'A traditional Roman pasta dish with eggs, cheese, pancetta, and black pepper.',
-    source: {
-      type: 'manual',
-      value: 'manual'
-    },
     imageUrl: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=800',
     servings: 4,
     prepTime: '<30' as PrepTime,
-    cookTime: 20,
+    cookTime: '20',
     ingredients: [
       { name: 'spaghetti', quantity: 1, unit: 'pound' },
       { name: 'pancetta or guanciale', quantity: 0.5, unit: 'pound', notes: 'diced' },
@@ -30,17 +26,13 @@ const testRecipes: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>[] = [
     ],
     mealTypes: ['dinner'],
     cuisine: ['Italian'],
-    nutritionTags: ['high-protein'],
     isFavorite: false,
-    rating: 5
+    rating: 5,
+    dateAdded: new Date()
   },
   {
     name: 'Overnight Oats with Berries',
     description: 'Easy and healthy breakfast prepared the night before.',
-    source: {
-      type: 'manual',
-      value: 'manual'
-    },
     imageUrl: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&q=80&w=800',
     servings: 1,
     prepTime: '<30' as PrepTime,
@@ -59,21 +51,17 @@ const testRecipes: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>[] = [
       { order: 4, instruction: 'Top with berries before serving' }
     ],
     mealTypes: ['breakfast'],
-    nutritionTags: ['low-calorie', 'vegetarian'],
     isFavorite: true,
-    notes: 'Can be stored in refrigerator for up to 3 days'
+    notes: 'Can be stored in refrigerator for up to 3 days',
+    dateAdded: new Date()
   },
   {
     name: 'Thai Green Curry',
     description: 'Fragrant and creamy coconut curry with vegetables.',
-    source: {
-      type: 'manual',
-      value: 'manual'
-    },
     imageUrl: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&q=80&w=800',
     servings: 4,
     prepTime: '30-60' as PrepTime,
-    cookTime: 45,
+    cookTime: '45',
     ingredients: [
       { name: 'green curry paste', quantity: 4, unit: 'tablespoons' },
       { name: 'coconut milk', quantity: 2, unit: 'cans', notes: '14 oz each' },
@@ -95,9 +83,9 @@ const testRecipes: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>[] = [
     ],
     mealTypes: ['dinner'],
     cuisine: ['Thai'],
-    nutritionTags: ['high-protein'],
     isFavorite: false,
-    notes: 'Can be made vegetarian by substituting chicken with tofu'
+    notes: 'Can be made vegetarian by substituting chicken with tofu',
+    dateAdded: new Date()
   }
 ];
 

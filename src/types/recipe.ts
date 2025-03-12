@@ -1,13 +1,11 @@
-import { Timestamp } from 'firebase/firestore';
-
 export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
 
 export type PrepTime = '<30' | '30-60' | '60+';
 
 export interface Ingredient {
   name: string;
-  quantity: number;
-  unit: string;
+  quantity: number | string;
+  unit?: string;
   notes?: string;
 }
 
@@ -20,30 +18,19 @@ export interface Recipe {
   id: string;
   name: string;
   description?: string;
-  source: {
-    type: 'url' | 'manual' | 'image';
-    value: string;  // URL, 'manual', or image reference
-  };
-  imageUrl?: string;
+  prepTime: string;
+  cookTime?: string;
+  totalTime?: string;
   servings: number;
-  prepTime: PrepTime;
-  cookTime?: number;  // in minutes
   ingredients: Ingredient[];
-  instructions: RecipeStep[];
-  
-  // Tags and Categories
-  mealTypes: MealType[];
-  cuisine?: string[];
-  nutritionTags?: string[];
-  
-  // Metadata
-  isFavorite: boolean;
-  dateAdded: Timestamp;
-  lastModified: Timestamp;
-  
-  // User specific data
+  instructions: Instruction[];
+  imageUrl?: string;
   notes?: string;
-  rating?: number;  // 1-5
+  mealTypes: string[];
+  cuisine?: string[];
+  rating?: number;
+  dateAdded: Date;
+  isFavorite: boolean;
 }
 
 // For recipe list views and previews
@@ -51,12 +38,12 @@ export interface RecipePreview {
   id: string;
   name: string;
   imageUrl?: string;
-  prepTime: PrepTime;
-  mealTypes: MealType[];
-  isFavorite: boolean;
+  prepTime: string;
+  mealTypes: string[];
   cuisine?: string;
   rating?: number;
   dateAdded: Date;
+  isFavorite: boolean;
 }
 
 // For form handling
@@ -90,4 +77,38 @@ export const CUISINES = [
   'Spanish',
   'Korean',
   'Vietnamese'
-] as const; 
+] as const;
+
+export interface Instruction {
+  order: number;
+  instruction: string;
+}
+
+export interface ParsedRecipe {
+  name: string;
+  description?: string;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  servings?: number;
+  ingredients: ParsedIngredient[];
+  instructions: string[];
+  imageUrl?: string;
+  cuisine?: string[];
+  author?: string;
+  source: string;
+}
+
+export interface ParsedIngredient {
+  original: string;  // Original text
+  quantity?: number | string;
+  unit?: string;
+  name: string;
+  notes?: string;
+}
+
+export interface RecipeParseError {
+  message: string;
+  code: 'UNSUPPORTED_SITE' | 'NETWORK_ERROR' | 'PARSE_ERROR' | 'AUTH_REQUIRED';
+  details?: any;
+} 

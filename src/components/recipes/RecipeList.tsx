@@ -197,7 +197,17 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       const { recipe } = await importRecipeFromUrl(data);
       
       // Add the imported recipe to the list
-      setRecipes(prevRecipes => [recipe, ...prevRecipes]);
+      setRecipes(prevRecipes => [{
+        id: recipe.id,
+        name: recipe.name,
+        imageUrl: recipe.imageUrl,
+        prepTime: recipe.prepTime,
+        mealTypes: recipe.mealTypes,
+        cuisine: recipe.cuisine?.[0], // Take first cuisine as string
+        rating: recipe.rating,
+        dateAdded: recipe.dateAdded,
+        isFavorite: recipe.isFavorite
+      }, ...prevRecipes]);
 
       // Show success message (you might want to add a toast notification system)
       console.log('Recipe imported successfully:', recipe.name);
