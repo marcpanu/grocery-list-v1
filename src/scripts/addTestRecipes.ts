@@ -1,5 +1,5 @@
 import { addRecipe } from '../firebase/firestore';
-import { Recipe, MealType, PrepTime } from '../types/recipe';
+import { Recipe, PrepTime } from '../types/recipe';
 
 const testRecipes: Omit<Recipe, 'id' | 'dateAdded' | 'lastModified'>[] = [
   {

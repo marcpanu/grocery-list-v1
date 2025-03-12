@@ -7,8 +7,6 @@ import { AddItemModal } from './AddItemModal';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
-  FunnelIcon,
-  XMarkIcon
 } from '@heroicons/react/24/outline';
 import { PageHeader } from './PageHeader';
 

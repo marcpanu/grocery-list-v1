@@ -32,7 +32,7 @@ import {
   UserData,
   StoredCredential
 } from '../types/index';
-import { encryptPassword, decryptPassword } from '../utils/encryption';
+import { encryptPassword } from '../utils/encryption';
 
 // Collection names
 const COLLECTIONS = {
