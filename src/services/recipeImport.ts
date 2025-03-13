@@ -8,6 +8,10 @@ export async function importRecipeFromUrl(data: {
   // Parse the recipe from the URL
   const parsedRecipe = await parseRecipeUrl(data.url);
 
+  // Determine source type based on URL
+  const sourceType = data.url.includes('instagram.com') ? 'instagram' :
+                    data.url.includes('tiktok.com') ? 'tiktok' : 'url';
+
   // Convert parsed recipe to our Recipe format, handling all optional fields
   const recipe: Omit<Recipe, 'id'> = {
     name: parsedRecipe.name,
@@ -27,12 +31,17 @@ export async function importRecipeFromUrl(data: {
       instruction: instruction ?? '',
     })),
     imageUrl: parsedRecipe.imageUrl,
-    notes: `Imported from: ${parsedRecipe.source}${parsedRecipe.author ? `\nAuthor: ${parsedRecipe.author}` : ''}`,
+    notes: parsedRecipe.author ? `Author: ${parsedRecipe.author}` : undefined,
     mealTypes: [],  // To be set by user
     cuisine: parsedRecipe.cuisine ?? [],
     dateAdded: new Date(),
     isFavorite: false,
     rating: undefined,
+    source: {
+      type: sourceType,
+      url: data.url,
+      title: parsedRecipe.source
+    }
   };
 
   // Add the recipe to Firestore

@@ -7,7 +7,10 @@ import {
   ArrowLeftIcon,
   UserIcon,
   PencilIcon,
-  TrashIcon
+  TrashIcon,
+  LinkIcon,
+  ShareIcon,
+  VideoCameraIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import ConfirmDialog from '../common/ConfirmDialog';
@@ -133,6 +136,23 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
       {/* Content */}
       <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-zinc-900 mb-2">{recipe.name}</h1>
+        
+        {/* Source */}
+        {recipe.source && (
+          <div className="mb-4">
+            <a
+              href={recipe.source.url}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="inline-flex items-center text-sm text-violet-600 hover:text-violet-700"
+            >
+              {recipe.source.type === 'url' && <LinkIcon className="w-4 h-4 mr-1" />}
+              {recipe.source.type === 'instagram' && <ShareIcon className="w-4 h-4 mr-1" />}
+              {recipe.source.type === 'tiktok' && <VideoCameraIcon className="w-4 h-4 mr-1" />}
+              <span>{recipe.source.title || 'View Source'}</span>
+            </a>
+          </div>
+        )}
         
         {/* Meta Information */}
         <div className="flex gap-4 mb-6 text-sm text-zinc-600">

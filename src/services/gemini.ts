@@ -58,7 +58,7 @@ Required fields and format:
     }
   ],
   "instructions": string[],
-  "imageUrl": string (optional),
+  "imageUrl": string (optional) - Look for the largest or most prominent image on the page, typically the main recipe photo. If multiple images exist, prefer the one that appears first or is marked as the featured image. The URL should be a direct link to the image file (ending in .jpg, .png, etc.).
   "author": string (optional),
   "cuisine": string[] (required)
 }

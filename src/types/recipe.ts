@@ -31,6 +31,11 @@ export interface Recipe {
   rating?: number;
   dateAdded: Date;
   isFavorite: boolean;
+  source?: {
+    type: 'url' | 'instagram' | 'tiktok';
+    url: string;
+    title?: string;
+  };
 }
 
 // For recipe list views and previews
