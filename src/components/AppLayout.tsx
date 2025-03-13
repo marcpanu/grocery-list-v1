@@ -15,6 +15,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { StoreSelector } from './StoreSelector';
+import MealPlanPage from '../pages/MealPlanPage';
 
 // Expose addTestRecipes to window for development
 if (process.env.NODE_ENV === 'development') {
@@ -128,14 +129,7 @@ export const AppLayout: React.FC = () => {
           <RecipeList onRecipeSelect={handleRecipeSelect} />
         );
       case 'plan':
-        return (
-          <>
-            <PageHeader title="Plan your meals" />
-            <div className="p-4">
-              {/* Meal planning content */}
-            </div>
-          </>
-        );
+        return <MealPlanPage />;
       case 'list':
         return (
           <>
