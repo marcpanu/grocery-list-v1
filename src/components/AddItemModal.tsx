@@ -76,14 +76,14 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   onChange={(e) => setNewItemQuantity(e.target.value)}
                   min="1"
                   placeholder="Qty"
-                  className="w-20 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
+                  className="w-16 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-xs"
                 />
                 <input
                   type="text"
                   value={newItemUnit}
                   onChange={(e) => setNewItemUnit(e.target.value)}
                   placeholder="Unit"
-                  className="w-24 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
+                  className="w-20 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-xs"
                 />
               </div>
               <div className="space-y-2">
