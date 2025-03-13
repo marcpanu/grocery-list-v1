@@ -77,7 +77,12 @@ export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
       notes: recipe.notes ?? null,
       cuisine: recipe.cuisine ?? null,
       rating: recipe.rating ?? null,
-      dateAdded: Timestamp.fromDate(new Date()),
+      dateAdded: Timestamp.fromDate(recipe.dateAdded),
+      ingredients: recipe.ingredients.map(ing => ({
+        ...ing,
+        unit: ing.unit ?? null,
+        notes: ing.notes ?? null
+      }))
     };
 
     const docRef = await addDoc(recipesRef, firestoreRecipe);
