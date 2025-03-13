@@ -66,10 +66,21 @@ const convertDoc = <T extends DocumentData>(
 export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
   try {
     const recipesRef = collection(db, 'recipes');
-    const docRef = await addDoc(recipesRef, {
+    
+    // Convert undefined optional fields to null for Firestore
+    const firestoreRecipe = {
       ...recipe,
-      dateAdded: new Date(),
-    });
+      description: recipe.description ?? null,
+      cookTime: recipe.cookTime ?? null,
+      totalTime: recipe.totalTime ?? null,
+      imageUrl: recipe.imageUrl ?? null,
+      notes: recipe.notes ?? null,
+      cuisine: recipe.cuisine ?? null,
+      rating: recipe.rating ?? null,
+      dateAdded: Timestamp.fromDate(new Date()),
+    };
+
+    const docRef = await addDoc(recipesRef, firestoreRecipe);
 
     const newRecipe: Recipe = {
       ...recipe,
@@ -104,7 +115,7 @@ export const getAllRecipes = async (): Promise<RecipePreview[]> => {
       isFavorite: data.isFavorite,
       cuisine: data.cuisine?.[0], // Take first cuisine if array
       rating: data.rating,
-      dateAdded: data.dateAdded.toDate()
+      dateAdded: data.dateAdded instanceof Timestamp ? data.dateAdded.toDate() : data.dateAdded
     } as RecipePreview;
   });
 };

@@ -4,18 +4,42 @@ import { extractRecipeFromHtml } from './gemini';
 /**
  * Attempts to parse a recipe from a URL using multiple strategies
  */
-export async function parseRecipeUrl(url: string, credentials?: { username?: string; password?: string }): Promise<ParsedRecipe> {
+export async function parseRecipeUrl(url: string): Promise<ParsedRecipe> {
   try {
     // Fetch the page content
-    const html = await fetchPage(url, credentials);
+    const html = await fetchPage(url);
     
     // Try Schema.org parsing first
     const schemaRecipe = await parseSchemaOrgRecipe(html);
+    
     if (schemaRecipe) {
+      // Check for missing required fields
+      const missingFields = checkMissingFields(schemaRecipe);
+      
+      if (missingFields.length > 0) {
+        // Use LLM to fill in missing fields
+        const llmRecipe = await parseLLMRecipe(html, url);
+        
+        // Merge the recipes, preferring schema values over LLM values except for missing fields
+        return {
+          ...llmRecipe,
+          ...schemaRecipe,
+          // Explicitly handle fields that might be undefined
+          cookTime: schemaRecipe.cookTime || llmRecipe.cookTime,
+          prepTime: schemaRecipe.prepTime || llmRecipe.prepTime,
+          totalTime: schemaRecipe.totalTime || llmRecipe.totalTime,
+          servings: schemaRecipe.servings || llmRecipe.servings,
+          ingredients: schemaRecipe.ingredients?.length ? schemaRecipe.ingredients : llmRecipe.ingredients,
+          instructions: schemaRecipe.instructions?.length ? schemaRecipe.instructions : llmRecipe.instructions,
+          imageUrl: schemaRecipe.imageUrl || llmRecipe.imageUrl,
+          cuisine: schemaRecipe.cuisine?.length ? schemaRecipe.cuisine : llmRecipe.cuisine
+        };
+      }
+      
       return schemaRecipe;
     }
 
-    // Fallback to LLM parsing
+    // Fallback to LLM parsing if no schema data found
     return await parseLLMRecipe(html, url);
   } catch (error) {
     if (isRecipeParseError(error)) {
@@ -30,32 +54,81 @@ export async function parseRecipeUrl(url: string, credentials?: { username?: str
 }
 
 /**
+ * Checks for missing or undefined required fields in a recipe
+ */
+function checkMissingFields(recipe: ParsedRecipe): string[] {
+  const requiredFields: (keyof ParsedRecipe)[] = [
+    'name',
+    'cookTime',
+    'prepTime',
+    'servings',
+    'ingredients',
+    'instructions'
+  ];
+  
+  return requiredFields.filter(field => {
+    const value = recipe[field];
+    if (Array.isArray(value)) {
+      return !value.length;
+    }
+    return value === undefined || value === null;
+  });
+}
+
+/**
  * Fetches the page content with proper headers and error handling
  */
-async function fetchPage(url: string, credentials?: { username?: string; password?: string }): Promise<string> {
-  const response = await fetch(url, {
-    headers: {
-      'User-Agent': 'Mozilla/5.0 (compatible; RecipeParser/1.0)',
-    },
-    credentials: credentials ? 'include' : 'omit',
-  });
+async function fetchPage(url: string): Promise<string> {
+  // List of CORS proxies to try in order
+  const proxies = [
+    (url: string) => `https://api.allorigins.win/get?url=${encodeURIComponent(url)}`,
+    (url: string) => `https://corsproxy.io/?${encodeURIComponent(url)}`,
+    (url: string) => `https://api.codetabs.com/v1/proxy?quest=${encodeURIComponent(url)}`
+  ];
 
-  if (!response.ok) {
-    if (response.status === 401 || response.status === 403) {
-      throw {
-        message: 'Authentication required to access this recipe',
-        code: 'AUTH_REQUIRED' as const,
-        details: { status: response.status }
-      };
+  let lastError: Error | null = null;
+
+  // Try each proxy in sequence
+  for (const proxyUrl of proxies) {
+    try {
+      const response = await fetch(proxyUrl(url));
+      
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      // Handle different proxy response formats
+      const contentType = response.headers.get('content-type');
+      if (contentType?.includes('application/json')) {
+        const data = await response.json();
+        // allorigins format
+        if (data.contents) {
+          return data.contents;
+        }
+        // other JSON format
+        return data;
+      }
+
+      // Direct HTML response
+      const text = await response.text();
+      return text;
+
+    } catch (err) {
+      console.warn(`Proxy failed: ${proxyUrl(url)}`, err);
+      lastError = err as Error;
+      continue; // Try next proxy
     }
-    throw {
-      message: 'Failed to fetch recipe page',
-      code: 'NETWORK_ERROR' as const,
-      details: { status: response.status }
-    };
   }
 
-  return response.text();
+  // If we get here, all proxies failed
+  throw {
+    message: 'Failed to fetch recipe page after trying multiple proxies',
+    code: 'NETWORK_ERROR' as const,
+    details: { 
+      error: lastError?.message || 'All proxies failed',
+      url 
+    }
+  };
 }
 
 /**
@@ -157,18 +230,37 @@ function convertSchemaRecipe(schema: any): ParsedRecipe {
     return instruction.text || instruction.description || '';
   }).filter(Boolean);
 
+  // Helper function to clean up time strings
+  const cleanTimeString = (time: string | undefined): string | undefined => {
+    if (!time) return undefined;
+    // Remove any PT prefix (ISO duration format) and convert to simple format
+    return time.replace(/^PT/, '').replace(/H/, ' hours ').replace(/M/, ' minutes').trim();
+  };
+
+  // Handle image URL (can be string or object)
+  const imageUrl = typeof schema.image === 'string' 
+    ? schema.image 
+    : Array.isArray(schema.image) 
+      ? schema.image[0]?.url || schema.image[0] 
+      : schema.image?.url;
+
   return {
     name: schema.name || 'Untitled Recipe',
-    description: schema.description,
-    prepTime: schema.prepTime,
-    cookTime: schema.cookTime,
-    totalTime: schema.totalTime,
-    servings: parseServings(schema.recipeYield),
+    description: schema.description || undefined,
+    prepTime: cleanTimeString(schema.prepTime) || '30-60',
+    cookTime: cleanTimeString(schema.cookTime),
+    totalTime: cleanTimeString(schema.totalTime),
+    servings: parseServings(schema.recipeYield) || 4,
     ingredients,
     instructions,
-    imageUrl: schema.image,
+    imageUrl: imageUrl || undefined,
     author: typeof schema.author === 'string' ? schema.author : schema.author?.name,
-    source: window.location.href
+    source: window.location.href,
+    cuisine: Array.isArray(schema.recipeCuisine) 
+      ? schema.recipeCuisine 
+      : schema.recipeCuisine 
+        ? [schema.recipeCuisine] 
+        : []
   };
 }
 
@@ -249,6 +341,7 @@ async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> 
   const { text, error } = await extractRecipeFromHtml(html);
   
   if (error || !text) {
+    console.error('LLM extraction error:', error);
     throw {
       message: error || 'Failed to extract recipe using LLM',
       code: 'PARSE_ERROR' as const,
@@ -257,14 +350,19 @@ async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> 
   }
 
   try {
+    console.log('Attempting to parse LLM response:', text);
     const recipe = JSON.parse(text);
+    
+    // Log the parsed recipe object
+    console.log('Successfully parsed LLM response:', recipe);
+    
     return {
-      name: recipe.name,
-      description: recipe.description,
-      prepTime: recipe.prepTime,
+      name: recipe.name || 'Untitled Recipe',
+      description: recipe.description || undefined,
+      prepTime: recipe.prepTime || '30-60',
       cookTime: recipe.cookTime,
       totalTime: recipe.totalTime,
-      servings: recipe.servings,
+      servings: recipe.servings || 4,
       ingredients: recipe.ingredients.map((ing: any) => ({
         original: `${ing.quantity || ''} ${ing.unit || ''} ${ing.name}`.trim(),
         quantity: ing.quantity,
@@ -272,16 +370,19 @@ async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> 
         name: ing.name,
         notes: ing.notes
       })),
-      instructions: recipe.instructions,
+      instructions: recipe.instructions || [],
       imageUrl: recipe.imageUrl,
       author: recipe.author,
-      source: url
+      source: url,
+      cuisine: Array.isArray(recipe.cuisine) ? recipe.cuisine : recipe.cuisine ? [recipe.cuisine] : []
     };
   } catch (e) {
+    console.error('Failed to parse LLM response:', e);
+    console.log('Raw LLM response that failed parsing:', text);
     throw {
       message: 'Failed to parse LLM response',
       code: 'PARSE_ERROR' as const,
-      details: { url, error: e }
+      details: { url, error: e, rawResponse: text }
     };
   }
 }

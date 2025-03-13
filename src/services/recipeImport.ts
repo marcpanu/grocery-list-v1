@@ -3,15 +3,10 @@ import { addRecipe } from '../firebase/firestore';
 import { Recipe } from '../types/recipe';
 
 export async function importRecipeFromUrl(data: { 
-  url: string; 
-  username?: string; 
-  password?: string; 
+  url: string;
 }): Promise<{ recipe: Recipe }> {
   // Parse the recipe from the URL
-  const parsedRecipe = await parseRecipeUrl(data.url, {
-    username: data.username,
-    password: data.password,
-  });
+  const parsedRecipe = await parseRecipeUrl(data.url);
 
   // Convert parsed recipe to our Recipe format
   const recipe: Omit<Recipe, 'id'> = {

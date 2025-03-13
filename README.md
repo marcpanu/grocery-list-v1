@@ -35,15 +35,18 @@ A modern, Firebase-powered shopping list application that helps organize your gr
   - Sort by name, date, or rating
   - Filter by meal type and cuisine
   - Favorite recipes system
+  - Delete recipes with confirmation dialog
 - **Recipe Details**:
   - Preparation time and servings
   - Ingredient lists with quantities
   - Step-by-step instructions
   - Notes and tips section
+  - Quick actions (edit, delete, favorite)
 - **Recipe Import**:
-  - URL-based recipe import
-  - Support for multiple recipe formats
-  - Automatic ingredient parsing
+  - Smart URL-based recipe import using Schema.org data
+  - AI-powered recipe parsing with Google's Gemini
+  - Support for most recipe websites
+  - Automatic ingredient and instruction parsing
 
 ### Data Management
 - **User Preferences**:
@@ -68,7 +71,7 @@ npm install
 
 # Set up environment variables
 cp .env.example .env
-# Edit .env with your Firebase configuration
+# Edit .env with your Firebase and Gemini configuration
 
 # Run development server
 npm run dev
@@ -79,15 +82,22 @@ npm run build
 
 ## 🔧 Environment Setup
 
-Create a `.env` file with the following Firebase configuration:
+Create a `.env` file with the following configuration:
 
 ```env
+# Firebase config
 VITE_FIREBASE_API_KEY=your-api-key
 VITE_FIREBASE_AUTH_DOMAIN=your-project.firebaseapp.com
 VITE_FIREBASE_PROJECT_ID=your-project-id
 VITE_FIREBASE_STORAGE_BUCKET=your-project.appspot.com
 VITE_FIREBASE_MESSAGING_SENDER_ID=your-sender-id
 VITE_FIREBASE_APP_ID=your-app-id
+VITE_FIREBASE_MEASUREMENT_ID=your-measurement-id
+
+# Gemini config
+VITE_GEMINI_API_KEY=your-api-key
+VITE_GEMINI_API_URL=https://generativelanguage.googleapis.com/v1beta/models/gemini-pro:generateContent
+VITE_GEMINI_MODEL=gemini-1.5-flash-8B
 ```
 
 ## 🛠️ Tech Stack
@@ -107,11 +117,14 @@ VITE_FIREBASE_APP_ID=your-app-id
   - Context API for global state
   - Custom hooks for shared logic
 
-### Backend
+### Backend & Services
 - **Firebase Platform**:
   - Firestore Database for data storage
   - Firebase Storage for image handling
   - Firebase Authentication (planned)
+- **AI Integration**:
+  - Google's Gemini AI for recipe parsing
+  - Schema.org data extraction
 - **Security**:
   - Web Crypto API for encryption
   - Secure credential storage
@@ -131,7 +144,7 @@ VITE_FIREBASE_APP_ID=your-app-id
 
 ### Core Components
 - **PageHeader**: Consistent header across all pages
-- **ConfirmDialog**: Reusable confirmation dialogs
+- **ConfirmDialog**: Reusable confirmation dialogs for destructive actions
 - **LoadingSpinner**: Unified loading states
 - **Modal**: Base modal component for forms and dialogs
 
@@ -145,10 +158,17 @@ VITE_FIREBASE_APP_ID=your-app-id
 - **StoreSelector**: Store selection dropdown
 
 ### Recipe Components
-- **RecipeList**: Main recipe browsing interface
-- **RecipeCard**: Individual recipe preview
-- **RecipeDetail**: Detailed recipe view
-- **RecipeImport**: Recipe import interface
+- **RecipeList**: Main recipe browsing interface with:
+  - Grid and list view options
+  - Sorting and filtering capabilities
+  - Delete confirmation handling
+  - Favorite toggling functionality
+- **RecipeCard**: Individual recipe preview with action buttons (favorite, delete)
+- **RecipeDetail**: Detailed recipe view with:
+  - Full recipe information display
+  - Action buttons (edit, delete, favorite)
+  - Integrated delete confirmation
+- **RecipeImport**: Smart recipe import interface with AI support
 
 ### Settings Components
 - **Settings**: Main settings interface
@@ -163,8 +183,9 @@ VITE_FIREBASE_APP_ID=your-app-id
 - ✅ Store and category management
 - ✅ Multiple view modes
 - ✅ Recipe management system
+- ✅ Smart recipe import with AI
 - ✅ Data encryption implementation
-- ✅ Confirmation dialogs
+- ✅ Confirmation dialogs for destructive actions
 - ✅ Loading states and animations
 - ✅ Responsive design
 

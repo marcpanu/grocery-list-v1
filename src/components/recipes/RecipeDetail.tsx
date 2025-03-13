@@ -1,14 +1,16 @@
 import { useState, useEffect } from 'react';
 import { Recipe } from '../../types/recipe';
-import { getRecipe } from '../../firebase/firestore';
+import { getRecipe, deleteRecipe } from '../../firebase/firestore';
 import { 
   ClockIcon, 
   HeartIcon,
   ArrowLeftIcon,
   UserIcon,
-  PencilIcon
+  PencilIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -19,6 +21,7 @@ interface RecipeDetailProps {
 export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) => {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
     loadRecipe();
@@ -32,6 +35,16 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
       console.error('Error loading recipe:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleDelete = async () => {
+    if (!recipe) return;
+    try {
+      await deleteRecipe(recipe.id);
+      onBack(); // Return to recipe list after deletion
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
     }
   };
 
@@ -81,22 +94,33 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
           <ArrowLeftIcon className="w-5 h-5 text-zinc-600" />
         </button>
 
-        {/* Edit Button */}
-        <button
-          onClick={() => onEdit(recipe.id)}
-          className="absolute top-4 right-14 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
-        >
-          <PencilIcon className="w-5 h-5 text-zinc-600" />
-        </button>
+        {/* Action Buttons */}
+        <div className="absolute top-4 right-4 flex gap-2">
+          {/* Edit Button */}
+          <button
+            onClick={() => onEdit(recipe.id)}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+          >
+            <PencilIcon className="w-5 h-5 text-zinc-600" />
+          </button>
 
-        {/* Favorite Button */}
-        <button className="absolute top-4 right-4 p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200">
-          {recipe.isFavorite ? (
-            <HeartSolid className="w-5 h-5 text-violet-600" />
-          ) : (
-            <HeartIcon className="w-5 h-5 text-zinc-600" />
-          )}
-        </button>
+          {/* Delete Button */}
+          <button
+            onClick={() => setShowDeleteConfirm(true)}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+          >
+            <TrashIcon className="w-5 h-5 text-zinc-600 hover:text-red-500" />
+          </button>
+
+          {/* Favorite Button */}
+          <button className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200">
+            {recipe.isFavorite ? (
+              <HeartSolid className="w-5 h-5 text-violet-600" />
+            ) : (
+              <HeartIcon className="w-5 h-5 text-zinc-600" />
+            )}
+          </button>
+        </div>
       </div>
 
       {/* Content */}
@@ -183,6 +207,17 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
           </section>
         )}
       </div>
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={showDeleteConfirm}
+        onClose={() => setShowDeleteConfirm(false)}
+        onConfirm={handleDelete}
+        title="Delete Recipe"
+        message="Are you sure you want to delete this recipe? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
+      />
     </div>
   );
 }; 

@@ -1,68 +1,124 @@
-import { GoogleGenerativeAI } from '@google/generative-ai';
-
-const apiKey = import.meta.env.VITE_GEMINI_API_KEY;
-
-if (!apiKey) {
-  throw new Error('Gemini API key not found in environment variables');
+const API_KEY = import.meta.env.VITE_GEMINI_API_KEY;
+if (!API_KEY) {
+  throw new Error('VITE_GEMINI_API_KEY environment variable is required');
 }
 
-const genAI = new GoogleGenerativeAI(apiKey);
+const API_ENDPOINT = 'https://generativelanguage.googleapis.com/v1/models/gemini-1.5-flash-8b:generateContent';
 
-export interface GeminiResponse {
-  text: string;
-  error?: string;
+/**
+ * Clean HTML content for better text extraction
+ */
+function cleanHtml(html: string): string {
+  // Step 1: Remove script and style tags
+  let cleaned = html.replace(/<script\b[^<]*(?:(?!<\/script>)<[^<]*)*<\/script>/gi, '')
+                    .replace(/<style\b[^<]*(?:(?!<\/style>)<[^<]*)*<\/style>/gi, '');
+
+  // Step 2: Remove all remaining HTML tags
+  cleaned = cleaned.replace(/<[^>]+>/g, ' ');
+
+  // Step 3: Trim extra spaces and line breaks
+  cleaned = cleaned.replace(/\s+/g, ' ');
+
+  // Step 4: Remove non-ASCII characters and HTML entities
+  cleaned = cleaned.replace(/[^\x20-\x7E]/g, '')
+                  .replace(/&nbsp;/g, ' ')
+                  .replace(/&[a-z]+;/g, ' ');
+
+  // Step 5: Normalize whitespace and line breaks
+  cleaned = cleaned.replace(/\s+/g, ' ')
+                  .replace(/\n{2,}/g, '\n')
+                  .trim();
+
+  return cleaned;
 }
 
 /**
- * Extracts recipe information from HTML content using Gemini
+ * Extract recipe information from HTML content using Gemini
  */
-export async function extractRecipeFromHtml(html: string): Promise<GeminiResponse> {
+export async function extractRecipeFromHtml(html: string): Promise<{ text?: string; error?: string }> {
   try {
-    const model = genAI.getGenerativeModel({ model: 'gemini-pro' });
+    const cleanedHtml = cleanHtml(html);
 
-    const prompt = `
-      Extract recipe information from the following HTML content. Return a JSON object with these fields:
-      - name: Recipe name (string)
-      - description: Recipe description (string, optional)
-      - prepTime: Preparation time (string, optional)
-      - cookTime: Cooking time (string, optional)
-      - totalTime: Total time (string, optional)
-      - servings: Number of servings (number, optional)
-      - ingredients: Array of ingredients, each with:
-        - quantity: number or string (optional)
-        - unit: string (optional)
-        - name: string
-        - notes: string (optional)
-      - instructions: Array of strings, each a step in the recipe
-      - imageUrl: URL of recipe image (string, optional)
-      - author: Recipe author (string, optional)
+    const prompt = `Extract a recipe from the following text and return it as a JSON object. DO NOT include markdown formatting, code blocks, or any other text - ONLY return the raw JSON object.
 
-      HTML Content:
-      ${html}
-
-      Return ONLY the JSON object, no other text. If you can't find certain information, omit those fields.
-      If you can't find enough information to create a valid recipe (at minimum: name, ingredients, and instructions),
-      return { "error": "Could not extract sufficient recipe information" }
-    `;
-
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = response.text();
-
-    // Try to parse the response as JSON
-    try {
-      const parsed = JSON.parse(text);
-      if (parsed.error) {
-        return { text: '', error: parsed.error };
-      }
-      return { text: JSON.stringify(parsed) };
-    } catch (e) {
-      return { text: '', error: 'Failed to parse Gemini response as JSON' };
+Required fields and format:
+{
+  "name": string (required),
+  "description": string (required),
+  "prepTime": string (optional),
+  "cookTime": string (optional),
+  "totalTime": string (optional),
+  "servings": number (optional),
+  "ingredients": [
+    {
+      "quantity": number (required),
+      "unit": string (required),
+      "name": string (required),
+      "notes": string (optional)
     }
+  ],
+  "instructions": string[],
+  "imageUrl": string (optional),
+  "author": string (optional),
+  "cuisine": string[] (required)
+}
+
+If insufficient data is available, respond with: {"error": "Not enough recipe details found for extraction."}
+
+Text to analyze:
+${cleanedHtml}`;
+
+    const response = await fetch(`${API_ENDPOINT}?key=${API_KEY}`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        contents: [{
+          role: 'user',
+          parts: [{ text: prompt }]
+        }]
+      })
+    });
+
+    if (!response.ok) {
+      throw new Error(`HTTP error! status: ${response.status}`);
+    }
+
+    const data = await response.json();
+    console.log('Raw Gemini API Response:', data);
+    
+    let generatedText = data.candidates[0]?.content?.parts[0]?.text;
+    console.log('Generated Text from Gemini (before cleaning):', generatedText);
+
+    if (!generatedText) {
+      throw new Error('No text generated from Gemini');
+    }
+
+    // Clean the response by removing markdown code blocks and any extra text
+    generatedText = generatedText
+      .replace(/^```(?:json)?\s*/, '')  // Remove opening code block
+      .replace(/\s*```$/, '')           // Remove closing code block
+      .trim();                          // Remove any extra whitespace
+
+    console.log('Generated Text from Gemini (after cleaning):', generatedText);
+
+    // Try parsing as JSON to validate the response
+    try {
+      JSON.parse(generatedText);
+    } catch (parseError) {
+      console.error('Failed to parse Gemini response as JSON:', parseError);
+      console.log('Invalid JSON response:', generatedText);
+      throw new Error('Generated text is not valid JSON');
+    }
+
+    return { text: generatedText };
   } catch (error) {
-    return {
-      text: '',
-      error: error instanceof Error ? error.message : 'Unknown error occurred'
-    };
+    console.error('Error in extractRecipeFromHtml:', error);
+    console.log('Error details:', {
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
+      error
+    });
+    return { error: error instanceof Error ? error.message : 'Unknown error occurred' };
   }
 } 

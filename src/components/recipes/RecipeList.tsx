@@ -16,12 +16,14 @@ import {
   getAllRecipes, 
   toggleRecipeFavorite,
   getUserPreferences,
-  updateUserPreferences
+  updateUserPreferences,
+  deleteRecipe
 } from '../../firebase/firestore';
 import { UserPreferences } from '../../types';
 import { RecipeImportModal } from './RecipeImportModal';
 import { RecipeUrlImport } from './RecipeUrlImport';
 import { importRecipeFromUrl } from '../../services/recipeImport';
+import ConfirmDialog from '../common/ConfirmDialog';
 
 interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
@@ -45,6 +47,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
   const [showUrlImportModal, setShowUrlImportModal] = useState(false);
+  const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -213,6 +216,23 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       console.log('Recipe imported successfully:', recipe.name);
     } catch (error) {
       throw error; // Re-throw to be handled by the URL import component
+    }
+  };
+
+  const handleDeleteRecipe = async (id: string) => {
+    setRecipeToDelete(id);
+  };
+
+  const confirmDelete = async () => {
+    if (!recipeToDelete) return;
+
+    try {
+      await deleteRecipe(recipeToDelete);
+      setRecipes(recipes.filter(recipe => recipe.id !== recipeToDelete));
+    } catch (error) {
+      console.error('Error deleting recipe:', error);
+    } finally {
+      setRecipeToDelete(null);
     }
   };
 
@@ -471,6 +491,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
                 key={recipe.id}
                 recipe={recipe}
                 onFavoriteToggle={handleFavoriteToggle}
+                onDelete={handleDeleteRecipe}
                 onClick={onRecipeSelect}
                 view={viewMode}
               />
@@ -483,6 +504,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
                 key={recipe.id}
                 recipe={recipe}
                 onFavoriteToggle={handleFavoriteToggle}
+                onDelete={handleDeleteRecipe}
                 onClick={onRecipeSelect}
                 view={viewMode}
               />
@@ -510,6 +532,17 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         isOpen={showUrlImportModal}
         onClose={() => setShowUrlImportModal(false)}
         onImport={handleUrlImport}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={!!recipeToDelete}
+        onClose={() => setRecipeToDelete(null)}
+        onConfirm={confirmDelete}
+        title="Delete Recipe"
+        message="Are you sure you want to delete this recipe? This action cannot be undone."
+        confirmText="Delete"
+        cancelText="Cancel"
       />
     </div>
   );
