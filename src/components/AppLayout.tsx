@@ -6,6 +6,7 @@ import { RecipeList } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
 import { ViewMode } from '../types';
+import { getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
@@ -20,18 +21,42 @@ if (process.env.NODE_ENV === 'development') {
   (window as any).addTestRecipes = addTestRecipes;
 }
 
+// Since this is a single-user app, we'll use a constant ID
+const USER_ID = 'default-user';
+
 type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 
 export const AppLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const storeFilterRef = useRef<HTMLDivElement>(null);
+  const [listId, setListId] = useState<string | null>(null);
 
   // Shopping list view state
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
   const [showCompleted, setShowCompleted] = useState(true);
   const [currentStore, setCurrentStore] = useState<string>('all');
   const [showStoreFilter, setShowStoreFilter] = useState(false);
+
+  // Load view settings from Firestore
+  useEffect(() => {
+    const loadViewSettings = async () => {
+      try {
+        const userLists = await getUserShoppingLists(USER_ID);
+        if (userLists.length > 0) {
+          const list = userLists[0];
+          setListId(list.id);
+          setViewMode(list.viewMode || 'combined');
+          setShowCompleted(list.showCompleted ?? true);
+          setCurrentStore(list.currentStore || 'all');
+        }
+      } catch (err) {
+        console.error('Failed to load view settings:', err);
+      }
+    };
+
+    loadViewSettings();
+  }, []);
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
@@ -45,6 +70,37 @@ export const AppLayout: React.FC = () => {
       document.removeEventListener('mousedown', handleClickOutside);
     };
   }, []);
+
+  // Update Firestore when view settings change
+  const handleViewModeChange = async (newMode: ViewMode) => {
+    if (!listId) return;
+    setViewMode(newMode);
+    try {
+      await updateShoppingList(listId, { viewMode: newMode });
+    } catch (err) {
+      console.error('Failed to update view mode:', err);
+    }
+  };
+
+  const handleShowCompletedChange = async (show: boolean) => {
+    if (!listId) return;
+    setShowCompleted(show);
+    try {
+      await updateShoppingList(listId, { showCompleted: show });
+    } catch (err) {
+      console.error('Failed to update show completed setting:', err);
+    }
+  };
+
+  const handleStoreChange = async (storeId: string) => {
+    if (!listId) return;
+    setCurrentStore(storeId);
+    try {
+      await updateShoppingList(listId, { currentStore: storeId });
+    } catch (err) {
+      console.error('Failed to update current store:', err);
+    }
+  };
 
   const handleRecipeSelect = (id: string) => {
     setSelectedRecipeId(id);
@@ -108,7 +164,7 @@ export const AppLayout: React.FC = () => {
                           <StoreSelector
                             selectedStore={undefined}
                             onStoreSelect={(store) => {
-                              setCurrentStore(store?.id || 'all');
+                              handleStoreChange(store?.id || 'all');
                               setShowStoreFilter(false);
                             }}
                             allowAllStores
@@ -121,7 +177,7 @@ export const AppLayout: React.FC = () => {
 
                   <div className="flex items-center bg-zinc-100 rounded-lg p-1">
                     <button
-                      onClick={() => setViewMode('combined')}
+                      onClick={() => handleViewModeChange('combined')}
                       className={`p-1.5 rounded-md transition-colors duration-200 ${
                         viewMode === 'combined'
                           ? 'bg-white shadow text-violet-600'
@@ -131,7 +187,7 @@ export const AppLayout: React.FC = () => {
                       <Squares2X2Icon className="w-5 h-5" />
                     </button>
                     <button
-                      onClick={() => setViewMode('sequential')}
+                      onClick={() => handleViewModeChange('sequential')}
                       className={`p-1.5 rounded-md transition-colors duration-200 ${
                         viewMode === 'sequential'
                           ? 'bg-white shadow text-violet-600'
@@ -143,7 +199,7 @@ export const AppLayout: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => setShowCompleted(!showCompleted)}
+                    onClick={() => handleShowCompletedChange(!showCompleted)}
                     className={`p-1.5 rounded-md transition-colors duration-200 ${
                       showCompleted
                         ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
