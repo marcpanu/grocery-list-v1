@@ -11,12 +11,31 @@ import {
   EyeSlashIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline';
-import { PageHeader } from './PageHeader';
 
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default-user';
 
-export const ShoppingList: React.FC = () => {
+interface ShoppingListProps {
+  viewMode: ViewMode;
+  showCompleted: boolean;
+  currentStore: string;
+  showStoreFilter: boolean;
+  onViewModeChange: (mode: ViewMode) => void;
+  onShowCompletedChange: (show: boolean) => void;
+  onCurrentStoreChange: (storeId: string) => void;
+  onShowStoreFilterChange: (show: boolean) => void;
+}
+
+export const ShoppingList: React.FC<ShoppingListProps> = ({
+  viewMode,
+  showCompleted,
+  currentStore,
+  showStoreFilter,
+  onViewModeChange,
+  onShowCompletedChange,
+  onCurrentStoreChange,
+  onShowStoreFilterChange
+}) => {
   const [list, setList] = useState<ShoppingListType | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -26,17 +45,23 @@ export const ShoppingList: React.FC = () => {
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [showConfig, setShowConfig] = useState(false);
-
-  // View state
-  const [viewMode, setViewMode] = useState<ViewMode>('combined');
-  const [showCompleted, setShowCompleted] = useState(true);
-  const [currentStore, setCurrentStore] = useState<string>('all');
-
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
 
   // Refs for click outside handling
-  const configButtonRef = useRef<HTMLDivElement>(null);
   const storeFilterRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (storeFilterRef.current && !storeFilterRef.current.contains(event.target as Node)) {
+        setShowConfig(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -51,10 +76,6 @@ export const ShoppingList: React.FC = () => {
         }
         
         setList(activeList);
-        // Initialize view state from list settings
-        setViewMode(activeList.viewMode || 'combined');
-        setShowCompleted(activeList.showCompleted ?? true);
-        setCurrentStore(activeList.currentStore || 'all');
       } catch (err) {
         setError('Failed to initialize shopping list');
         console.error(err);
@@ -64,19 +85,6 @@ export const ShoppingList: React.FC = () => {
     };
 
     initializeList();
-  }, []);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (storeFilterRef.current && !storeFilterRef.current.contains(event.target as Node)) {
-        setShowConfig(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
   }, []);
 
   const refreshList = async () => {
@@ -113,7 +121,7 @@ export const ShoppingList: React.FC = () => {
 
   const handleViewModeChange = async (newMode: ViewMode) => {
     if (!list?.id) return;
-    setViewMode(newMode);
+    onViewModeChange(newMode);
     try {
       await updateShoppingList(list.id, { viewMode: newMode });
       refreshList();
@@ -124,7 +132,7 @@ export const ShoppingList: React.FC = () => {
 
   const handleStoreFilterChange = async (storeId: string) => {
     if (!list?.id) return;
-    setCurrentStore(storeId);
+    onCurrentStoreChange(storeId);
     try {
       await updateShoppingList(list.id, { currentStore: storeId });
       refreshList();
@@ -136,7 +144,7 @@ export const ShoppingList: React.FC = () => {
   const handleToggleCompleted = async () => {
     if (!list?.id) return;
     const newShowCompleted = !showCompleted;
-    setShowCompleted(newShowCompleted);
+    onShowCompletedChange(newShowCompleted);
     try {
       await updateShoppingList(list.id, { showCompleted: newShowCompleted });
       refreshList();
@@ -207,84 +215,6 @@ export const ShoppingList: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-16">
-      <header className="sticky top-0 z-10 bg-white border-b border-zinc-200">
-        <div className="px-4 py-4">
-          <div className="flex items-center justify-between">
-            <h1 className="text-2xl font-bold text-zinc-900">Grocery List</h1>
-            
-            <div className="flex items-center space-x-2">
-              <div ref={storeFilterRef} className="relative">
-                <button
-                  onClick={() => setShowConfig(!showConfig)}
-                  className={`p-1.5 rounded-md transition-colors duration-200 ${
-                    showConfig || currentStore !== 'all'
-                      ? 'text-violet-600 bg-violet-50'
-                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                  }`}
-                >
-                  <FunnelIcon className="w-5 h-5" />
-                </button>
-                
-                {showConfig && (
-                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-zinc-200 p-4 z-50">
-                    <div>
-                      <label className="block text-sm font-medium text-zinc-700 mb-1">
-                        Store Filter
-                      </label>
-                      <StoreSelector
-                        selectedStore={list?.stores.find(s => s.id === currentStore)}
-                        onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
-                        allowAllStores
-                        className="w-full"
-                      />
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="flex items-center bg-zinc-100 rounded-lg p-1">
-                <button
-                  onClick={() => handleViewModeChange('combined')}
-                  className={`p-1.5 rounded-md transition-colors duration-200 ${
-                    viewMode === 'combined'
-                      ? 'bg-white shadow text-violet-600'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                >
-                  <Squares2X2Icon className="w-5 h-5" />
-                </button>
-                <button
-                  onClick={() => handleViewModeChange('sequential')}
-                  className={`p-1.5 rounded-md transition-colors duration-200 ${
-                    viewMode === 'sequential'
-                      ? 'bg-white shadow text-violet-600'
-                      : 'text-zinc-600 hover:text-zinc-900'
-                  }`}
-                >
-                  <ListBulletIcon className="w-5 h-5" />
-                </button>
-              </div>
-
-              <button
-                onClick={handleToggleCompleted}
-                className={`p-1.5 rounded-md transition-colors duration-200 ${
-                  showCompleted
-                    ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                    : 'text-violet-600 bg-violet-50'
-                }`}
-                title={showCompleted ? 'Hide completed items' : 'Show completed items'}
-              >
-                {showCompleted ? (
-                  <EyeIcon className="w-5 h-5" />
-                ) : (
-                  <EyeSlashIcon className="w-5 h-5" />
-                )}
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
       {/* List Content */}
       <div className="px-4 pt-4">
         {viewMode === 'sequential' ? (

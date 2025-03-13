@@ -1,10 +1,19 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ShoppingList } from './ShoppingList';
 import { PageHeader } from './PageHeader';
 import { Settings } from './Settings';
 import { RecipeList } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
+import { ViewMode } from '../types';
+import { 
+  Squares2X2Icon,
+  ListBulletIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  FunnelIcon,
+} from '@heroicons/react/24/outline';
+import { StoreSelector } from './StoreSelector';
 
 // Expose addTestRecipes to window for development
 if (process.env.NODE_ENV === 'development') {
@@ -16,6 +25,26 @@ type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 export const AppLayout: React.FC = () => {
   const [activeTab, setActiveTab] = useState<Tab>('list');
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const storeFilterRef = useRef<HTMLDivElement>(null);
+
+  // Shopping list view state
+  const [viewMode, setViewMode] = useState<ViewMode>('combined');
+  const [showCompleted, setShowCompleted] = useState(true);
+  const [currentStore, setCurrentStore] = useState<string>('all');
+  const [showStoreFilter, setShowStoreFilter] = useState(false);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (storeFilterRef.current && !storeFilterRef.current.contains(event.target as Node)) {
+        setShowStoreFilter(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, []);
 
   const handleRecipeSelect = (id: string) => {
     setSelectedRecipeId(id);
@@ -54,8 +83,93 @@ export const AppLayout: React.FC = () => {
       case 'list':
         return (
           <>
-            <PageHeader title="Grocery List" />
-            <ShoppingList />
+            <PageHeader 
+              title="Grocery List" 
+              actions={
+                <div className="flex items-center space-x-2">
+                  <div className="relative" ref={storeFilterRef}>
+                    <button
+                      onClick={() => setShowStoreFilter(!showStoreFilter)}
+                      className={`p-1.5 rounded-md transition-colors duration-200 ${
+                        showStoreFilter || currentStore !== 'all'
+                          ? 'text-violet-600 bg-violet-50'
+                          : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                      }`}
+                    >
+                      <FunnelIcon className="w-5 h-5" />
+                    </button>
+                    
+                    {showStoreFilter && (
+                      <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-zinc-200 p-4 z-50">
+                        <div>
+                          <label className="block text-sm font-medium text-zinc-700 mb-1">
+                            Store Filter
+                          </label>
+                          <StoreSelector
+                            selectedStore={undefined}
+                            onStoreSelect={(store) => {
+                              setCurrentStore(store?.id || 'all');
+                              setShowStoreFilter(false);
+                            }}
+                            allowAllStores
+                            className="w-full"
+                          />
+                        </div>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center bg-zinc-100 rounded-lg p-1">
+                    <button
+                      onClick={() => setViewMode('combined')}
+                      className={`p-1.5 rounded-md transition-colors duration-200 ${
+                        viewMode === 'combined'
+                          ? 'bg-white shadow text-violet-600'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <Squares2X2Icon className="w-5 h-5" />
+                    </button>
+                    <button
+                      onClick={() => setViewMode('sequential')}
+                      className={`p-1.5 rounded-md transition-colors duration-200 ${
+                        viewMode === 'sequential'
+                          ? 'bg-white shadow text-violet-600'
+                          : 'text-zinc-600 hover:text-zinc-900'
+                      }`}
+                    >
+                      <ListBulletIcon className="w-5 h-5" />
+                    </button>
+                  </div>
+
+                  <button
+                    onClick={() => setShowCompleted(!showCompleted)}
+                    className={`p-1.5 rounded-md transition-colors duration-200 ${
+                      showCompleted
+                        ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                        : 'text-violet-600 bg-violet-50'
+                    }`}
+                    title={showCompleted ? 'Hide completed items' : 'Show completed items'}
+                  >
+                    {showCompleted ? (
+                      <EyeIcon className="w-5 h-5" />
+                    ) : (
+                      <EyeSlashIcon className="w-5 h-5" />
+                    )}
+                  </button>
+                </div>
+              }
+            />
+            <ShoppingList 
+              viewMode={viewMode}
+              showCompleted={showCompleted}
+              currentStore={currentStore}
+              showStoreFilter={showStoreFilter}
+              onViewModeChange={setViewMode}
+              onShowCompletedChange={setShowCompleted}
+              onCurrentStoreChange={setCurrentStore}
+              onShowStoreFilterChange={setShowStoreFilter}
+            />
           </>
         );
       case 'settings':
