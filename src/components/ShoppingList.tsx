@@ -7,6 +7,9 @@ import { AddItemModal } from './AddItemModal';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
+  EyeIcon,
+  EyeSlashIcon,
+  FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { PageHeader } from './PageHeader';
 
@@ -33,6 +36,7 @@ export const ShoppingList: React.FC = () => {
 
   // Refs for click outside handling
   const configButtonRef = useRef<HTMLDivElement>(null);
+  const storeFilterRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -64,7 +68,7 @@ export const ShoppingList: React.FC = () => {
 
   useEffect(() => {
     const handleClickOutside = (event: MouseEvent) => {
-      if (configButtonRef.current && !configButtonRef.current.contains(event.target as Node)) {
+      if (storeFilterRef.current && !storeFilterRef.current.contains(event.target as Node)) {
         setShowConfig(false);
       }
     };
@@ -203,79 +207,83 @@ export const ShoppingList: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-16">
-      <PageHeader 
-        title="Grocery List"
-        onToggleConfig={() => setShowConfig(!showConfig)}
-        showConfig={showConfig}
-      />
-
-      {/* View Options Dropdown */}
-      {showConfig && (
-        <div className="fixed top-[72px] right-4 w-72 bg-white rounded-lg shadow-lg ring-1 ring-black ring-opacity-5 z-50">
-          <div className="p-4 space-y-4">
-            {/* Store Filter */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
-                Store Filter
-              </label>
-              <StoreSelector
-                selectedStore={list?.stores.find(s => s.id === currentStore)}
-                onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
-                allowAllStores
-                className="w-full"
-              />
-            </div>
-
-            {/* View Mode */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
-                View Mode
-              </label>
-              <div className="flex rounded-md shadow-sm">
+      <header className="sticky top-0 z-10 bg-white border-b border-zinc-200">
+        <div className="px-4 py-4">
+          <div className="flex items-center justify-between">
+            <h1 className="text-2xl font-bold text-zinc-900">Grocery List</h1>
+            
+            <div className="flex items-center space-x-2">
+              <div ref={storeFilterRef} className="relative">
                 <button
-                  onClick={() => handleViewModeChange('combined')}
-                  className={`flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-l-md border ${
-                    viewMode === 'combined'
-                      ? 'bg-violet-100 border-violet-200 text-violet-700'
-                      : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                  onClick={() => setShowConfig(!showConfig)}
+                  className={`p-1.5 rounded-md transition-colors duration-200 ${
+                    showConfig || currentStore !== 'all'
+                      ? 'text-violet-600 bg-violet-50'
+                      : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
                   }`}
                 >
-                  <Squares2X2Icon className="w-5 h-5 mr-2" />
-                  Combined
+                  <FunnelIcon className="w-5 h-5" />
+                </button>
+                
+                {showConfig && (
+                  <div className="absolute right-0 mt-2 w-64 bg-white rounded-lg shadow-lg border border-zinc-200 p-4 z-50">
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-1">
+                        Store Filter
+                      </label>
+                      <StoreSelector
+                        selectedStore={list?.stores.find(s => s.id === currentStore)}
+                        onStoreSelect={(store) => handleStoreFilterChange(store?.id || 'all')}
+                        allowAllStores
+                        className="w-full"
+                      />
+                    </div>
+                  </div>
+                )}
+              </div>
+
+              <div className="flex items-center bg-zinc-100 rounded-lg p-1">
+                <button
+                  onClick={() => handleViewModeChange('combined')}
+                  className={`p-1.5 rounded-md transition-colors duration-200 ${
+                    viewMode === 'combined'
+                      ? 'bg-white shadow text-violet-600'
+                      : 'text-zinc-600 hover:text-zinc-900'
+                  }`}
+                >
+                  <Squares2X2Icon className="w-5 h-5" />
                 </button>
                 <button
                   onClick={() => handleViewModeChange('sequential')}
-                  className={`flex-1 inline-flex items-center justify-center px-4 py-2 text-sm font-medium rounded-r-md border-t border-r border-b ${
+                  className={`p-1.5 rounded-md transition-colors duration-200 ${
                     viewMode === 'sequential'
-                      ? 'bg-violet-100 border-violet-200 text-violet-700'
-                      : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                      ? 'bg-white shadow text-violet-600'
+                      : 'text-zinc-600 hover:text-zinc-900'
                   }`}
                 >
-                  <ListBulletIcon className="w-5 h-5 mr-2" />
-                  Sequential
+                  <ListBulletIcon className="w-5 h-5" />
                 </button>
               </div>
-            </div>
 
-            {/* Show/Hide Completed */}
-            <div>
-              <label className="block text-sm font-medium text-zinc-700 mb-1">
-                Completed Items
-              </label>
               <button
                 onClick={handleToggleCompleted}
-                className={`w-full inline-flex items-center justify-center px-4 py-2 rounded-md border text-sm font-medium ${
+                className={`p-1.5 rounded-md transition-colors duration-200 ${
                   showCompleted
-                    ? 'bg-violet-100 border-violet-200 text-violet-700'
-                    : 'bg-white border-zinc-300 text-zinc-700 hover:bg-zinc-50'
+                    ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+                    : 'text-violet-600 bg-violet-50'
                 }`}
+                title={showCompleted ? 'Hide completed items' : 'Show completed items'}
               >
-                {showCompleted ? 'Showing Completed' : 'Hiding Completed'}
+                {showCompleted ? (
+                  <EyeIcon className="w-5 h-5" />
+                ) : (
+                  <EyeSlashIcon className="w-5 h-5" />
+                )}
               </button>
             </div>
           </div>
         </div>
-      )}
+      </header>
 
       {/* List Content */}
       <div className="px-4 pt-4">
