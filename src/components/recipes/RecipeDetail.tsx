@@ -141,7 +141,7 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
 
         {/* Tags */}
         <div className="flex flex-wrap gap-2 mb-6">
-          {recipe.mealTypes.map((type) => (
+          {recipe.mealTypes?.map((type) => (
             <span
               key={type}
               className="px-3 py-1 rounded-full bg-violet-50 text-violet-700 text-sm"
@@ -165,10 +165,10 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
         )}
 
         {/* Ingredients */}
-        <section className="mb-6">
+        <section className="mb-8">
           <h2 className="text-lg font-semibold text-zinc-900 mb-3">Ingredients</h2>
           <ul className="space-y-2">
-            {recipe.ingredients.map((ingredient, index) => (
+            {recipe.ingredients?.map((ingredient, index) => (
               <li key={index} className="flex items-baseline">
                 <span className="font-medium text-zinc-900">
                   {ingredient.quantity} {ingredient.unit}
@@ -188,7 +188,7 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
         <section>
           <h2 className="text-lg font-semibold text-zinc-900 mb-3">Instructions</h2>
           <ol className="space-y-4">
-            {recipe.instructions.map((step) => (
+            {recipe.instructions?.map((step) => (
               <li key={step.order} className="flex">
                 <span className="font-medium text-violet-600 mr-4">
                   {step.order}.
