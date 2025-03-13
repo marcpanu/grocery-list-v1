@@ -116,20 +116,20 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
 
   return (
     <div 
-      className={`group px-4 py-3 hover:bg-zinc-50 transition-colors ${
+      className={`group px-2 py-1.5 hover:bg-zinc-50 transition-colors ${
         isUpdating ? 'opacity-50' : ''
       }`}
     >
-      <div className="flex items-center gap-4 sm:gap-6">
+      <div className="flex gap-3">
         <button
           onClick={handleToggleCheck}
           disabled={isUpdating}
-          className="relative flex items-center justify-center w-5 h-5 rounded-full border-2 border-zinc-300 hover:border-violet-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
+          className="relative flex-shrink-0 flex items-center justify-center w-4 h-4 self-center rounded-full border-2 border-zinc-300 hover:border-violet-500 transition-colors focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
         >
           <div className={`absolute inset-0.5 rounded-full transition-colors ${item.checked ? 'bg-violet-600' : ''}`} />
           {item.checked && (
             <svg
-              className="w-3 h-3 text-white relative"
+              className="w-2 h-2 text-white relative"
               viewBox="0 0 12 12"
               fill="none"
               xmlns="http://www.w3.org/2000/svg"
@@ -145,30 +145,32 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
           )}
         </button>
 
-        <div className="flex-1 min-w-0 flex items-baseline gap-2">
-          {isEditing ? (
-            <input
-              type="text"
-              value={editedName}
-              onChange={(e) => setEditedName(e.target.value)}
-              onBlur={handleNameUpdate}
-              onKeyDown={(e) => handleKeyDown(e, 'name')}
-              className="flex-1 px-0 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-zinc-900"
-              autoFocus
-            />
-          ) : (
-            <span 
-              onClick={() => setIsEditing(true)}
-              className={`font-medium cursor-text transition-colors ${
-                item.checked 
-                  ? 'line-through text-zinc-400' 
-                  : 'text-zinc-900 hover:text-violet-600'
-              }`}
-            >
-              {item.name}
-            </span>
-          )}
-          <div className="flex items-center gap-1">
+        <div className="flex-1 min-w-0 py-0.5">
+          <div className="flex items-baseline gap-2">
+            {isEditing ? (
+              <input
+                type="text"
+                value={editedName}
+                onChange={(e) => setEditedName(e.target.value)}
+                onBlur={handleNameUpdate}
+                onKeyDown={(e) => handleKeyDown(e, 'name')}
+                className="flex-1 px-0 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-zinc-900 text-sm"
+                autoFocus
+              />
+            ) : (
+              <span 
+                onClick={() => setIsEditing(true)}
+                className={`text-sm font-medium cursor-text transition-colors ${
+                  item.checked 
+                    ? 'line-through text-zinc-400' 
+                    : 'text-zinc-900 hover:text-violet-600'
+                }`}
+              >
+                {item.name}
+              </span>
+            )}
+          </div>
+          <div className="flex items-center gap-1 mt-0.5">
             {isEditingQuantity ? (
               <input
                 type="number"
@@ -176,39 +178,39 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
                 onChange={(e) => setEditedQuantity(e.target.value)}
                 onBlur={handleQuantityUpdate}
                 onKeyDown={(e) => handleKeyDown(e, 'quantity')}
-                className="w-16 px-1 py-0.5 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-sm text-zinc-500 tabular-nums"
+                className="w-12 px-1 py-0.5 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-xs text-zinc-500 tabular-nums"
                 min="1"
                 autoFocus
               />
             ) : (
               <span 
                 onClick={() => setIsEditingQuantity(true)}
-                className="text-sm text-zinc-500 tabular-nums whitespace-nowrap cursor-text hover:text-violet-600"
+                className="text-xs text-zinc-500 tabular-nums whitespace-nowrap cursor-text hover:text-violet-600"
               >
-                × {item.quantity}
+                {item.quantity}
               </span>
             )}
             {item.unit && (
-              <span className="text-sm text-zinc-500">
+              <span className="text-xs text-zinc-500">
                 {item.unit}
               </span>
             )}
           </div>
         </div>
 
-        <div className="flex items-center gap-3 opacity-0 group-hover:opacity-100 transition-opacity">
+        <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
           <StoreSelector
             selectedStore={item.store}
             onStoreSelect={handleStoreSelect}
-            className="w-28 sm:w-40"
+            className="w-24"
           />
           <button
             onClick={handleRemove}
             disabled={isUpdating}
-            className="p-1.5 text-zinc-400 hover:text-red-600 transition-colors"
+            className="p-1 text-zinc-400 hover:text-red-600 transition-colors"
             title="Delete item"
           >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor">
               <path
                 strokeLinecap="round"
                 strokeLinejoin="round"

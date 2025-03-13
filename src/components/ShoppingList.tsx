@@ -224,28 +224,28 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
               const store = list.stores.find((s: Store) => s.id === storeId);
               return (
                 <div key={storeId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="px-4 py-3 bg-white border-b border-zinc-200 sm:px-6">
+                  <div className="px-3 py-2 bg-white border-b border-zinc-200">
                     <div className="flex items-center">
-                      <svg className="w-5 h-5 text-violet-600 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <svg className="w-4 h-4 text-violet-600 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
                         <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
                       </svg>
-                      <h2 className="text-base font-semibold text-zinc-900">
+                      <h2 className="text-sm font-medium text-zinc-900">
                         {store?.name || 'Unassigned Store'}
                       </h2>
                     </div>
                   </div>
-                  <div className="divide-y divide-zinc-200">
+                  <div className="divide-y divide-zinc-100">
                     {Object.entries(categorizedItems).map(([categoryId, items]) => {
                       const category = list.categories.find((c: Category) => c.id === categoryId);
                       return (
                         <div key={categoryId}>
-                          <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
-                            <h3 className="text-sm font-medium text-zinc-700">
+                          <div className="px-3 py-1.5 bg-zinc-50/50">
+                            <h3 className="text-xs font-medium text-zinc-700">
                               {category?.name || 'Uncategorized'}
                             </h3>
                           </div>
-                          <div className="px-4 py-2 sm:px-6">
-                            <div className="space-y-2">
+                          <div className="px-3 py-1">
+                            <div className="space-y-1">
                               {items.map(item => (
                                 <ShoppingListItem
                                   key={item.id}
@@ -266,18 +266,18 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
           </div>
         ) : (
           // Combined view: Group by category only
-          <div className="space-y-4">
+          <div className="space-y-3">
             {Object.entries(itemsByCategory).map(([categoryId, items]) => {
               const category = list.categories.find((c: Category) => c.id === categoryId);
               return (
                 <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="px-4 py-2.5 bg-zinc-50/50 sm:px-6">
-                    <h3 className="text-sm font-medium text-zinc-700">
+                  <div className="px-3 py-1.5 bg-zinc-50/50">
+                    <h3 className="text-xs font-medium text-zinc-700">
                       {category?.name || 'Uncategorized'}
                     </h3>
                   </div>
-                  <div className="px-4 py-2 sm:px-6">
-                    <div className="space-y-2">
+                  <div className="px-3 py-1">
+                    <div className="space-y-1">
                       {items.map(item => (
                         <ShoppingListItem
                           key={item.id}
