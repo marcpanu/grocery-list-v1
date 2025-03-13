@@ -70,21 +70,23 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
                   className="flex-1 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
                   autoFocus
                 />
-                <input
-                  type="number"
-                  value={newItemQuantity}
-                  onChange={(e) => setNewItemQuantity(e.target.value)}
-                  min="1"
-                  placeholder="Qty"
-                  className="w-16 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-xs"
-                />
-                <input
-                  type="text"
-                  value={newItemUnit}
-                  onChange={(e) => setNewItemUnit(e.target.value)}
-                  placeholder="Unit"
-                  className="w-20 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-xs"
-                />
+                <div className="flex gap-2 w-32">
+                  <input
+                    type="number"
+                    value={newItemQuantity}
+                    onChange={(e) => setNewItemQuantity(e.target.value)}
+                    min="1"
+                    placeholder="Qty"
+                    className="w-16 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
+                  />
+                  <input
+                    type="text"
+                    value={newItemUnit}
+                    onChange={(e) => setNewItemUnit(e.target.value)}
+                    placeholder="Unit"
+                    className="w-14 rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm"
+                  />
+                </div>
               </div>
               <div className="space-y-2">
                 <CategorySelector
