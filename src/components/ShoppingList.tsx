@@ -1,16 +1,8 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
-import { StoreSelector } from './StoreSelector';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList, updateItemInList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
 import { AddItemModal } from './AddItemModal';
-import { 
-  Squares2X2Icon,
-  ListBulletIcon,
-  EyeIcon,
-  EyeSlashIcon,
-  FunnelIcon,
-} from '@heroicons/react/24/outline';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 
 // Since this is a single-user app, we'll use a constant ID
@@ -20,22 +12,18 @@ interface ShoppingListProps {
   viewMode: ViewMode;
   showCompleted: boolean;
   currentStore: string;
-  showStoreFilter: boolean;
   onViewModeChange: (mode: ViewMode) => void;
   onShowCompletedChange: (show: boolean) => void;
   onCurrentStoreChange: (storeId: string) => void;
-  onShowStoreFilterChange: (show: boolean) => void;
 }
 
 export const ShoppingList: React.FC<ShoppingListProps> = ({
   viewMode,
   showCompleted,
   currentStore,
-  showStoreFilter,
   onViewModeChange,
   onShowCompletedChange,
   onCurrentStoreChange,
-  onShowStoreFilterChange
 }) => {
   const [list, setList] = useState<ShoppingListType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -45,24 +33,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   const [newItemUnit, setNewItemUnit] = useState('');
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
-  const [showConfig, setShowConfig] = useState(false);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-
-  // Refs for click outside handling
-  const storeFilterRef = useRef<HTMLDivElement>(null);
-
-  useEffect(() => {
-    const handleClickOutside = (event: MouseEvent) => {
-      if (storeFilterRef.current && !storeFilterRef.current.contains(event.target as Node)) {
-        setShowConfig(false);
-      }
-    };
-
-    document.addEventListener('mousedown', handleClickOutside);
-    return () => {
-      document.removeEventListener('mousedown', handleClickOutside);
-    };
-  }, []);
 
   useEffect(() => {
     const initializeList = async () => {

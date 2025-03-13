@@ -2,15 +2,11 @@ import { ReactNode } from 'react';
 
 interface PageHeaderProps {
   title: string;
-  onToggleConfig?: () => void;
-  showConfig?: boolean;
   actions?: ReactNode;
 }
 
 export const PageHeader: React.FC<PageHeaderProps> = ({ 
-  title, 
-  onToggleConfig,
-  showConfig,
+  title,
   actions
 }) => {
   return (
