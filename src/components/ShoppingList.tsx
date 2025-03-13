@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
 import { StoreSelector } from './StoreSelector';
-import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
+import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList, updateItemInList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
 import { AddItemModal } from './AddItemModal';
 import { 
@@ -11,6 +11,7 @@ import {
   EyeSlashIcon,
   FunnelIcon,
 } from '@heroicons/react/24/outline';
+import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default-user';
@@ -175,6 +176,32 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     });
   };
 
+  const handleDragEnd = async (result: DropResult) => {
+    const { destination, source, draggableId } = result;
+
+    // Drop was cancelled or dropped outside a droppable
+    if (!destination || !list) return;
+
+    // Find the item being dragged
+    const item = list.items.find(item => item.id === draggableId);
+    if (!item) return;
+
+    // Get the store ID from the droppable ID (format: "store-{storeId}")
+    const newStoreId = destination.droppableId.replace('store-', '');
+    const newStore = list.stores.find(store => store.id === newStoreId);
+
+    // If the store hasn't changed, do nothing
+    if (item.store?.id === newStore?.id) return;
+
+    try {
+      // Update the item's store
+      await updateItemInList(list.id, item.id, { store: newStore });
+      refreshList();
+    } catch (err) {
+      console.error('Failed to update item store:', err);
+    }
+  };
+
   // Loading state
   if (loading) {
     return (
@@ -217,28 +244,75 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     <div className="min-h-screen bg-zinc-50 pb-16">
       {/* List Content */}
       <div className="px-4 pt-4">
-        {viewMode === 'sequential' ? (
-          // Sequential view: Group by store, then by category
-          <div className="space-y-4">
-            {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
-              const store = list.stores.find((s: Store) => s.id === storeId);
-              return (
-                <div key={storeId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="px-3 py-2 bg-white border-b border-zinc-200">
-                    <div className="flex items-center">
-                      <svg className="w-4 h-4 text-violet-600 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
-                      </svg>
-                      <h2 className="text-sm font-medium text-zinc-900">
-                        {store?.name || 'Unassigned Store'}
-                      </h2>
+        <DragDropContext onDragEnd={handleDragEnd}>
+          {viewMode === 'sequential' ? (
+            <div className="space-y-4">
+              {Object.entries(itemsByStore).map(([storeId, categorizedItems]) => {
+                const store = list?.stores.find((s: Store) => s.id === storeId);
+                return (
+                  <div key={storeId} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="px-3 py-2 bg-white border-b border-zinc-200">
+                      <div className="flex items-center">
+                        <svg className="w-4 h-4 text-violet-600 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 21V5a2 2 0 00-2-2H7a2 2 0 00-2 2v16m14 0h2m-2 0h-5m-9 0H3m2 0h5M9 7h1m-1 4h1m4-4h1m-1 4h1m-5 10v-5a1 1 0 011-1h2a1 1 0 011 1v5m-4 0h4" />
+                        </svg>
+                        <h2 className="text-sm font-medium text-zinc-900">
+                          {store?.name || 'Unassigned Store'}
+                        </h2>
+                      </div>
                     </div>
+                    <Droppable droppableId={`store-${storeId}`}>
+                      {(provided) => (
+                        <div 
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className="divide-y divide-zinc-100"
+                        >
+                          {Object.entries(categorizedItems).map(([categoryId, items]) => {
+                            const category = list?.categories.find((c: Category) => c.id === categoryId);
+                            return (
+                              <div key={categoryId}>
+                                <div className="px-3 py-1.5 bg-zinc-50/50">
+                                  <h3 className="text-xs font-medium text-zinc-700">
+                                    {category?.name || 'Uncategorized'}
+                                  </h3>
+                                </div>
+                                <div className="px-3 py-1">
+                                  <div className="space-y-1">
+                                    {items.map((item, index) => (
+                                      <ShoppingListItem
+                                        key={item.id}
+                                        item={item}
+                                        listId={list?.id || ''}
+                                        onUpdate={refreshList}
+                                        index={index}
+                                      />
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                          {provided.placeholder}
+                        </div>
+                      )}
+                    </Droppable>
                   </div>
-                  <div className="divide-y divide-zinc-100">
-                    {Object.entries(categorizedItems).map(([categoryId, items]) => {
-                      const category = list.categories.find((c: Category) => c.id === categoryId);
+                );
+              })}
+            </div>
+          ) : (
+            <div className="space-y-3">
+              <Droppable droppableId="store-all">
+                {(provided) => (
+                  <div 
+                    ref={provided.innerRef}
+                    {...provided.droppableProps}
+                  >
+                    {Object.entries(itemsByCategory).map(([categoryId, items]) => {
+                      const category = list?.categories.find((c: Category) => c.id === categoryId);
                       return (
-                        <div key={categoryId}>
+                        <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
                           <div className="px-3 py-1.5 bg-zinc-50/50">
                             <h3 className="text-xs font-medium text-zinc-700">
                               {category?.name || 'Uncategorized'}
@@ -246,12 +320,13 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
                           </div>
                           <div className="px-3 py-1">
                             <div className="space-y-1">
-                              {items.map(item => (
+                              {items.map((item, index) => (
                                 <ShoppingListItem
                                   key={item.id}
                                   item={item}
-                                  listId={list.id}
+                                  listId={list?.id || ''}
                                   onUpdate={refreshList}
+                                  index={index}
                                 />
                               ))}
                             </div>
@@ -259,40 +334,13 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
                         </div>
                       );
                     })}
+                    {provided.placeholder}
                   </div>
-                </div>
-              );
-            })}
-          </div>
-        ) : (
-          // Combined view: Group by category only
-          <div className="space-y-3">
-            {Object.entries(itemsByCategory).map(([categoryId, items]) => {
-              const category = list.categories.find((c: Category) => c.id === categoryId);
-              return (
-                <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                  <div className="px-3 py-1.5 bg-zinc-50/50">
-                    <h3 className="text-xs font-medium text-zinc-700">
-                      {category?.name || 'Uncategorized'}
-                    </h3>
-                  </div>
-                  <div className="px-3 py-1">
-                    <div className="space-y-1">
-                      {items.map(item => (
-                        <ShoppingListItem
-                          key={item.id}
-                          item={item}
-                          listId={list.id}
-                          onUpdate={refreshList}
-                        />
-                      ))}
-                    </div>
-                  </div>
-                </div>
-              );
-            })}
-          </div>
-        )}
+                )}
+              </Droppable>
+            </div>
+          )}
+        </DragDropContext>
       </div>
 
       {/* Floating Action Button */}
