@@ -10,7 +10,7 @@ export async function parseRecipeUrl(url: string): Promise<ParsedRecipe> {
     const html = await fetchPage(url);
     
     // Try Schema.org parsing first
-    const schemaRecipe = await parseSchemaOrgRecipe(html);
+    const schemaRecipe = await parseSchemaOrgRecipe(html, url);
     
     if (schemaRecipe) {
       // Check for missing required fields
@@ -90,8 +90,13 @@ async function fetchPage(url: string): Promise<string> {
 
   // Try each proxy in sequence
   for (const proxyUrl of proxies) {
+    const proxyUrlString = proxyUrl(url);
+    console.log(`DEBUG: Attempting proxy: ${proxyUrlString}`);
+    
     try {
-      const response = await fetch(proxyUrl(url));
+      const response = await fetch(proxyUrlString);
+      console.log(`DEBUG: Proxy response status: ${response.status}`);
+      console.log(`DEBUG: Proxy response headers:`, Object.fromEntries(response.headers.entries()));
       
       if (!response.ok) {
         throw new Error(`HTTP error! status: ${response.status}`);
@@ -99,22 +104,28 @@ async function fetchPage(url: string): Promise<string> {
 
       // Handle different proxy response formats
       const contentType = response.headers.get('content-type');
+      console.log(`DEBUG: Proxy response content-type: ${contentType}`);
+      
       if (contentType?.includes('application/json')) {
         const data = await response.json();
+        console.log(`DEBUG: Proxy JSON response keys:`, Object.keys(data));
         // allorigins format
         if (data.contents) {
+          console.log(`DEBUG: Using allorigins proxy response`);
           return data.contents;
         }
         // other JSON format
+        console.log(`DEBUG: Using generic JSON proxy response`);
         return data;
       }
 
       // Direct HTML response
       const text = await response.text();
+      console.log(`DEBUG: Using direct HTML proxy response, length: ${text.length}`);
       return text;
 
     } catch (err) {
-      console.warn(`Proxy failed: ${proxyUrl(url)}`, err);
+      console.warn(`DEBUG: Proxy failed: ${proxyUrlString}`, err);
       lastError = err as Error;
       continue; // Try next proxy
     }
@@ -134,7 +145,7 @@ async function fetchPage(url: string): Promise<string> {
 /**
  * Attempts to parse recipe data using Schema.org markup (JSON-LD and microdata)
  */
-async function parseSchemaOrgRecipe(html: string): Promise<ParsedRecipe | null> {
+async function parseSchemaOrgRecipe(html: string, url: string): Promise<ParsedRecipe | null> {
   const parser = new DOMParser();
   const doc = parser.parseFromString(html, 'text/html');
 
@@ -145,7 +156,7 @@ async function parseSchemaOrgRecipe(html: string): Promise<ParsedRecipe | null> 
       const data = JSON.parse(script.textContent || '');
       const recipes = findRecipes(data);
       if (recipes.length > 0) {
-        return convertSchemaRecipe(recipes[0]);
+        return convertSchemaRecipe(recipes[0], url);
       }
     } catch (e) {
       console.warn('Failed to parse JSON-LD script:', e);
@@ -155,7 +166,7 @@ async function parseSchemaOrgRecipe(html: string): Promise<ParsedRecipe | null> 
   // Try microdata as fallback
   const microdata = extractMicrodata(doc);
   if (microdata) {
-    return convertSchemaRecipe(microdata);
+    return convertSchemaRecipe(microdata, url);
   }
 
   return null;
@@ -218,7 +229,7 @@ function extractMicrodata(doc: Document): any | null {
 /**
  * Converts Schema.org recipe data to our ParsedRecipe format
  */
-function convertSchemaRecipe(schema: any): ParsedRecipe {
+function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
   const ingredients = (schema.recipeIngredient || []).map((text: string) => {
     return parseIngredient(text);
   });
@@ -255,7 +266,7 @@ function convertSchemaRecipe(schema: any): ParsedRecipe {
     instructions,
     imageUrl: imageUrl || undefined,
     author: typeof schema.author === 'string' ? schema.author : schema.author?.name,
-    source: window.location.href,
+    source: url,
     cuisine: Array.isArray(schema.recipeCuisine) 
       ? schema.recipeCuisine 
       : schema.recipeCuisine 
@@ -338,7 +349,7 @@ function parseQuantity(quantity: string): number | string {
  * Uses LLM to extract recipe information from HTML content
  */
 async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> {
-  const { text, error } = await extractRecipeFromHtml(html);
+  const { text, error } = await extractRecipeFromHtml(html, url);
   
   if (error || !text) {
     console.error('LLM extraction error:', error);
@@ -355,8 +366,9 @@ async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> 
     
     // Log the parsed recipe object
     console.log('Successfully parsed LLM response:', recipe);
+    console.log('DEBUG: Source from parsed recipe:', recipe.source);
     
-    return {
+    const parsedRecipe = {
       name: recipe.name || 'Untitled Recipe',
       description: recipe.description || undefined,
       prepTime: recipe.prepTime || '30-60',
@@ -373,9 +385,12 @@ async function parseLLMRecipe(html: string, url: string): Promise<ParsedRecipe> 
       instructions: recipe.instructions || [],
       imageUrl: recipe.imageUrl,
       author: recipe.author,
-      source: url,
+      source: recipe.source,
       cuisine: Array.isArray(recipe.cuisine) ? recipe.cuisine : recipe.cuisine ? [recipe.cuisine] : []
     };
+    
+    console.log('DEBUG: Source in final parsed recipe:', parsedRecipe.source);
+    return parsedRecipe;
   } catch (e) {
     console.error('Failed to parse LLM response:', e);
     console.log('Raw LLM response that failed parsing:', text);

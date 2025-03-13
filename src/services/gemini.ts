@@ -35,9 +35,10 @@ function cleanHtml(html: string): string {
 /**
  * Extract recipe information from HTML content using Gemini
  */
-export async function extractRecipeFromHtml(html: string): Promise<{ text?: string; error?: string }> {
+export async function extractRecipeFromHtml(html: string, url: string): Promise<{ text?: string; error?: string }> {
   try {
     const cleanedHtml = cleanHtml(html);
+    console.log(`DEBUG: Original URL being passed to Gemini: ${url}`);
 
     const prompt = `Extract a recipe from the following text and return it as a JSON object. DO NOT include markdown formatting, code blocks, or any other text - ONLY return the raw JSON object.
 
@@ -60,7 +61,8 @@ Required fields and format:
   "instructions": string[],
   "imageUrl": string (optional) - Look for the largest or most prominent image on the page, typically the main recipe photo. If multiple images exist, prefer the one that appears first or is marked as the featured image. The URL should be a direct link to the image file (ending in .jpg, .png, etc.).
   "author": string (optional),
-  "cuisine": string[] (required)
+  "cuisine": string[] (required),
+  "source": string (required) - The URL of the recipe page (${url})
 }
 
 If insufficient data is available, respond with: {"error": "Not enough recipe details found for extraction."}

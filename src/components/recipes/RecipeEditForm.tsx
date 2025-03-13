@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Recipe, Ingredient, Instruction } from '../../types/recipe';
+import { useState } from 'react';
+import { Recipe, Ingredient } from '../../types/recipe';
 import { updateRecipe } from '../../firebase/firestore';
 import { CUISINES } from '../../types/recipe';
 
@@ -390,7 +390,6 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
                   type="checkbox"
                   checked={(formData.cuisine || []).some(c => c.startsWith('Other:'))}
                   onChange={(e) => {
-                    const otherCuisine = (formData.cuisine || []).find(c => c.startsWith('Other:'));
                     const newCuisines = e.target.checked
                       ? [...(formData.cuisine || []).filter(c => !c.startsWith('Other:')), 'Other:']
                       : (formData.cuisine || []).filter(c => !c.startsWith('Other:'));

@@ -22,7 +22,7 @@ interface RecipeDetailProps {
   onEdit: (id: string) => void;
 }
 
-export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) => {
+export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
