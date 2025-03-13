@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
-import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateShoppingList, updateItemInList } from '../firebase/firestore';
+import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateItemInList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
 import { AddItemModal } from './AddItemModal';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
@@ -12,18 +12,12 @@ interface ShoppingListProps {
   viewMode: ViewMode;
   showCompleted: boolean;
   currentStore: string;
-  onViewModeChange: (mode: ViewMode) => void;
-  onShowCompletedChange: (show: boolean) => void;
-  onCurrentStoreChange: (storeId: string) => void;
 }
 
 export const ShoppingList: React.FC<ShoppingListProps> = ({
   viewMode,
   showCompleted,
   currentStore,
-  onViewModeChange,
-  onShowCompletedChange,
-  onCurrentStoreChange,
 }) => {
   const [list, setList] = useState<ShoppingListType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -91,39 +85,8 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     }
   };
 
-  const handleViewModeChange = async (newMode: ViewMode) => {
-    if (!list?.id) return;
-    onViewModeChange(newMode);
-    try {
-      await updateShoppingList(list.id, { viewMode: newMode });
-      refreshList();
-    } catch (err) {
-      console.error('Failed to update view mode:', err);
-    }
-  };
 
-  const handleStoreFilterChange = async (storeId: string) => {
-    if (!list?.id) return;
-    onCurrentStoreChange(storeId);
-    try {
-      await updateShoppingList(list.id, { currentStore: storeId });
-      refreshList();
-    } catch (err) {
-      console.error('Failed to update store filter:', err);
-    }
-  };
 
-  const handleToggleCompleted = async () => {
-    if (!list?.id) return;
-    const newShowCompleted = !showCompleted;
-    onShowCompletedChange(newShowCompleted);
-    try {
-      await updateShoppingList(list.id, { showCompleted: newShowCompleted });
-      refreshList();
-    } catch (err) {
-      console.error('Failed to toggle completed items:', err);
-    }
-  };
 
   // Filter and sort items
   const getFilteredAndSortedItems = () => {
@@ -148,7 +111,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   };
 
   const handleDragEnd = async (result: DropResult) => {
-    const { destination, source, draggableId } = result;
+    const { destination, draggableId } = result;
 
     // Drop was cancelled or dropped outside a droppable
     if (!destination || !list) return;

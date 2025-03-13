@@ -164,11 +164,6 @@ export const AppLayout: React.FC = () => {
               viewMode={viewMode}
               showCompleted={showCompleted}
               currentStore={currentStore}
-              showStoreFilter={showStoreFilter}
-              onViewModeChange={setViewMode}
-              onShowCompletedChange={setShowCompleted}
-              onCurrentStoreChange={setCurrentStore}
-              onShowStoreFilterChange={setShowStoreFilter}
             />
           </>
         );
