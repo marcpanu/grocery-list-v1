@@ -22,7 +22,13 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     imageUrl: recipe.imageUrl || '',
     notes: recipe.notes || '',
     mealTypes: [...recipe.mealTypes],
-    cuisine: recipe.cuisine || [],
+    cuisine: (recipe.cuisine || []).map(c => {
+      // If the cuisine is not in the standard list or our additional options, treat it as "Other"
+      if (!CUISINES.includes(c as typeof CUISINES[number]) && c !== 'Caribbean' && c !== 'African') {
+        return `Other:${c}`;
+      }
+      return c;
+    }),
     rating: recipe.rating,
     isFavorite: recipe.isFavorite
   });
@@ -33,7 +39,12 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     e.preventDefault();
     setIsSaving(true);
     try {
-      await updateRecipe(recipe.id, formData);
+      // Strip "Other:" prefix from cuisine values before saving
+      const cleanedFormData = {
+        ...formData,
+        cuisine: (formData.cuisine || []).map(c => c.startsWith('Other:') ? c.replace('Other:', '') : c)
+      };
+      await updateRecipe(recipe.id, cleanedFormData);
       onSave();
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -328,23 +339,86 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           <label className="block text-sm font-medium text-zinc-700 mb-2">
             Cuisine
           </label>
-          <div className="flex flex-wrap gap-2">
-            {CUISINES.map((cuisine) => (
-              <label key={cuisine} className="inline-flex items-center">
+          <div className="space-y-4">
+            <div className="flex flex-wrap gap-2">
+              {CUISINES.map((cuisine) => (
+                <label key={cuisine} className="inline-flex items-center">
+                  <input
+                    type="checkbox"
+                    checked={(formData.cuisine || []).includes(cuisine)}
+                    onChange={(e) => {
+                      const newCuisines = e.target.checked
+                        ? [...(formData.cuisine || []), cuisine]
+                        : (formData.cuisine || []).filter(c => c !== cuisine);
+                      setFormData(prev => ({ ...prev, cuisine: newCuisines }));
+                    }}
+                    className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                  />
+                  <span className="ml-2 text-sm text-zinc-700">{cuisine}</span>
+                </label>
+              ))}
+              <label className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  checked={(formData.cuisine || []).includes(cuisine)}
+                  checked={(formData.cuisine || []).includes('Caribbean')}
                   onChange={(e) => {
                     const newCuisines = e.target.checked
-                      ? [...(formData.cuisine || []), cuisine]
-                      : (formData.cuisine || []).filter(c => c !== cuisine);
+                      ? [...(formData.cuisine || []), 'Caribbean']
+                      : (formData.cuisine || []).filter(c => c !== 'Caribbean');
                     setFormData(prev => ({ ...prev, cuisine: newCuisines }));
                   }}
                   className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
                 />
-                <span className="ml-2 text-sm text-zinc-700">{cuisine}</span>
+                <span className="ml-2 text-sm text-zinc-700">Caribbean</span>
               </label>
-            ))}
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={(formData.cuisine || []).includes('African')}
+                  onChange={(e) => {
+                    const newCuisines = e.target.checked
+                      ? [...(formData.cuisine || []), 'African']
+                      : (formData.cuisine || []).filter(c => c !== 'African');
+                    setFormData(prev => ({ ...prev, cuisine: newCuisines }));
+                  }}
+                  className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                />
+                <span className="ml-2 text-sm text-zinc-700">African</span>
+              </label>
+              <label className="inline-flex items-center">
+                <input
+                  type="checkbox"
+                  checked={(formData.cuisine || []).some(c => c.startsWith('Other:'))}
+                  onChange={(e) => {
+                    const otherCuisine = (formData.cuisine || []).find(c => c.startsWith('Other:'));
+                    const newCuisines = e.target.checked
+                      ? [...(formData.cuisine || []).filter(c => !c.startsWith('Other:')), 'Other:']
+                      : (formData.cuisine || []).filter(c => !c.startsWith('Other:'));
+                    setFormData(prev => ({ ...prev, cuisine: newCuisines }));
+                  }}
+                  className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                />
+                <span className="ml-2 text-sm text-zinc-700">Other</span>
+              </label>
+            </div>
+            {(formData.cuisine || []).some(c => c.startsWith('Other:')) && (
+              <div className="mt-2">
+                <input
+                  type="text"
+                  value={(formData.cuisine || []).find(c => c.startsWith('Other:'))?.replace('Other:', '') || ''}
+                  onChange={(e) => {
+                    const otherCuisine = e.target.value;
+                    const newCuisines = [
+                      ...(formData.cuisine || []).filter(c => !c.startsWith('Other:')),
+                      otherCuisine ? `Other:${otherCuisine}` : 'Other:'
+                    ];
+                    setFormData(prev => ({ ...prev, cuisine: newCuisines }));
+                  }}
+                  placeholder="Enter cuisine type"
+                  className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                />
+              </div>
+            )}
           </div>
         </div>
 
