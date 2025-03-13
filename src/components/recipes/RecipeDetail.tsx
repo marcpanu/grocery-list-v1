@@ -11,6 +11,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import ConfirmDialog from '../common/ConfirmDialog';
+import { RecipeEditModal } from './RecipeEditModal';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -22,6 +23,7 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
 
   useEffect(() => {
     loadRecipe();
@@ -46,6 +48,11 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
     } catch (error) {
       console.error('Error deleting recipe:', error);
     }
+  };
+
+  const handleSave = async () => {
+    setShowEditModal(false);
+    await loadRecipe(); // Reload the recipe to show updated data
   };
 
   if (isLoading) {
@@ -98,7 +105,7 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
         <div className="absolute top-4 right-4 flex gap-2">
           {/* Edit Button */}
           <button
-            onClick={() => onEdit(recipe.id)}
+            onClick={() => setShowEditModal(true)}
             className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
           >
             <PencilIcon className="w-5 h-5 text-zinc-600" />
@@ -124,7 +131,7 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
       </div>
 
       {/* Content */}
-      <div className="p-4">
+      <div className="max-w-3xl mx-auto px-4 py-8">
         <h1 className="text-2xl font-bold text-zinc-900 mb-2">{recipe.name}</h1>
         
         {/* Meta Information */}
@@ -217,6 +224,14 @@ export const RecipeDetail = ({ recipeId, onBack, onEdit }: RecipeDetailProps) =>
         message="Are you sure you want to delete this recipe? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* Edit Modal */}
+      <RecipeEditModal
+        isOpen={showEditModal}
+        onClose={() => setShowEditModal(false)}
+        onSave={handleSave}
+        recipe={recipe}
       />
     </div>
   );
