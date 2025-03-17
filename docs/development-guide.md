@@ -6,11 +6,16 @@
 shopping-list/
 ├── src/
 │   ├── components/        # Reusable UI components
+│   │   ├── common/       # Shared UI components
+│   │   ├── recipes/      # Recipe management
+│   │   ├── mealPlan/     # Meal planning
+│   │   └── shopping/     # Shopping list
 │   ├── pages/            # Main application pages
 │   ├── hooks/            # Custom React hooks
 │   ├── utils/            # Helper functions
 │   ├── types/            # TypeScript type definitions
-│   ├── styles/           # Global styles and Tailwind config
+│   ├── services/         # Business logic
+│   ├── firebase/         # Firebase integration
 │   └── App.tsx          # Main application component
 ├── docs/                 # Documentation
 ├── public/              # Static assets
@@ -115,116 +120,151 @@ npm run test:e2e
 
 ### Current Status
 - Recipe Box: Complete
+  - Recipe management
+  - Import from URLs
+  - Custom hooks for import functionality
+  - Grid/List views
+  - Sorting and filtering
 - Shopping List: Complete
+  - Item management
+  - Store organization
+  - Category system
 - Meal Planning: In Progress
-- Authentication: Planned
-- Multi-user Support: Planned
+  - Weekly overview implemented
+  - Add from recipes working
+  - Quick add functionality complete
+  - Import new recipes integrated
+  - Single-document-per-user model implemented
+
+### Recent Changes
+1. Recipe Import System
+   - Created useRecipeImport custom hook
+   - Implemented URL import functionality
+   - Added support for future Instagram/TikTok imports
+   - Improved error handling and state management
+
+2. Meal Planning Improvements
+   - Implemented single-document-per-user model
+   - Added recipe selection modal
+   - Integrated recipe import functionality
+   - Added quick add meal feature
+   - Improved loading states
+
+3. Data Model Optimization
+   - Simplified meal plan structure
+   - Improved query efficiency
+   - Prepared for multi-user support
+   - Optimized state management
 
 ### Known Issues
 1. Meal Plan Page
-   - Infinite loading state in meal plan page
-   - Need to remove auth components temporarily
-   - Data model needs review for meal plan structure
+   - Loading state management needs refinement
+   - Recipe import modal close/cancel functionality fixed
+   - Need to complete recipe-to-meal plan workflow
 
 2. Recipe Import
-   - Some URL parsing edge cases need handling
-   - Image storage optimization needed
+   - URL import error handling needs improvement
+   - Need to add loading states during import
+   - Future social media import placeholders
 
-3. Shopping List
-   - Store reordering needs optimization
-   - Category management UI needs improvement
+### Next Steps
+1. Complete Meal Planning
+   - Implement meal editing
+   - Add meal deletion
+   - Improve weekly view interactions
+   - Add drag-and-drop functionality
 
-### Planned Features
-1. Authentication
-   - Implement Firebase Authentication
-   - Update data model for multi-user support
-   - Add user profile management
-   - Implement proper security rules
+2. Recipe Import Enhancement
+   - Improve error messages
+   - Add loading indicators
+   - Prepare for social media imports
+   - Enhance image handling
 
-2. Meal Planning
-   - Complete weekly overview
-   - Add meal editing functionality
-   - Implement meal deletion
-   - Add drag-and-drop meal reordering
+3. UI/UX Improvements
+   - Add success/error notifications
+   - Improve loading states
+   - Enhance modal transitions
+   - Add keyboard shortcuts
 
-3. Recipe Management
-   - Add bulk recipe import
-   - Implement recipe sharing
-   - Add recipe versioning
-   - Improve image handling
+## Technical Details
 
-4. Shopping List
-   - Add list sharing
-   - Implement list templates
-   - Add price tracking
-   - Improve store management
+### Data Model
+```typescript
+// Meal Plan Structure
+interface MealPlan {
+  userId: string;
+  meals: Array<{
+    id: string;
+    name: string;
+    description?: string;
+    type: MealType;
+    servings: number;
+    days: string[];
+    recipeId?: string;
+    createdAt: Timestamp;
+  }>;
+  createdAt: Timestamp;
+  updatedAt: Timestamp;
+}
 
-### Recent Changes
-1. Recipe Source Feature
-   - Added support for different source types (URL, Instagram, TikTok)
-   - Implemented source type detection
-   - Added source link display
+// Recipe Import Hook
+interface RecipeImportHook {
+  showImportModal: boolean;
+  setShowImportModal: (show: boolean) => void;
+  showUrlImportModal: boolean;
+  closeUrlImport: () => void;
+  handleImportOptionSelect: (optionId: string) => void;
+  handleUrlImport: (data: { url: string }) => Promise<void>;
+}
+```
 
-2. Recipe Import Improvements
-   - Enhanced image extraction
-   - Added custom cuisine support
-   - Improved metadata handling
-   - Better error handling
+### Implementation Guidelines
+1. State Management
+   - Use custom hooks for shared logic
+   - Keep UI state local when possible
+   - Use Firestore for persistence
+   - Implement proper loading states
 
-### Technical Decisions
-1. Data Model
-   - Using Firestore for data persistence
-   - Multi-user ready structure
-   - Currently using 'default' user ID
-   - Collections:
-     - recipes
-     - mealPlans
-     - shoppingLists
-     - stores
-     - categories
-     - userPreferences
-     - userData
+2. Error Handling
+   - Provide clear error messages
+   - Add retry mechanisms
+   - Show loading states
+   - Handle edge cases
 
-2. Authentication
-   - Planned implementation of Firebase Auth
-   - Data model already supports multi-user
-   - Security rules to be implemented
+3. Performance
+   - Optimize Firestore queries
+   - Implement proper caching
+   - Minimize re-renders
+   - Use proper data structures
 
-3. State Management
-   - React state for UI components
-   - Context for global state
-   - Firestore for persistence
+4. Code Organization
+   - Keep components focused
+   - Extract shared logic to hooks
+   - Maintain clear interfaces
+   - Document complex logic
 
 ## Development Workflow
+1. Feature Implementation
+   - Create feature branch
+   - Implement core functionality
+   - Add error handling
+   - Implement loading states
+   - Add documentation
+   - Submit PR
 
-### Code Style
-- Follow TypeScript best practices
-- Use functional components with hooks
-- Maintain consistent file structure
-- Document complex functions
-- Add type definitions for all data structures
-- Prepend all debugging logs with "DEBUG: " to make removing them later easier
+2. Code Review
+   - Check error handling
+   - Verify loading states
+   - Review documentation
+   - Test edge cases
+   - Verify performance
 
-### Testing
-- Unit tests for utility functions
-- Component tests for UI elements
-- Integration tests for data flow
-- E2E tests for critical paths
-
-### Git Workflow
-1. Create feature branch
-2. Make changes
-3. Run tests
-4. Update documentation
-5. Create PR
-6. Code review
-7. Merge to main
-
-### Documentation
-- Keep README focused on current functionality
-- Update development guide with progress
-- Document API changes
-- Maintain type definitions
+3. Testing
+   - Test happy path
+   - Test error cases
+   - Test loading states
+   - Test edge cases
+   - Verify UX
 
 ## Implementation Priorities
 1. Fix meal plan page loading issue

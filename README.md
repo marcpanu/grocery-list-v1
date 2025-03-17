@@ -5,7 +5,7 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 ## Features
 
 ### Recipe Management
-- Import recipes from URLs
+- Import recipes from URLs (with support planned for Instagram and TikTok)
 - View recipe details including:
   - Name, description, and image
   - Prep time, cook time, and servings
@@ -23,6 +23,7 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - Filter by meal type and cuisine
   - Grid/List view toggle
   - Search functionality
+  - Custom hooks for recipe import
 
 ### Shopping List
 - Add items from recipes to shopping list
@@ -32,21 +33,24 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - View items in combined or sequential mode
 - Hide/show completed items
 - Move items between stores
-- Categorize items (product, meat, etc.)
+- Categorize items (produce, meat, etc.)
 
 ### Meal Planning
 - Weekly overview of planned meals
 - Day-by-day meal details
-- Add meals from existing recipes
-- Quick add meals without recipes
-- Import new recipes
+- Add meals from:
+  - Existing recipes
+  - Quick add without recipes
+  - Import new recipes directly
 - Categorize meals by type (breakfast, lunch, dinner, snack, dessert)
+- Single-document-per-user data model for efficient querying
 
 ### User Preferences
 - Customize recipe view mode (grid/compact)
 - Sort recipes by name, date added, or rating
 - Filter recipes by meal type and cuisine
 - Show/hide favorites
+- Persistent preferences storage
 
 ## Getting Started
 
@@ -79,7 +83,7 @@ src/
   │   ├── recipes/       # Recipe-related components
   │   ├── mealPlan/      # Meal planning components
   │   └── shopping/      # Shopping list components
-  ├── contexts/          # React contexts
+  ├── hooks/             # Custom React hooks
   ├── firebase/          # Firebase configuration
   ├── pages/             # Main route components
   ├── services/          # Business logic and API calls
@@ -89,18 +93,21 @@ src/
 
 ### Key Components
 - `AppLayout`: Main application layout with navigation
-- `RecipeList`: Grid/list view of recipes
+- `RecipeList`: Grid/list view of recipes with import functionality
 - `RecipeDetail`: Detailed view of a single recipe
 - `RecipeEditForm`: Form for creating/editing recipes
 - `ShoppingList`: Shopping list management
 - `StoreSelector`: Store selection component
 - `MealPlanPage`: Weekly meal planning interface
-- `FloatingActionButton`: Quick action menu
+- `RecipeImportModal`: Recipe import options modal
+- `RecipeUrlImport`: URL-based recipe import
+- `AddMealModal`: Meal planning form
 
 ### State Management
 - Firebase Firestore for data persistence
 - React state for UI components
-- Context for global state (if needed)
+- Custom hooks for shared functionality
+- Single-document-per-user data model
 
 ## Contributing
 1. Fork the repository

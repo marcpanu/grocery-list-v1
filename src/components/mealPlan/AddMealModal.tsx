@@ -16,19 +16,22 @@ interface AddMealModalProps {
     recipeId?: string;
   }) => void;
   selectedRecipe?: Recipe;
+  isLoading?: boolean;
 }
 
 export const AddMealModal: React.FC<AddMealModalProps> = ({ 
   isOpen, 
   onClose, 
   onAdd,
-  selectedRecipe 
+  selectedRecipe,
+  isLoading = false
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<MealType>('dinner');
   const [selectedDays, setSelectedDays] = useState<string[]>([]);
   const [servings, setServings] = useState(2);
+  const [error, setError] = useState<string | null>(null);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
   const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
@@ -40,17 +43,33 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       setDescription(selectedRecipe.description || '');
       setType(selectedRecipe.mealTypes[0] as MealType || 'dinner');
       setServings(selectedRecipe.servings);
-    } else {
+    } else if (!isOpen) {
+      // Only reset when modal closes
       setName('');
       setDescription('');
       setType('dinner');
       setServings(2);
       setSelectedDays([]);
+      setError(null);
     }
   }, [isOpen, selectedRecipe]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
+    
+    // Validate days selection
+    if (selectedDays.length === 0) {
+      setError('Please select at least one day');
+      return;
+    }
+
+    // Validate servings
+    if (servings < 1) {
+      setError('Servings must be at least 1');
+      return;
+    }
+
+    setError(null);
     onAdd({
       name,
       description,
@@ -59,7 +78,6 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       servings,
       recipeId: selectedRecipe?.id,
     });
-    onClose();
   };
 
   return (
@@ -72,12 +90,32 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
             <Dialog.Title className="text-lg font-semibold">
               {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Meal'}
             </Dialog.Title>
-            <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
+            <button 
+              onClick={onClose} 
+              className="text-gray-500 hover:text-gray-700"
+              disabled={isLoading}
+            >
               <XMarkIcon className="w-6 h-6" />
             </button>
           </div>
 
+          {error && (
+            <div className="mb-4 p-2 bg-red-100 text-red-700 rounded">
+              {error}
+            </div>
+          )}
+
           <form onSubmit={handleSubmit} className="space-y-4">
+            {selectedRecipe && (
+              <div className="bg-violet-50 p-4 rounded-lg mb-4">
+                <h3 className="font-medium text-violet-900">Selected Recipe</h3>
+                <p className="text-violet-800">{selectedRecipe.name}</p>
+                {selectedRecipe.description && (
+                  <p className="text-sm text-violet-700 mt-1">{selectedRecipe.description}</p>
+                )}
+              </div>
+            )}
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Meal Name
@@ -88,7 +126,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
                 required
-                disabled={!!selectedRecipe}
+                disabled={!!selectedRecipe || isLoading}
               />
             </div>
 
@@ -101,7 +139,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
                 rows={3}
-                disabled={!!selectedRecipe}
+                disabled={!!selectedRecipe || isLoading}
               />
             </div>
 
@@ -113,7 +151,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                 value={type}
                 onChange={(e) => setType(e.target.value as MealType)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                disabled={!!selectedRecipe}
+                disabled={!!selectedRecipe || isLoading}
               >
                 {mealTypes.map((mealType) => (
                   <option key={mealType} value={mealType}>
@@ -129,7 +167,14 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
               </label>
               <div className="flex flex-wrap gap-2">
                 {daysOfWeek.map((day) => (
-                  <label key={day} className="flex items-center gap-1">
+                  <label 
+                    key={day} 
+                    className={`flex items-center gap-1 p-2 rounded ${
+                      selectedDays.includes(day) 
+                        ? 'bg-violet-100 text-violet-900' 
+                        : 'hover:bg-gray-100'
+                    }`}
+                  >
                     <input
                       type="checkbox"
                       checked={selectedDays.includes(day)}
@@ -141,6 +186,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                         }
                       }}
                       className="rounded text-violet-600"
+                      disabled={isLoading}
                     />
                     <span className="text-sm">{day}</span>
                   </label>
@@ -158,6 +204,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                 value={servings}
                 onChange={(e) => setServings(parseInt(e.target.value))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                disabled={isLoading}
               />
             </div>
 
@@ -165,15 +212,24 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900"
+                className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50"
+                disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
+                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
+                disabled={isLoading}
               >
-                Add Meal
+                {isLoading ? (
+                  <>
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-white"></div>
+                    <span>Adding...</span>
+                  </>
+                ) : (
+                  'Add Meal'
+                )}
               </button>
             </div>
           </form>

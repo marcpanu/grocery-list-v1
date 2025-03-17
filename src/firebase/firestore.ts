@@ -203,10 +203,12 @@ export const addMealPlan = async (userId: string, mealPlanData: DocumentData) =>
   const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
   const now = Timestamp.now();
   
-  // Convert dates to Timestamps
+  // Convert dates to Timestamps, handling both Date and Timestamp inputs
   const mealWithTimestamp = {
     ...mealPlanData.meals[0],
-    createdAt: Timestamp.fromDate(mealPlanData.meals[0].createdAt)
+    createdAt: mealPlanData.meals[0].createdAt instanceof Timestamp 
+      ? mealPlanData.meals[0].createdAt 
+      : Timestamp.fromDate(mealPlanData.meals[0].createdAt)
   };
 
   // Try to get existing meal plan

@@ -22,7 +22,6 @@ import {
 import { UserPreferences } from '../../types';
 import { RecipeImportModal } from './RecipeImportModal';
 import { RecipeUrlImport } from './RecipeUrlImport';
-import { importRecipeFromUrl } from '../../services/recipeImport';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { useRecipeImport } from '../../hooks/useRecipeImport';
 

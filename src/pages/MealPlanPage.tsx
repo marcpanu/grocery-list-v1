@@ -226,6 +226,7 @@ export const MealPlanPage: React.FC = () => {
         }}
         onAdd={handleAddMeal}
         selectedRecipe={selectedRecipe}
+        isLoading={isLoading}
       />
 
       <RecipeImportModal
