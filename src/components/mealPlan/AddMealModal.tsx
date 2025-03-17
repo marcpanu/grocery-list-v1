@@ -41,7 +41,13 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
     if (isOpen && selectedRecipe) {
       setName(selectedRecipe.name);
       setDescription(selectedRecipe.description || '');
-      setType(selectedRecipe.mealTypes[0] as MealType || 'dinner');
+      // Ensure we get a valid meal type from the recipe
+      const recipeMealType = selectedRecipe.mealTypes[0];
+      if (recipeMealType && mealTypes.includes(recipeMealType as MealType)) {
+        setType(recipeMealType as MealType);
+      } else {
+        setType('dinner'); // Default to dinner if no valid meal type
+      }
       setServings(selectedRecipe.servings);
     } else if (!isOpen) {
       // Only reset when modal closes
@@ -151,7 +157,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
                 value={type}
                 onChange={(e) => setType(e.target.value as MealType)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                disabled={!!selectedRecipe || isLoading}
+                disabled={isLoading}
               >
                 {mealTypes.map((mealType) => (
                   <option key={mealType} value={mealType}>
