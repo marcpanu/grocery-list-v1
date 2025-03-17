@@ -12,10 +12,12 @@ import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
 import { Timestamp } from 'firebase/firestore';
 import { useRecipeImport } from '../hooks/useRecipeImport';
+import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
+import { DayDetails } from '../components/mealPlan/DayDetails';
 
 const DEFAULT_USER_ID = 'default';
 
-export const MealPlanPage: React.FC = () => {
+const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -24,6 +26,7 @@ export const MealPlanPage: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [selectedDay, setSelectedDay] = useState<string>('Sun');
 
   // Use the recipe import hook
   const {
@@ -34,11 +37,9 @@ export const MealPlanPage: React.FC = () => {
     handleUrlImport,
     closeUrlImport
   } = useRecipeImport((recipe) => {
-    // This callback will be called after a recipe is imported
     if (recipe) {
       handleRecipeSelect(recipe);
     } else {
-      // This is the manual creation case
       setShowAddMealModal(true);
     }
   });
@@ -46,17 +47,14 @@ export const MealPlanPage: React.FC = () => {
   useEffect(() => {
     const loadMealPlans = async () => {
       try {
-        console.log('Starting to load meal plans for user:', DEFAULT_USER_ID);
         setIsLoading(true);
         setError(null);
         const plans = await getUserMealPlans(DEFAULT_USER_ID);
-        console.log('Retrieved meal plans:', plans);
         setMealPlans(plans);
       } catch (error) {
         console.error('Failed to load meal plans:', error);
         setError('Failed to load meal plans. Please try again.');
       } finally {
-        console.log('Finished loading meal plans, setting isLoading to false');
         setIsLoading(false);
       }
     };
@@ -74,7 +72,6 @@ export const MealPlanPage: React.FC = () => {
       setError(null);
       setSuccess(null);
       setIsLoading(true);
-      console.log('Adding meal:', meal);
       const now = Timestamp.now();
       const mealPlanData = {
         userId: DEFAULT_USER_ID,
@@ -87,7 +84,6 @@ export const MealPlanPage: React.FC = () => {
         createdAt: now,
         updatedAt: now,
       };
-      console.log('Meal plan data:', mealPlanData);
       await addMealPlan(DEFAULT_USER_ID, mealPlanData);
       
       // Add a small delay to ensure Firestore has processed the update
@@ -95,7 +91,6 @@ export const MealPlanPage: React.FC = () => {
       
       // Refresh meal plans
       const plans = await getUserMealPlans(DEFAULT_USER_ID);
-      console.log('Retrieved meal plans:', plans);
       setMealPlans(plans);
       setSuccess('Meal added successfully!');
       
@@ -106,11 +101,25 @@ export const MealPlanPage: React.FC = () => {
     } catch (error) {
       console.error('Failed to add meal:', error);
       setError('Failed to add meal. Please try again.');
-      // Don't close modals on error
     } finally {
       setIsLoading(false);
     }
   };
+
+  const handleEditMeal = (meal: Meal) => {
+    // TODO: Implement meal editing
+    console.log('Edit meal:', meal);
+  };
+
+  const handleDeleteMeal = (mealId: string) => {
+    // TODO: Implement meal deletion
+    console.log('Delete meal:', mealId);
+  };
+
+  // Get meals for selected day
+  const selectedDayMeals = mealPlans
+    .flatMap(plan => plan.meals)
+    .filter(meal => meal.days.includes(selectedDay));
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -124,6 +133,7 @@ export const MealPlanPage: React.FC = () => {
           {success}
         </div>
       )}
+      
       <div className="flex justify-between items-center mb-8">
         <h1 className="text-2xl font-bold text-gray-900">Meal Planning</h1>
         <div className="flex gap-4">
@@ -132,83 +142,47 @@ export const MealPlanPage: React.FC = () => {
             className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
           >
             <BookOpenIcon className="w-5 h-5" />
-            Add from Recipes
+            <span className="hidden sm:inline">Add from Recipes</span>
+            <span className="sm:hidden">Add</span>
           </button>
           <button
             onClick={() => setShowImportModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             <PencilSquareIcon className="w-5 h-5" />
-            Add New Recipe
+            <span className="hidden sm:inline">Add New Recipe</span>
+            <span className="sm:hidden">New</span>
           </button>
           <button
             onClick={() => setShowQuickAddModal(true)}
             className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
           >
             <DocumentTextIcon className="w-5 h-5" />
-            Quick Add
+            <span className="hidden sm:inline">Quick Add</span>
+            <span className="sm:hidden">Quick</span>
           </button>
         </div>
       </div>
 
-      {/* Weekly Overview */}
-      <div className="bg-white rounded-lg shadow p-6 mb-8">
+      {/* Weekly Calendar */}
+      <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-8">
         <h2 className="text-lg font-semibold mb-4">Weekly Overview</h2>
-        <div className="grid grid-cols-7 gap-4">
-          {isLoading ? (
-            <div className="col-span-7 flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
-            </div>
-          ) : (
-            ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-              <div key={day} className="border rounded-lg p-4">
-                <h3 className="font-medium mb-2">{day}</h3>
-                <div className="space-y-2">
-                  {mealPlans
-                    .flatMap(plan => plan.meals)
-                    .filter(meal => meal.days.includes(day))
-                    .map((meal) => (
-                      <div key={meal.id} className="text-sm p-2 bg-gray-50 rounded">
-                        {meal.name}
-                      </div>
-                    ))}
-                </div>
-              </div>
-            ))
-          )}
-        </div>
+        <WeeklyCalendarView
+          mealPlans={mealPlans}
+          isLoading={isLoading}
+          selectedDate={selectedDay}
+          onDateSelect={setSelectedDay}
+        />
       </div>
 
       {/* Day Details */}
-      <div className="bg-white rounded-lg shadow p-6">
-        <h2 className="text-lg font-semibold mb-4">Day Details</h2>
-        <div className="space-y-4">
-          {isLoading ? (
-            <div className="flex justify-center items-center py-8">
-              <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
-            </div>
-          ) : mealPlans.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">No meals planned yet.</p>
-          ) : (
-            mealPlans
-              .flatMap(plan => plan.meals)
-              .map((meal) => (
-                <div key={meal.id} className="border rounded-lg p-4">
-                  <h3 className="font-medium">{meal.name}</h3>
-                  {meal.description && (
-                    <p className="text-sm text-gray-500 mt-1">{meal.description}</p>
-                  )}
-                  <div className="flex items-center gap-4 mt-2 text-sm text-gray-600">
-                    <span>{meal.type}</span>
-                    <span>•</span>
-                    <span>{meal.servings} servings</span>
-                    <span>•</span>
-                    <span>{meal.days.join(', ')}</span>
-                  </div>
-                </div>
-              ))
-          )}
-        </div>
+      <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <DayDetails
+          selectedDay={selectedDay}
+          meals={selectedDayMeals}
+          onEditMeal={handleEditMeal}
+          onDeleteMeal={handleDeleteMeal}
+        />
       </div>
 
       {/* Modals */}
@@ -364,4 +338,4 @@ export const MealPlanPage: React.FC = () => {
   );
 };
 
-export default MealPlanPage; 
+export default MealPlanPage;
