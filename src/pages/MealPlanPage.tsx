@@ -11,7 +11,7 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
 import { Timestamp } from 'firebase/firestore';
-import { importRecipeFromUrl } from '../services/recipeImport';
+import { useRecipeImport } from '../hooks/useRecipeImport';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -19,13 +19,29 @@ export const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showUrlImportModal, setShowUrlImportModal] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | undefined>();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+
+  // Use the recipe import hook
+  const {
+    showImportModal,
+    setShowImportModal,
+    showUrlImportModal,
+    handleImportOptionSelect,
+    handleUrlImport,
+    closeUrlImport
+  } = useRecipeImport((recipe) => {
+    // This callback will be called after a recipe is imported
+    if (recipe) {
+      handleRecipeSelect(recipe);
+    } else {
+      // This is the manual creation case
+      setShowAddMealModal(true);
+    }
+  });
 
   useEffect(() => {
     const loadMealPlans = async () => {
@@ -51,25 +67,6 @@ export const MealPlanPage: React.FC = () => {
     setSelectedRecipe(recipe);
     setShowRecipeSearch(false);
     setShowAddMealModal(true);
-  };
-
-  const handleImportOptionSelect = (optionId: string) => {
-    setShowImportModal(false);
-    if (optionId === 'manual') {
-      setShowAddMealModal(true);
-    } else if (optionId === 'url') {
-      setShowUrlImportModal(true);
-    }
-  };
-
-  const handleUrlImport = async (data: { url: string; username?: string; password?: string }) => {
-    try {
-      const { recipe } = await importRecipeFromUrl(data);
-      handleRecipeSelect(recipe);
-      setShowUrlImportModal(false);
-    } catch (error) {
-      throw error; // Re-throw to be handled by the URL import component
-    }
   };
 
   const handleAddMeal = async (meal: Omit<Meal, 'id' | 'createdAt'>) => {
@@ -239,7 +236,7 @@ export const MealPlanPage: React.FC = () => {
 
       <RecipeUrlImport
         isOpen={showUrlImportModal}
-        onClose={() => setShowUrlImportModal(false)}
+        onClose={closeUrlImport}
         onImport={handleUrlImport}
       />
 

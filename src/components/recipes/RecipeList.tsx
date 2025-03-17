@@ -24,6 +24,7 @@ import { RecipeImportModal } from './RecipeImportModal';
 import { RecipeUrlImport } from './RecipeUrlImport';
 import { importRecipeFromUrl } from '../../services/recipeImport';
 import ConfirmDialog from '../common/ConfirmDialog';
+import { useRecipeImport } from '../../hooks/useRecipeImport';
 
 interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
@@ -45,8 +46,6 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showFavorites, setShowFavorites] = useState(false);
   const [showFilters, setShowFilters] = useState(false);
   const [showSortOptions, setShowSortOptions] = useState(false);
-  const [showImportModal, setShowImportModal] = useState(false);
-  const [showUrlImportModal, setShowUrlImportModal] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
 
   // Refs for click outside handling
@@ -56,6 +55,31 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   // Get unique meal types and cuisines from recipes
   const availableMealTypes = [...new Set(recipes.flatMap(r => r.mealTypes || []))].sort();
   const availableCuisines = [...new Set(recipes.map(r => r.cuisine).filter((c): c is string => !!c))].sort();
+
+  // Use the recipe import hook
+  const {
+    showImportModal,
+    setShowImportModal,
+    showUrlImportModal,
+    handleImportOptionSelect,
+    handleUrlImport,
+    closeUrlImport
+  } = useRecipeImport((recipe) => {
+    // Just refresh the recipe list after import
+    if (recipe) {
+      setRecipes(prevRecipes => [{
+        id: recipe.id,
+        name: recipe.name,
+        imageUrl: recipe.imageUrl,
+        prepTime: recipe.prepTime,
+        mealTypes: recipe.mealTypes,
+        cuisine: recipe.cuisine?.[0],
+        rating: recipe.rating,
+        dateAdded: recipe.dateAdded,
+        isFavorite: recipe.isFavorite
+      }, ...prevRecipes]);
+    }
+  });
 
   useEffect(() => {
     const loadInitialData = async () => {
@@ -181,41 +205,6 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       ));
     } catch (error) {
       console.error('Error toggling favorite:', error);
-    }
-  };
-
-  const handleImportOptionSelect = (optionId: string) => {
-    switch (optionId) {
-      case 'url':
-        setShowUrlImportModal(true);
-        break;
-      // Add other cases as we implement them
-      default:
-        console.log('Import option not implemented:', optionId);
-    }
-  };
-
-  const handleUrlImport = async (data: { url: string; username?: string; password?: string }) => {
-    try {
-      const { recipe } = await importRecipeFromUrl(data);
-      
-      // Add the imported recipe to the list
-      setRecipes(prevRecipes => [{
-        id: recipe.id,
-        name: recipe.name,
-        imageUrl: recipe.imageUrl,
-        prepTime: recipe.prepTime,
-        mealTypes: recipe.mealTypes,
-        cuisine: recipe.cuisine?.[0], // Take first cuisine as string
-        rating: recipe.rating,
-        dateAdded: recipe.dateAdded,
-        isFavorite: recipe.isFavorite
-      }, ...prevRecipes]);
-
-      // Show success message (you might want to add a toast notification system)
-      console.log('Recipe imported successfully:', recipe.name);
-    } catch (error) {
-      throw error; // Re-throw to be handled by the URL import component
     }
   };
 
@@ -530,7 +519,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
 
       <RecipeUrlImport
         isOpen={showUrlImportModal}
-        onClose={() => setShowUrlImportModal(false)}
+        onClose={closeUrlImport}
         onImport={handleUrlImport}
       />
 
