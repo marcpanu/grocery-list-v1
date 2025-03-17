@@ -5,11 +5,13 @@ import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
+import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
 import { addMealPlan, getUserMealPlans } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
 import { Timestamp } from 'firebase/firestore';
+import { importRecipeFromUrl } from '../services/recipeImport';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -18,6 +20,7 @@ export const MealPlanPage: React.FC = () => {
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
   const [showImportModal, setShowImportModal] = useState(false);
+  const [showUrlImportModal, setShowUrlImportModal] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | undefined>();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -54,6 +57,18 @@ export const MealPlanPage: React.FC = () => {
     setShowImportModal(false);
     if (optionId === 'manual') {
       setShowAddMealModal(true);
+    } else if (optionId === 'url') {
+      setShowUrlImportModal(true);
+    }
+  };
+
+  const handleUrlImport = async (data: { url: string; username?: string; password?: string }) => {
+    try {
+      const { recipe } = await importRecipeFromUrl(data);
+      handleRecipeSelect(recipe);
+      setShowUrlImportModal(false);
+    } catch (error) {
+      throw error; // Re-throw to be handled by the URL import component
     }
   };
 
@@ -220,6 +235,12 @@ export const MealPlanPage: React.FC = () => {
         isOpen={showImportModal}
         onClose={() => setShowImportModal(false)}
         onSelectOption={handleImportOptionSelect}
+      />
+
+      <RecipeUrlImport
+        isOpen={showUrlImportModal}
+        onClose={() => setShowUrlImportModal(false)}
+        onImport={handleUrlImport}
       />
 
       {/* Quick Add Modal */}
