@@ -6,14 +6,14 @@ import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { addMealPlan, getUserMealPlans } from '../firebase/firestore';
-import { useAuth } from '../contexts/AuthContext';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
 import { Timestamp } from 'firebase/firestore';
 
+const DEFAULT_USER_ID = 'default';
+
 export const MealPlanPage: React.FC = () => {
-  const { user, loading: authLoading } = useAuth();
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -26,15 +26,11 @@ export const MealPlanPage: React.FC = () => {
 
   useEffect(() => {
     const loadMealPlans = async () => {
-      if (!user) {
-        console.log('No user found, skipping meal plan load');
-        return;
-      }
       try {
-        console.log('Starting to load meal plans for user:', user.uid);
+        console.log('Starting to load meal plans for user:', DEFAULT_USER_ID);
         setIsLoading(true);
         setError(null);
-        const plans = await getUserMealPlans(user.uid);
+        const plans = await getUserMealPlans(DEFAULT_USER_ID);
         console.log('Retrieved meal plans:', plans);
         setMealPlans(plans);
       } catch (error) {
@@ -46,7 +42,7 @@ export const MealPlanPage: React.FC = () => {
       }
     };
     loadMealPlans();
-  }, [user]);
+  }, []);
 
   const handleRecipeSelect = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
@@ -62,8 +58,6 @@ export const MealPlanPage: React.FC = () => {
   };
 
   const handleAddMeal = async (meal: Omit<Meal, 'id' | 'createdAt'>) => {
-    if (!user) return;
-
     try {
       setError(null);
       setSuccess(null);
@@ -71,7 +65,7 @@ export const MealPlanPage: React.FC = () => {
       console.log('Adding meal:', meal);
       const now = Timestamp.now();
       const mealPlanData = {
-        userId: user.uid,
+        userId: DEFAULT_USER_ID,
         meals: [{
           ...meal,
           id: crypto.randomUUID(),
@@ -82,13 +76,13 @@ export const MealPlanPage: React.FC = () => {
         updatedAt: now,
       };
       console.log('Meal plan data:', mealPlanData);
-      await addMealPlan(user.uid, mealPlanData);
+      await addMealPlan(DEFAULT_USER_ID, mealPlanData);
       
       // Add a small delay to ensure Firestore has processed the update
       await new Promise(resolve => setTimeout(resolve, 500));
       
       // Refresh meal plans
-      const plans = await getUserMealPlans(user.uid);
+      const plans = await getUserMealPlans(DEFAULT_USER_ID);
       console.log('Retrieved meal plans:', plans);
       setMealPlans(plans);
       setSuccess('Meal added successfully!');
@@ -105,24 +99,6 @@ export const MealPlanPage: React.FC = () => {
       setIsLoading(false);
     }
   };
-
-  if (authLoading) {
-    console.log('Auth is still loading');
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-violet-600" />
-      </div>
-    );
-  }
-
-  if (!user) {
-    console.log('No authenticated user found');
-    return (
-      <div className="flex justify-center items-center min-h-screen">
-        <p className="text-gray-600">Please sign in to view your meal plans.</p>
-      </div>
-    );
-  }
 
   return (
     <div className="container mx-auto px-4 py-8">
@@ -249,142 +225,117 @@ export const MealPlanPage: React.FC = () => {
       {/* Quick Add Modal */}
       <Dialog open={showQuickAddModal} onClose={() => setShowQuickAddModal(false)} className="relative z-50">
         <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
-        
         <div className="fixed inset-0 flex items-center justify-center p-4">
-          <Dialog.Panel className="mx-auto max-w-md w-full rounded-lg bg-white p-6">
+          <Dialog.Panel className="mx-auto max-w-sm rounded bg-white p-6">
             <div className="flex justify-between items-center mb-4">
-              <Dialog.Title className="text-lg font-semibold">Quick Add Meal</Dialog.Title>
-              <button onClick={() => setShowQuickAddModal(false)} className="text-gray-500 hover:text-gray-700">
-                <XMarkIcon className="w-6 h-6" />
+              <Dialog.Title className="text-lg font-medium">Quick Add Meal</Dialog.Title>
+              <button
+                onClick={() => setShowQuickAddModal(false)}
+                className="text-gray-400 hover:text-gray-500"
+              >
+                <XMarkIcon className="h-6 w-6" />
               </button>
             </div>
-
             <form onSubmit={(e) => {
               e.preventDefault();
               const formData = new FormData(e.currentTarget);
-              const selectedDays = Array.from(formData.getAll('days')).map(value => value.toString());
-              
-              if (selectedDays.length === 0) {
-                setError('Please select at least one day for the meal.');
-                return;
-              }
-
-              const name = formData.get('name') as string;
-              if (!name.trim()) {
-                setError('Please enter a meal name.');
-                return;
-              }
-
-              const type = formData.get('type') as MealType;
-              if (!type) {
-                setError('Please select a meal type.');
-                return;
-              }
-
-              const servings = parseInt(formData.get('servings') as string) || 0;
-              if (servings < 1) {
-                setError('Please enter a valid number of servings.');
-                return;
-              }
-
-              handleAddMeal({
-                name: name.trim(),
-                description: (formData.get('description') as string)?.trim() || '',
-                type,
-                days: selectedDays,
-                servings,
-              });
-              setShowQuickAddModal(false);
+              const meal = {
+                name: formData.get('name') as string,
+                description: formData.get('description') as string,
+                type: formData.get('type') as MealType,
+                servings: parseInt(formData.get('servings') as string),
+                days: Array.from(formData.getAll('days')).map(value => value.toString()),
+              };
+              handleAddMeal(meal);
             }}>
               <div className="space-y-4">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Meal Name
+                  <label htmlFor="name" className="block text-sm font-medium text-gray-700">
+                    Name
                   </label>
                   <input
                     type="text"
                     name="name"
+                    id="name"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Description (optional)
+                  <label htmlFor="description" className="block text-sm font-medium text-gray-700">
+                    Description
                   </label>
                   <textarea
                     name="description"
-                    rows={3}
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                    id="description"
+                    rows={2}
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   />
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Meal Type
+                  <label htmlFor="type" className="block text-sm font-medium text-gray-700">
+                    Type
                   </label>
                   <select
                     name="type"
+                    id="type"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   >
-                    {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
-                      <option key={type} value={type}>
-                        {type.charAt(0).toUpperCase() + type.slice(1)}
-                      </option>
-                    ))}
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                    <option value="dessert">Dessert</option>
                   </select>
                 </div>
-
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
-                    Days
-                  </label>
-                  <div className="flex flex-wrap gap-2">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <label key={day} className="flex items-center gap-1">
-                        <input
-                          type="checkbox"
-                          name="days"
-                          value={day}
-                          className="rounded text-violet-600"
-                        />
-                        <span className="text-sm">{day}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">
+                  <label htmlFor="servings" className="block text-sm font-medium text-gray-700">
                     Servings
                   </label>
                   <input
                     type="number"
                     name="servings"
-                    min="1"
-                    defaultValue="2"
+                    id="servings"
                     required
-                    className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                    min="1"
+                    defaultValue="1"
+                    className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   />
                 </div>
-
-                <div className="flex justify-end gap-3 mt-6">
-                  <button
-                    type="button"
-                    onClick={() => setShowQuickAddModal(false)}
-                    className="px-4 py-2 text-gray-700 hover:text-gray-900"
-                  >
-                    Cancel
-                  </button>
-                  <button
-                    type="submit"
-                    className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
-                  >
-                    Add Meal
-                  </button>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-2">
+                    Days
+                  </label>
+                  <div className="grid grid-cols-2 gap-2">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <label key={day} className="flex items-center space-x-2">
+                        <input
+                          type="checkbox"
+                          name="days"
+                          value={day}
+                          className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                        />
+                        <span className="text-sm text-gray-700">{day}</span>
+                      </label>
+                    ))}
+                  </div>
                 </div>
+              </div>
+              <div className="mt-6 flex justify-end gap-3">
+                <button
+                  type="button"
+                  onClick={() => setShowQuickAddModal(false)}
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+                >
+                  Cancel
+                </button>
+                <button
+                  type="submit"
+                  className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+                >
+                  Add Meal
+                </button>
               </div>
             </form>
           </Dialog.Panel>

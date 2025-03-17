@@ -203,6 +203,7 @@ npm run test:e2e
 - Maintain consistent file structure
 - Document complex functions
 - Add type definitions for all data structures
+- Prepend all debugging logs with "DEBUG: " to make removing them later easier
 
 ### Testing
 - Unit tests for utility functions
