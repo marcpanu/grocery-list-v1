@@ -36,14 +36,18 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Categorize items (produce, meat, etc.)
 
 ### Meal Planning
-- Weekly overview of planned meals
-- Day-by-day meal details
-- Add meals from:
-  - Existing recipes
-  - Quick add without recipes
-  - Import new recipes directly
-- Categorize meals by type (breakfast, lunch, dinner, snack, dessert)
-- Single-document-per-user data model for efficient querying
+- Add recipes to your weekly meal plan
+  - Select recipes from your recipe box
+  - Import new recipes directly to meal plan
+  - Quick add custom meals without recipes
+- Flexible meal scheduling
+  - Assign meals to multiple days
+  - Customize servings per planned meal
+  - Adjust meal types (breakfast, lunch, dinner, etc.)
+- Weekly overview with planned meals
+  - Current: Basic weekly grid view
+  - Planned: Mobile-optimized calendar view
+  - Planned: Detailed daily meal breakdown
 
 ### User Preferences
 - Customize recipe view mode (grid/compact)
@@ -51,6 +55,26 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Filter recipes by meal type and cuisine
 - Show/hide favorites
 - Persistent preferences storage
+
+## Project Status
+
+### Completed Features
+- Recipe management and storage
+- Recipe import from URLs
+- Shopping list creation and management
+- Basic meal planning functionality
+  - Adding recipes to meal plan
+  - Multi-day meal assignments
+  - Meal type customization
+
+### In Progress
+- Enhanced meal planning interface
+  - Mobile-optimized calendar view
+  - Detailed daily meal breakdown
+  - Improved meal scheduling UX
+- Recipe import from social media
+  - Instagram integration
+  - TikTok integration
 
 ## Getting Started
 
