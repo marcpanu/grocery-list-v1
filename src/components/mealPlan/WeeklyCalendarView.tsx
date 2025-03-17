@@ -109,7 +109,11 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
             {/* Meal type indicators */}
             <div className="flex flex-col gap-1 items-center mt-auto">
               {Object.entries(dayMeals).map(([type, meals]) => 
-                getMealTypeIndicator(type as MealType, meals.length)
+                getMealTypeIndicator(type as MealType, meals.length) && (
+                  <div key={type}>
+                    {getMealTypeIndicator(type as MealType, meals.length)}
+                  </div>
+                )
               )}
             </div>
           </button>
