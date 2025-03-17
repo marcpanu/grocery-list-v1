@@ -94,4 +94,5 @@ export interface UserData {
   credentials: StoredCredential[];
 }
 
-export * from './recipe'; 
+export * from './recipe';
+export type { Meal, MealPlan, WeeklyTemplate } from './mealPlan'; 

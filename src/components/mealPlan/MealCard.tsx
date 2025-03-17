@@ -1,5 +1,5 @@
 import React from 'react';
-import { MealType } from '../../types/mealPlan';
+import { MealType } from '../../types/recipe';
 
 interface MealCardProps {
   name: string;

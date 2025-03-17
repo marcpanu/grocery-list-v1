@@ -18,6 +18,11 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Delete recipes with confirmation
 - Mark recipes as favorites
 - Rate recipes
+- Advanced UI features:
+  - Sort by name, date, rating
+  - Filter by meal type and cuisine
+  - Grid/List view toggle
+  - Search functionality
 
 ### Shopping List
 - Add items from recipes to shopping list
@@ -26,32 +31,22 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Filter items by store
 - View items in combined or sequential mode
 - Hide/show completed items
+- Move items between stores
+- Categorize items (product, meat, etc.)
+
+### Meal Planning
+- Weekly overview of planned meals
+- Day-by-day meal details
+- Add meals from existing recipes
+- Quick add meals without recipes
+- Import new recipes
+- Categorize meals by type (breakfast, lunch, dinner, snack, dessert)
 
 ### User Preferences
 - Customize recipe view mode (grid/compact)
 - Sort recipes by name, date added, or rating
 - Filter recipes by meal type and cuisine
 - Show/hide favorites
-
-## Recent Changes
-
-### Recipe Source Feature
-- Added support for recipe sources with different types:
-  - Regular URLs
-  - Instagram posts
-  - TikTok videos
-- Source information includes:
-  - Type-specific icon
-  - Clickable link
-  - Optional display title
-- Source link appears at the top of recipe details
-- Automatic source type detection during recipe import
-
-### Recipe Import Improvements
-- Enhanced recipe parsing with better image extraction
-- Support for custom cuisine types
-- Improved handling of recipe metadata
-- Better error handling and validation
 
 ## Getting Started
 
@@ -76,16 +71,17 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
    npm run dev
    ```
 
-## Development
-
-### Project Structure
+## Project Structure
 ```
 src/
   ├── components/         # React components
   │   ├── common/        # Shared components
   │   ├── recipes/       # Recipe-related components
+  │   ├── mealPlan/      # Meal planning components
   │   └── shopping/      # Shopping list components
+  ├── contexts/          # React contexts
   ├── firebase/          # Firebase configuration
+  ├── pages/             # Main route components
   ├── services/          # Business logic and API calls
   ├── types/             # TypeScript type definitions
   └── utils/             # Helper functions
@@ -98,6 +94,8 @@ src/
 - `RecipeEditForm`: Form for creating/editing recipes
 - `ShoppingList`: Shopping list management
 - `StoreSelector`: Store selection component
+- `MealPlanPage`: Weekly meal planning interface
+- `FloatingActionButton`: Quick action menu
 
 ### State Management
 - Firebase Firestore for data persistence

@@ -30,7 +30,8 @@ import {
   RecipePreview,
   UserPreferences,
   UserData,
-  StoredCredential
+  StoredCredential,
+  MealPlan
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
 
@@ -199,32 +200,70 @@ export const deleteRecipe = async (recipeId: string): Promise<void> => {
 
 // Meal Plan Operations
 export const addMealPlan = async (userId: string, mealPlanData: DocumentData) => {
-  const mealPlansRef = collection(db, COLLECTIONS.MEAL_PLANS);
-  return addDoc(mealPlansRef, {
-    ...mealPlanData,
-    userId,
-    createdAt: new Date()
-  });
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  const now = Timestamp.now();
+  
+  // Convert dates to Timestamps
+  const mealWithTimestamp = {
+    ...mealPlanData.meals[0],
+    createdAt: Timestamp.fromDate(mealPlanData.meals[0].createdAt)
+  };
+
+  // Try to get existing meal plan
+  const mealPlanSnap = await getDoc(mealPlanRef);
+  
+  if (mealPlanSnap.exists()) {
+    // Update existing meal plan
+    await updateDoc(mealPlanRef, {
+      meals: arrayUnion(mealWithTimestamp),
+      updatedAt: now
+    });
+  } else {
+    // Create new meal plan
+    await setDoc(mealPlanRef, {
+      userId,
+      meals: [mealWithTimestamp],
+      createdAt: now,
+      updatedAt: now
+    });
+  }
 };
 
-export const getMealPlan = async (mealPlanId: string) => {
-  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, mealPlanId);
+export const getMealPlan = async (userId: string) => {
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
   const mealPlanSnap = await getDoc(mealPlanRef);
   return mealPlanSnap.exists() ? mealPlanSnap.data() : null;
 };
 
-export const getUserMealPlans = async (userId: string) => {
-  const mealPlansRef = collection(db, COLLECTIONS.MEAL_PLANS);
-  const q = query(
-    mealPlansRef,
-    where('userId', '==', userId),
-    orderBy('createdAt', 'desc')
-  );
-  const querySnapshot = await getDocs(q);
-  return querySnapshot.docs.map(doc => ({
-    id: doc.id,
-    ...doc.data()
-  }));
+export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
+  console.log('Getting meal plans for user:', userId);
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  const mealPlanSnap = await getDoc(mealPlanRef);
+  
+  if (!mealPlanSnap.exists()) {
+    console.log('No meal plan found for user');
+    return [];
+  }
+
+  const data = mealPlanSnap.data();
+  console.log('Raw meal plan data:', data);
+  
+  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
+  const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date();
+  
+  const mealPlan: MealPlan = {
+    id: mealPlanSnap.id,
+    userId,
+    meals: data.meals.map((meal: any) => ({
+      ...meal,
+      createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
+    })),
+    createdAt,
+    updatedAt
+  };
+  
+  console.log('Processed meal plan:', mealPlan);
+  return [mealPlan];
 };
 
 // Store Operations

@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { MealType } from '../../types/mealPlan';
+import { MealType } from '../../types/recipe';
+import { Recipe } from '../../types/recipe';
 
 interface AddMealModalProps {
   isOpen: boolean;
@@ -12,10 +13,17 @@ interface AddMealModalProps {
     type: MealType;
     days: string[];
     servings: number;
+    recipeId?: string;
   }) => void;
+  selectedRecipe?: Recipe;
 }
 
-export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onAdd }) => {
+export const AddMealModal: React.FC<AddMealModalProps> = ({ 
+  isOpen, 
+  onClose, 
+  onAdd,
+  selectedRecipe 
+}) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
   const [type, setType] = useState<MealType>('dinner');
@@ -23,7 +31,23 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
   const [servings, setServings] = useState(2);
 
   const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'other'];
+  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
+
+  // Reset form when modal opens/closes or selectedRecipe changes
+  useEffect(() => {
+    if (isOpen && selectedRecipe) {
+      setName(selectedRecipe.name);
+      setDescription(selectedRecipe.description || '');
+      setType(selectedRecipe.mealTypes[0] as MealType || 'dinner');
+      setServings(selectedRecipe.servings);
+    } else {
+      setName('');
+      setDescription('');
+      setType('dinner');
+      setServings(2);
+      setSelectedDays([]);
+    }
+  }, [isOpen, selectedRecipe]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -33,6 +57,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
       type,
       days: selectedDays,
       servings,
+      recipeId: selectedRecipe?.id,
     });
     onClose();
   };
@@ -44,7 +69,9 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
       <div className="fixed inset-0 flex items-center justify-center p-4">
         <Dialog.Panel className="mx-auto max-w-lg w-full rounded-lg bg-white p-6">
           <div className="flex justify-between items-center mb-4">
-            <Dialog.Title className="text-lg font-semibold">Add New Meal</Dialog.Title>
+            <Dialog.Title className="text-lg font-semibold">
+              {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Meal'}
+            </Dialog.Title>
             <button onClick={onClose} className="text-gray-500 hover:text-gray-700">
               <XMarkIcon className="w-6 h-6" />
             </button>
@@ -61,6 +88,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
                 onChange={(e) => setName(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
                 required
+                disabled={!!selectedRecipe}
               />
             </div>
 
@@ -73,6 +101,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
                 onChange={(e) => setDescription(e.target.value)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
                 rows={3}
+                disabled={!!selectedRecipe}
               />
             </div>
 
@@ -84,6 +113,7 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({ isOpen, onClose, onA
                 value={type}
                 onChange={(e) => setType(e.target.value as MealType)}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                disabled={!!selectedRecipe}
               >
                 {mealTypes.map((mealType) => (
                   <option key={mealType} value={mealType}>

@@ -1,19 +1,20 @@
-export type MealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'other';
-
-export interface MealPlan {
-  id: string;
-  weekStartDate: Date;
-  meals: Meal[];
-}
+import { MealType } from './recipe';
 
 export interface Meal {
   id: string;
   name: string;
   description?: string;
-  recipeId?: string; // Reference to recipe if it exists
   type: MealType;
-  days: string[]; // ISO date strings
+  days: string[];
   servings: number;
+  recipeId?: string;
+  createdAt: Date;
+}
+
+export interface MealPlan {
+  id: string;
+  userId: string;
+  meals: Meal[];
   createdAt: Date;
   updatedAt: Date;
 }
