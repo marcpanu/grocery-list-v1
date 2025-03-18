@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
@@ -28,6 +28,7 @@ const MealPlanPage: React.FC = () => {
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>('Sun');
+  const [showActionModal, setShowActionModal] = useState(false);
 
   // Use the recipe import hook
   const {
@@ -137,36 +138,6 @@ const MealPlanPage: React.FC = () => {
             {success}
           </div>
         )}
-
-        {/* Action Buttons */}
-        <div className="flex justify-end mb-6">
-          <div className="flex gap-4">
-            <button
-              onClick={() => setShowRecipeSearch(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
-            >
-              <BookOpenIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Add from Recipes</span>
-              <span className="sm:hidden">Add</span>
-            </button>
-            <button
-              onClick={() => setShowImportModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <PencilSquareIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Add New Recipe</span>
-              <span className="sm:hidden">New</span>
-            </button>
-            <button
-              onClick={() => setShowQuickAddModal(true)}
-              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-            >
-              <DocumentTextIcon className="w-5 h-5" />
-              <span className="hidden sm:inline">Quick Add</span>
-              <span className="sm:hidden">Quick</span>
-            </button>
-          </div>
-        </div>
         
         {/* Weekly Calendar */}
         <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-8">
@@ -189,7 +160,71 @@ const MealPlanPage: React.FC = () => {
           />
         </div>
 
-        {/* Modals */}
+        {/* Floating Action Button */}
+        <button
+          onClick={() => setShowActionModal(true)}
+          className="fixed bottom-20 right-4 w-14 h-14 bg-violet-600 text-white rounded-full shadow-lg hover:bg-violet-700 transition-colors duration-200 flex items-center justify-center"
+        >
+          <PlusIcon className="h-6 w-6" />
+        </button>
+
+        {/* Action Modal */}
+        <Dialog open={showActionModal} onClose={() => setShowActionModal(false)} className="relative z-50">
+          <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+          <div className="fixed inset-0 flex items-center justify-center p-4">
+            <Dialog.Panel className="mx-auto max-w-sm w-full rounded-lg bg-white p-6">
+              <div className="flex justify-between items-center mb-4">
+                <Dialog.Title className="text-lg font-medium text-gray-900">Add Meal</Dialog.Title>
+                <button
+                  onClick={() => setShowActionModal(false)}
+                  className="text-gray-400 hover:text-gray-500"
+                >
+                  <XMarkIcon className="h-6 w-6" />
+                </button>
+              </div>
+              <div className="space-y-3">
+                <button
+                  onClick={() => {
+                    setShowActionModal(false);
+                    setShowRecipeSearch(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  <BookOpenIcon className="h-5 w-5 text-violet-600" />
+                  <span>Add from Recipes</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowActionModal(false);
+                    setShowImportModal(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  <PencilSquareIcon className="h-5 w-5 text-violet-600" />
+                  <span>Add New Recipe</span>
+                </button>
+                <button
+                  onClick={() => {
+                    setShowActionModal(false);
+                    setShowQuickAddModal(true);
+                  }}
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  <DocumentTextIcon className="h-5 w-5 text-violet-600" />
+                  <span>Quick Add</span>
+                </button>
+                <button
+                  className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
+                >
+                  <DocumentDuplicateIcon className="h-5 w-5 text-violet-600" />
+                  <span>Create from Template</span>
+                </button>
+              </div>
+            </Dialog.Panel>
+          </div>
+        </Dialog>
+
+        {/* Existing Modals */}
         <RecipeSearchModal
           isOpen={showRecipeSearch}
           onClose={() => setShowRecipeSearch(false)}
@@ -223,7 +258,7 @@ const MealPlanPage: React.FC = () => {
         <Dialog open={showQuickAddModal} onClose={() => setShowQuickAddModal(false)} className="relative z-50">
           <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
-            <Dialog.Panel className="mx-auto max-w-sm rounded bg-white p-6">
+            <Dialog.Panel className="mx-auto max-w-2xl w-full rounded bg-white p-6">
               <div className="flex justify-between items-center mb-4">
                 <Dialog.Title className="text-lg font-medium">Quick Add Meal</Dialog.Title>
                 <button
@@ -304,9 +339,9 @@ const MealPlanPage: React.FC = () => {
                     <label className="block text-sm font-medium text-gray-700 mb-2">
                       Days
                     </label>
-                    <div className="grid grid-cols-2 gap-2">
+                    <div className="grid grid-cols-4 gap-4">
                       {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                        <label key={day} className="flex items-center space-x-2">
+                        <label key={day} className="flex items-center space-x-3">
                           <input
                             type="checkbox"
                             name="days"
