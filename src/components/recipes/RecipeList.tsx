@@ -59,7 +59,6 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [pendingRecipeForGroceryList, setPendingRecipeForGroceryList] = useState<string | null>(null);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
-  const [servingMultiplier, setServingMultiplier] = useState(1);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -290,7 +289,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         setShowGroceryListConfirm(true);
       } else {
         // No items in list, just add ingredients
-        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
       }
@@ -326,7 +325,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -362,7 +361,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       }
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+      await addRecipeIngredientsToGroceryList(recipe, 1);
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
@@ -611,24 +610,6 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
               ))}
             </div>
           )}
-
-          <div className="flex items-center space-x-4 mb-4">
-            <label htmlFor="servings" className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              Servings:
-            </label>
-            <select
-              id="servings"
-              value={servingMultiplier}
-              onChange={(e) => setServingMultiplier(Number(e.target.value))}
-              className="block w-24 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-            >
-              {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((value) => (
-                <option key={value} value={value}>
-                  {value}x
-                </option>
-              ))}
-            </select>
-          </div>
         </div>
       </header>
 
