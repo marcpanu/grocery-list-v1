@@ -40,17 +40,17 @@ export const AddMealModal = ({
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    type: 'dinner' as MealType,
+    type: '',
     days: [] as string[],
     servings: 2,
-    prepTime: '<30',
+    prepTime: '',
     cookTime: '',
     totalTime: '',
-    ingredients: [] as Ingredient[],
-    instructions: [] as Instruction[],
+    ingredients: [{ name: '', quantity: '', unit: null, notes: null }],
+    instructions: [{ order: 1, instruction: '' }],
     notes: '',
-    mealTypes: [] as string[],
-    cuisine: [] as string[],
+    mealTypes: [],
+    cuisine: [],
     rating: undefined as number | undefined
   });
 
@@ -62,7 +62,7 @@ export const AddMealModal = ({
       setFormData({
         name: selectedRecipe.name,
         description: selectedRecipe.description || '',
-        type: selectedRecipe.mealTypes[0] as MealType || 'dinner',
+        type: selectedRecipe.mealTypes[0] || '',
         days: [],
         servings: selectedRecipe.servings,
         prepTime: selectedRecipe.prepTime,
@@ -79,14 +79,14 @@ export const AddMealModal = ({
       setFormData({
         name: '',
         description: '',
-        type: 'dinner',
+        type: '',
         days: [],
         servings: 2,
-        prepTime: '<30',
+        prepTime: '',
         cookTime: '',
         totalTime: '',
-        ingredients: [],
-        instructions: [],
+        ingredients: [{ name: '', quantity: '', unit: null, notes: null }],
+        instructions: [{ order: 1, instruction: '' }],
         notes: '',
         mealTypes: [],
         cuisine: [],
@@ -147,8 +147,20 @@ export const AddMealModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    if (isAddingToMealPlan && formData.days.length === 0) {
-      setError('Please select at least one day');
+    
+    // Validate required fields
+    if (!formData.name.trim()) {
+      setError('Recipe name is required');
+      return;
+    }
+
+    if (!formData.type) {
+      setError('Meal type is required');
+      return;
+    }
+
+    if (!formData.prepTime) {
+      setError('Prep time is required');
       return;
     }
 
@@ -157,16 +169,40 @@ export const AddMealModal = ({
       return;
     }
 
+    // Validate ingredients
+    const validIngredients = formData.ingredients.filter(ing => 
+      ing.name.trim() && (typeof ing.quantity === 'number' || String(ing.quantity).trim())
+    );
+    if (validIngredients.length === 0) {
+      setError('At least one ingredient with name and quantity is required');
+      return;
+    }
+
+    // Validate instructions
+    const validInstructions = formData.instructions.filter(inst => 
+      inst.instruction.trim()
+    );
+    if (validInstructions.length === 0) {
+      setError('At least one instruction is required');
+      return;
+    }
+
+    // Validate days if adding to meal plan
+    if (isAddingToMealPlan && formData.days.length === 0) {
+      setError('Please select at least one day');
+      return;
+    }
+
     const formDataToAdd = {
-      name: formData.name,
+      name: formData.name.trim(),
       description: formData.description || undefined,
       type: formData.type,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
       cookTime: formData.cookTime || undefined,
       totalTime: formData.totalTime || undefined,
-      ingredients: formData.ingredients,
-      instructions: formData.instructions.map(i => i.instruction),
+      ingredients: validIngredients,
+      instructions: validInstructions.map(i => i.instruction),
       cuisine: formData.cuisine,
       rating: formData.rating,
       ...(isAddingToMealPlan ? { days: formData.days } : { days: [] }),
@@ -184,7 +220,7 @@ export const AddMealModal = ({
         <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <Dialog.Title className="text-lg font-semibold">
-              {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Meal'}
+              {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Recipe'}
             </Dialog.Title>
             <button 
               onClick={onClose} 
@@ -216,7 +252,7 @@ export const AddMealModal = ({
             <div className="space-y-4">
               <div>
                 <label htmlFor="name" className="block text-sm font-medium text-zinc-700">
-                  Recipe Name
+                  Recipe Name <span className="text-red-500">*</span>
                 </label>
                 <input
                   type="text"
@@ -245,16 +281,39 @@ export const AddMealModal = ({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
+                  <label htmlFor="type" className="block text-sm font-medium text-zinc-700">
+                    Meal Type <span className="text-red-500">*</span>
+                  </label>
+                  <select
+                    id="type"
+                    value={formData.type}
+                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    required
+                    disabled={isLoading}
+                  >
+                    <option value="">Select a meal type</option>
+                    <option value="breakfast">Breakfast</option>
+                    <option value="lunch">Lunch</option>
+                    <option value="dinner">Dinner</option>
+                    <option value="snack">Snack</option>
+                    <option value="dessert">Dessert</option>
+                  </select>
+                </div>
+
+                <div>
                   <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-                    Prep Time
+                    Prep Time <span className="text-red-500">*</span>
                   </label>
                   <select
                     id="prepTime"
                     value={formData.prepTime}
                     onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    required
                     disabled={isLoading}
                   >
+                    <option value="">Select prep time</option>
                     <option value="<30">Less than 30 minutes</option>
                     <option value="30-60">30-60 minutes</option>
                     <option value="60+">More than 60 minutes</option>
@@ -262,22 +321,8 @@ export const AddMealModal = ({
                 </div>
 
                 <div>
-                  <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
-                    Cook Time
-                  </label>
-                  <input
-                    type="text"
-                    id="cookTime"
-                    value={formData.cookTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    disabled={isLoading}
-                  />
-                </div>
-
-                <div>
                   <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
-                    Servings
+                    Servings <span className="text-red-500">*</span>
                   </label>
                   <input
                     type="number"
