@@ -122,6 +122,7 @@ npm run test:e2e
 - Recipe Box: Complete
   - Recipe management
   - Import from URLs
+  - Manual recipe creation
   - Custom hooks for import functionality
   - Grid/List views
   - Sorting and filtering
@@ -129,30 +130,35 @@ npm run test:e2e
   - Item management
   - Store organization
   - Category system
-- Meal Planning: In Progress
+- Meal Planning: Enhanced
   - Weekly overview implemented
   - Add from recipes working
   - Quick add functionality complete
   - Import new recipes integrated
+  - Manual recipe creation integrated
   - Single-document-per-user model implemented
 
 ### Recent Changes
-1. Recipe Import System
+1. Recipe Import and Creation System
    - Created useRecipeImport custom hook
    - Implemented URL import functionality
    - Added support for future Instagram/TikTok imports
+   - Enhanced manual recipe creation
    - Improved error handling and state management
 
 2. Meal Planning Improvements
    - Implemented single-document-per-user model
    - Added recipe selection modal
    - Integrated recipe import functionality
-   - Added quick add meal feature
+   - Enhanced quick add meal feature
+   - Added full recipe creation capability
+   - Made non-essential fields optional
    - Improved loading states
 
 3. Data Model Optimization
    - Simplified meal plan structure
    - Improved query efficiency
+   - Enhanced recipe creation workflow
    - Prepared for multi-user support
    - Optimized state management
 
@@ -162,10 +168,11 @@ npm run test:e2e
    - Recipe import modal close/cancel functionality fixed
    - Need to complete recipe-to-meal plan workflow
 
-2. Recipe Import
+2. Recipe Import and Creation
    - URL import error handling needs improvement
    - Need to add loading states during import
    - Future social media import placeholders
+   - Form validation refinements needed
 
 ### Next Steps
 1. Complete Meal Planning
@@ -173,18 +180,21 @@ npm run test:e2e
    - Add meal deletion
    - Improve weekly view interactions
    - Add drag-and-drop functionality
+   - Enhance form validation
 
 2. Recipe Import Enhancement
    - Improve error messages
    - Add loading indicators
    - Prepare for social media imports
    - Enhance image handling
+   - Refine form validation
 
 3. UI/UX Improvements
    - Add success/error notifications
    - Improve loading states
    - Enhance modal transitions
    - Add keyboard shortcuts
+   - Improve form accessibility
 
 ## Technical Details
 
@@ -201,6 +211,10 @@ interface MealPlan {
     servings: number;
     days: string[];
     recipeId?: string;
+    ingredients?: Ingredient[];
+    instructions?: string[];
+    cuisine?: string[];
+    rating?: number;
     createdAt: Timestamp;
   }>;
   createdAt: Timestamp;
@@ -215,6 +229,23 @@ interface RecipeImportHook {
   closeUrlImport: () => void;
   handleImportOptionSelect: (optionId: string) => void;
   handleUrlImport: (data: { url: string }) => Promise<void>;
+}
+
+// Add Meal Data
+interface AddMealData {
+  name: string;
+  description?: string;
+  type: MealType;
+  days: string[];
+  servings: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  ingredients?: Ingredient[];
+  instructions?: string[];
+  cuisine?: string[];
+  rating?: number;
+  recipeId?: string;
 }
 ```
 
