@@ -36,7 +36,6 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
   const [servingMultiplier, setServingMultiplier] = useState(1);
 

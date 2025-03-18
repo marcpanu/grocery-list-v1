@@ -1,24 +1,21 @@
-import { 
+import {
   collection,
   doc,
-  getDocs,
   getDoc,
-  addDoc,
+  getDocs,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   orderBy,
-  DocumentData,
-  Timestamp,
-  QueryDocumentSnapshot,
-  writeBatch,
   limit,
-  setDoc,
+  Timestamp,
+  addDoc,
   arrayUnion,
-  arrayRemove,
-  runTransaction,
-  serverTimestamp
+  writeBatch,
+  DocumentData,
+  QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { db } from './config';
 import { 

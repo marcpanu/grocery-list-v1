@@ -22,7 +22,7 @@ import { toast, Toaster } from 'react-hot-toast';
 
 const DEFAULT_USER_ID = 'default';
 
-const MealPlanPage: React.FC = () => {
+export const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -37,7 +37,6 @@ const MealPlanPage: React.FC = () => {
   const [instructionCount, setInstructionCount] = useState(1);
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
-  const [pendingMealPlanForGroceryList, setPendingMealPlanForGroceryList] = useState(false);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
 
   // Use the recipe import hook
@@ -220,31 +219,6 @@ const MealPlanPage: React.FC = () => {
     handleAddMeal(meal);
   };
 
-  // Function to collect all recipes from the meal plan
-  const getAllMealPlanRecipes = async () => {
-    const recipesToAdd = [];
-    
-    // Get all meals with recipeIds
-    const mealsWithRecipeIds = mealPlans.flatMap(plan => 
-      plan.meals.filter(meal => meal.recipeId)
-    );
-    
-    // Deduplicate recipes by ID
-    const uniqueRecipeIds = [...new Set(mealsWithRecipeIds.map(meal => meal.recipeId))];
-    
-    // Fetch all recipe details
-    for (const recipeId of uniqueRecipeIds) {
-      if (recipeId) {
-        const recipe = await getRecipe(recipeId);
-        if (recipe) {
-          recipesToAdd.push(recipe);
-        }
-      }
-    }
-    
-    return recipesToAdd;
-  };
-
   // Function to handle adding all meal plan ingredients to grocery list
   const handleAddAllToGroceryList = async () => {
     try {
@@ -365,7 +339,6 @@ const MealPlanPage: React.FC = () => {
     } finally {
       // Reset all states
       setAddingToGroceryList(false);
-      setPendingMealPlanForGroceryList(false);
     }
   };
 
@@ -410,7 +383,6 @@ const MealPlanPage: React.FC = () => {
     } finally {
       // Reset all states
       setAddingToGroceryList(false);
-      setPendingMealPlanForGroceryList(false);
     }
   };
 
@@ -822,7 +794,6 @@ const MealPlanPage: React.FC = () => {
           onClose={() => {
             if (!addingToGroceryList) {
               setShowGroceryListConfirm(false);
-              setPendingMealPlanForGroceryList(false);
             }
           }}
           onConfirmClear={handleClearAndAddToGroceryList}
