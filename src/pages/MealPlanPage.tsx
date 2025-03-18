@@ -224,7 +224,7 @@ const MealPlanPage: React.FC = () => {
   const getAllMealPlanRecipes = async () => {
     const recipesToAdd = [];
     
-    // Get all meals with recipeId
+    // Get all meals with recipeIds
     const mealsWithRecipeIds = mealPlans.flatMap(plan => 
       plan.meals.filter(meal => meal.recipeId)
     );
@@ -248,54 +248,70 @@ const MealPlanPage: React.FC = () => {
   // Function to handle adding all meal plan ingredients to grocery list
   const handleAddAllToGroceryList = async () => {
     try {
-      setAddingToGroceryList(true);
-      
+      // Get all meals with recipe IDs
+      const mealsWithRecipeIds = mealPlans.flatMap(plan => 
+        plan.meals.filter(meal => meal.recipeId)
+      );
+      if (mealsWithRecipeIds.length === 0) {
+        toast.error('No recipes found in meal plan');
+        return;
+      }
+
+      // Track recipe serving multipliers based on number of days
+      const recipeServingMultipliers = new Map<string, number>();
+
+      // Count recipe occurrences and track serving adjustments
+      for (const meal of mealsWithRecipeIds) {
+        if (!meal.recipeId) continue;
+        
+        // Count the number of days this meal appears on
+        const dayCount = meal.days.length;
+        
+        // For each recipe, we need to track:
+        // 1. How many times it appears (days)
+        // 2. The servings adjustment from the recipe's original servings
+        if (recipeServingMultipliers.has(meal.recipeId)) {
+          // Add to the existing multiplier
+          const currentMultiplier = recipeServingMultipliers.get(meal.recipeId) || 0;
+          recipeServingMultipliers.set(meal.recipeId, currentMultiplier + dayCount);
+        } else {
+          // Initialize with the day count
+          recipeServingMultipliers.set(meal.recipeId, dayCount);
+        }
+      }
+
       // Check if user already has items in the grocery list
       const userLists = await getUserShoppingLists('default');
       if (userLists.length > 0 && userLists[0].items.length > 0) {
         // Show confirmation dialog
-        setPendingMealPlanForGroceryList(true);
         setShowGroceryListConfirm(true);
       } else {
         // No items in list, just add ingredients
-        await addAllIngredientsToGroceryList();
+        await addAllIngredientsToGroceryList(recipeServingMultipliers);
+        toast.success('Recipe ingredients added to your grocery list!');
       }
-    } catch (error) {
-      console.error('Failed to add ingredients to grocery list:', error);
-      toast.error('Failed to add meal plan ingredients to grocery list');
-    } finally {
-      if (!showGroceryListConfirm) {
-        setAddingToGroceryList(false);
-      }
-    }
-  };
-
-  // Function to add all ingredients from all recipes
-  const addAllIngredientsToGroceryList = async () => {
-    try {
-      const recipes = await getAllMealPlanRecipes();
-      
-      if (recipes.length === 0) {
-        toast.error('No recipes found in meal plan');
-        return;
-      }
-      
-      // Show loading toast
-      const loadingToast = toast.loading('Adding ingredients to your grocery list...');
-      
-      // Add each recipe's ingredients
-      for (const recipe of recipes) {
-        await addRecipeIngredientsToGroceryList(recipe);
-      }
-      
-      // Dismiss loading toast and show success
-      toast.dismiss(loadingToast);
-      toast.success(`Added ingredients from ${recipes.length} recipes to your grocery list!`);
     } catch (error) {
       console.error('Failed to add ingredients to grocery list:', error);
       toast.error('Failed to add ingredients to grocery list');
-    } finally {
-      setAddingToGroceryList(false);
+    }
+  };
+
+  const addAllIngredientsToGroceryList = async (recipeServingMultipliers: Map<string, number>) => {
+    try {
+      // Get all unique recipes
+      const recipes = await Promise.all(
+        Array.from(recipeServingMultipliers.keys()).map(id => getRecipe(id))
+      );
+
+      // Add ingredients from each recipe with its multiplier
+      for (const recipe of recipes) {
+        if (!recipe) continue;
+        const multiplier = recipeServingMultipliers.get(recipe.id) || 1;
+        await addRecipeIngredientsToGroceryList(recipe, multiplier);
+      }
+    } catch (error) {
+      console.error('Error adding ingredients:', error);
+      throw error;
     }
   };
 
@@ -316,15 +332,32 @@ const MealPlanPage: React.FC = () => {
         // Clear all items
         await updateShoppingList(list.id, { items: [] });
         
-        // Add all ingredients
-        const recipes = await getAllMealPlanRecipes();
-        for (const recipe of recipes) {
-          await addRecipeIngredientsToGroceryList(recipe);
+        // Get all meals with recipe IDs and calculate multipliers
+        const mealsWithRecipeIds = mealPlans.flatMap(plan => 
+          plan.meals.filter(meal => meal.recipeId)
+        );
+        
+        // Track recipe serving multipliers based on number of days
+        const recipeServingMultipliers = new Map<string, number>();
+        
+        // Count recipe occurrences and track serving adjustments
+        for (const meal of mealsWithRecipeIds) {
+          if (!meal.recipeId) continue;
+          const dayCount = meal.days.length;
+          if (recipeServingMultipliers.has(meal.recipeId)) {
+            const currentMultiplier = recipeServingMultipliers.get(meal.recipeId) || 0;
+            recipeServingMultipliers.set(meal.recipeId, currentMultiplier + dayCount);
+          } else {
+            recipeServingMultipliers.set(meal.recipeId, dayCount);
+          }
         }
+        
+        // Add all ingredients with correct multipliers
+        await addAllIngredientsToGroceryList(recipeServingMultipliers);
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
-        toast.success(`Grocery list cleared and ingredients from ${recipes.length} recipes added!`);
+        toast.success('Grocery list cleared and new ingredients added!');
       }
     } catch (error) {
       console.error('Failed to clear and add ingredients:', error);
@@ -345,15 +378,32 @@ const MealPlanPage: React.FC = () => {
       // Show loading toast
       const loadingToast = toast.loading('Adding ingredients to grocery list...');
       
-      // Add to existing list
-      const recipes = await getAllMealPlanRecipes();
-      for (const recipe of recipes) {
-        await addRecipeIngredientsToGroceryList(recipe);
+      // Get all meals with recipe IDs and calculate multipliers
+      const mealsWithRecipeIds = mealPlans.flatMap(plan => 
+        plan.meals.filter(meal => meal.recipeId)
+      );
+      
+      // Track recipe serving multipliers based on number of days
+      const recipeServingMultipliers = new Map<string, number>();
+      
+      // Count recipe occurrences and track serving adjustments
+      for (const meal of mealsWithRecipeIds) {
+        if (!meal.recipeId) continue;
+        const dayCount = meal.days.length;
+        if (recipeServingMultipliers.has(meal.recipeId)) {
+          const currentMultiplier = recipeServingMultipliers.get(meal.recipeId) || 0;
+          recipeServingMultipliers.set(meal.recipeId, currentMultiplier + dayCount);
+        } else {
+          recipeServingMultipliers.set(meal.recipeId, dayCount);
+        }
       }
+      
+      // Add all ingredients with correct multipliers
+      await addAllIngredientsToGroceryList(recipeServingMultipliers);
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
-      toast.success(`Ingredients from ${recipes.length} recipes added to your grocery list!`);
+      toast.success('Ingredients added to your grocery list!');
     } catch (error) {
       console.error('Failed to add ingredients:', error);
       toast.error('Failed to update grocery list');
