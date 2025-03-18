@@ -1,9 +1,9 @@
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ShoppingItem, Store } from '../types';
 import { StoreSelector } from './StoreSelector';
 import { updateItemInList, removeItemFromList, toggleItemCheck } from '../firebase/firestore';
 import { Draggable } from '@hello-pangea/dnd';
-import { Bars3Icon } from '@heroicons/react/24/outline';
+import { Bars3Icon, BuildingStorefrontIcon } from '@heroicons/react/24/outline';
 
 interface ShoppingListItemProps {
   item: ShoppingItem;
@@ -23,12 +23,35 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
   const [editedName, setEditedName] = useState(item.name);
   const [isEditingQuantity, setIsEditingQuantity] = useState(false);
   const [editedQuantity, setEditedQuantity] = useState(item.quantity.toString());
+  const [showStorePopover, setShowStorePopover] = useState(false);
+  const storePopoverRef = useRef<HTMLDivElement>(null);
+  const storeButtonRef = useRef<HTMLButtonElement>(null);
+
+  useEffect(() => {
+    const handleClickOutside = (event: MouseEvent) => {
+      if (
+        showStorePopover &&
+        storePopoverRef.current &&
+        !storePopoverRef.current.contains(event.target as Node) &&
+        storeButtonRef.current &&
+        !storeButtonRef.current.contains(event.target as Node)
+      ) {
+        setShowStorePopover(false);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [showStorePopover]);
 
   const handleStoreSelect = async (store: Store | undefined) => {
     setIsUpdating(true);
     try {
       await updateItemInList(listId, item.id, { store });
       onUpdate();
+      setShowStorePopover(false);
     } catch (err) {
       console.error('Failed to update store:', err);
     } finally {
@@ -212,11 +235,32 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
             </div>
 
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
-              <StoreSelector
-                selectedStore={item.store}
-                onStoreSelect={handleStoreSelect}
-                className="w-24"
-              />
+              <div className="relative">
+                <button
+                  ref={storeButtonRef}
+                  onClick={() => setShowStorePopover(!showStorePopover)}
+                  disabled={isUpdating}
+                  className={`p-1 transition-colors ${item.store ? 'text-violet-600' : 'text-zinc-400 hover:text-violet-500'}`}
+                  title={item.store ? `Assigned to: ${item.store.name} (click to change)` : "Assign to store"}
+                >
+                  <BuildingStorefrontIcon className="w-4 h-4" />
+                </button>
+                
+                {showStorePopover && (
+                  <div 
+                    ref={storePopoverRef}
+                    className="absolute right-0 mt-1 z-10 w-48 bg-white shadow-lg rounded-md p-2 border border-zinc-200"
+                  >
+                    <div className="text-xs font-medium text-zinc-500 mb-1">Select Store:</div>
+                    <StoreSelector
+                      selectedStore={item.store}
+                      onStoreSelect={handleStoreSelect}
+                      className="w-full"
+                    />
+                  </div>
+                )}
+              </div>
+              
               <button
                 onClick={handleRemove}
                 disabled={isUpdating}
