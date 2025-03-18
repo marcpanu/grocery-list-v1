@@ -73,8 +73,17 @@ export interface UserPreferences {
     cuisines: string[];
     showFavorites: boolean;
   };
+  defaultStore: string | null;  // ID of the default store
+  pantryItems: PantryItem[];    // List of pantry items to exclude from grocery list
   // We can add more preferences here later
   lastUpdated: Timestamp;
+}
+
+export interface PantryItem {
+  id: string;           // Unique identifier
+  name: string;         // Main name of the pantry item
+  variants: string[];   // List of variants/alternate names
+  category: 'basic' | 'dry-goods' | 'spices' | 'other'; // Category for organization
 }
 
 export interface StoredCredential {

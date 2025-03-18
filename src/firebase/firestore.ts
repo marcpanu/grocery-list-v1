@@ -1,21 +1,21 @@
-import { 
+import {
   collection,
   doc,
-  getDocs,
   getDoc,
-  addDoc,
+  getDocs,
+  setDoc,
   updateDoc,
   deleteDoc,
   query,
   where,
   orderBy,
-  DocumentData,
-  Timestamp,
-  QueryDocumentSnapshot,
-  writeBatch,
   limit,
-  setDoc,
-  arrayUnion
+  Timestamp,
+  addDoc,
+  arrayUnion,
+  writeBatch,
+  DocumentData,
+  QueryDocumentSnapshot
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -31,9 +31,11 @@ import {
   UserPreferences,
   UserData,
   StoredCredential,
-  MealPlan
+  MealPlan,
+  PantryItem
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
+import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
 
 // Collection names
 const COLLECTIONS = {
@@ -469,13 +471,22 @@ export const addItemToList = async (
   
   if (!list) throw new Error('Shopping list not found');
   
+  // Create the new item with the required fields
   const newItem: ShoppingItem = {
     ...item,
     id: crypto.randomUUID(),
     addedAt: Timestamp.now(),
   };
 
-  const updatedItems = [...list.items, newItem];
+  // Convert undefined optional fields to null for Firestore
+  const firestoreItem = {
+    ...newItem,
+    unit: newItem.unit ?? null,
+    store: newItem.store ?? null,
+    category: newItem.category ?? null
+  };
+
+  const updatedItems = [...list.items, firestoreItem];
   
   await updateDoc(listRef, {
     items: updatedItems,
@@ -569,36 +580,47 @@ export const updateShoppingList = async (shoppingListId: string, shoppingListDat
 
 // User Preferences Operations
 export const getUserPreferences = async (): Promise<UserPreferences | null> => {
-  // For now, we'll use a fixed ID since this is a single-user app
-  const DEFAULT_USER_ID = 'default';
-  const prefsRef = doc(db, COLLECTIONS.USER_PREFERENCES, DEFAULT_USER_ID);
-  const prefsSnap = await getDoc(prefsRef);
-  
-  if (!prefsSnap.exists()) {
-    // Create default preferences if they don't exist
-    const defaultPrefs: Omit<UserPreferences, 'id'> = {
-      recipeViewMode: 'grid',
-      recipeSortBy: 'dateAdded',
-      recipeSortOrder: 'desc',
+  try {
+    // Get the preferences document
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
+    const docSnap = await getDoc(userPrefsDoc);
+    
+    // Default preferences if none exist
+    const defaultPrefs: UserPreferences = {
+      id: 'default',
+      recipeViewMode: 'grid' as const,
+      recipeSortBy: 'name' as const,
+      recipeSortOrder: 'asc' as const,
       recipeFilters: {
         mealTypes: [],
         cuisines: [],
         showFavorites: false
       },
+      defaultStore: null,
+      pantryItems: DEFAULT_PANTRY_ITEMS,
       lastUpdated: Timestamp.now()
     };
     
-    await setDoc(prefsRef, defaultPrefs);
-    return {
-      id: DEFAULT_USER_ID,
-      ...defaultPrefs
-    };
+    // If document doesn't exist, create it with default preferences
+    if (!docSnap.exists()) {
+      await setDoc(userPrefsDoc, defaultPrefs);
+      return defaultPrefs;
+    }
+    
+    // Return the preferences or apply defaults for missing fields
+    const data = docSnap.data() as UserPreferences;
+    
+    // If pantryItems don't exist in the document, add the default ones
+    if (!data.pantryItems) {
+      data.pantryItems = DEFAULT_PANTRY_ITEMS;
+      await updateDoc(userPrefsDoc, { pantryItems: DEFAULT_PANTRY_ITEMS });
+    }
+    
+    return data;
+  } catch (error) {
+    console.error('Error getting user preferences:', error);
+    return null;
   }
-  
-  return {
-    id: prefsSnap.id,
-    ...prefsSnap.data()
-  } as UserPreferences;
 };
 
 export const updateUserPreferences = async (
@@ -694,4 +716,122 @@ export const deleteAllImages = async (): Promise<void> => {
 
   // TODO: Actually delete the images from Firebase Storage
   // This will be implemented when we add image upload functionality
+};
+
+// Update user pantry items
+export const updatePantryItems = async (pantryItems: PantryItem[]): Promise<void> => {
+  try {
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
+    await updateDoc(userPrefsDoc, {
+      pantryItems,
+      lastUpdated: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error updating pantry items:', error);
+    throw new Error('Failed to update pantry items');
+  }
+};
+
+// Reset pantry items to default
+export const resetPantryItemsToDefault = async (): Promise<void> => {
+  try {
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
+    await updateDoc(userPrefsDoc, {
+      pantryItems: DEFAULT_PANTRY_ITEMS,
+      lastUpdated: Timestamp.now()
+    });
+  } catch (error) {
+    console.error('Error resetting pantry items:', error);
+    throw new Error('Failed to reset pantry items');
+  }
+};
+
+// Function to check if an ingredient is in the pantry items list
+const isIngredientInPantry = (ingredientName: string, pantryItems: PantryItem[]): boolean => {
+  const lowercaseName = ingredientName.toLowerCase().trim();
+  
+  // Check if the ingredient name matches any pantry item name or variant
+  return pantryItems.some(item => {
+    // Check main name match
+    if (lowercaseName === item.name.toLowerCase() || 
+        lowercaseName.includes(item.name.toLowerCase())) {
+      return true;
+    }
+    
+    // Check variants
+    return item.variants.some(variant => 
+      lowercaseName === variant.toLowerCase() || 
+      lowercaseName.includes(variant.toLowerCase())
+    );
+  });
+};
+
+// Function to add recipe ingredients to the grocery list with pantry exclusion and quantity adjustment
+export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingMultiplier: number = 1): Promise<void> => {
+  try {
+    // Get the user's shopping list
+    const userLists = await getUserShoppingLists('default');
+    if (userLists.length === 0) {
+      throw new Error('No shopping list found');
+    }
+    
+    const list = userLists[0];
+    console.log('User shopping list:', list);
+    
+    // Get user preferences to check for default store and pantry items
+    const preferences = await getUserPreferences();
+    console.log('User preferences:', preferences);
+    const defaultStoreId = preferences?.defaultStore || null;
+    console.log('Default store ID:', defaultStoreId);
+    
+    // Fix: Find the store object by ID and ensure it's found before using it
+    let defaultStore = undefined;
+    if (defaultStoreId && list.stores) {
+      console.log('Available stores:', list.stores);
+      defaultStore = list.stores.find((s: Store) => s.id === defaultStoreId);
+      console.log('Default store found:', defaultStoreId, defaultStore); // Debug log
+    } else {
+      console.log('Default store not found or no stores available');
+    }
+    
+    const pantryItems = preferences?.pantryItems || [];
+    
+    // Add each ingredient to the list
+    for (const ingredient of recipe.ingredients) {
+      // Skip pantry items
+      if (isIngredientInPantry(ingredient.name, pantryItems)) {
+        continue;
+      }
+      
+      // Convert quantity to number if it's a string
+      let quantity: number;
+      if (typeof ingredient.quantity === 'string') {
+        // Convert string to number if possible, or default to 1
+        const parsedQuantity = parseFloat(ingredient.quantity);
+        quantity = isNaN(parsedQuantity) ? 1 : parsedQuantity;
+      } else {
+        quantity = ingredient.quantity;
+      }
+      
+      // Apply serving multiplier
+      quantity = quantity * servingMultiplier;
+      
+      // Create item matching the TypeScript interface (with undefined for optional fields)
+      const newItem: NewShoppingItem = {
+        name: ingredient.name,
+        quantity: quantity,
+        unit: ingredient.unit && ingredient.unit.length > 0 ? ingredient.unit : undefined,
+        checked: false,
+        store: defaultStore, // This should be the actual store object, not just the ID
+        category: undefined
+      };
+      
+      console.log('Adding item with store:', newItem.name, newItem.store); // Debug log
+      
+      await addItemToList(list.id, newItem);
+    }
+  } catch (error) {
+    console.error('Error adding recipe ingredients to grocery list:', error);
+    throw new Error('Failed to add recipe ingredients to grocery list');
+  }
 }; 

@@ -51,6 +51,7 @@ shopping-list/
 - Shopping route optimization
 - List sharing capabilities
 - Automatic item categorization
+- Automatic item categorization
 
 ### Phase 4: Configuration and Optimization
 - Store management system
@@ -168,6 +169,10 @@ npm run test:e2e
    - Enhanced filter state persistence
    - Fixed "All Stores" filter option
    - Improved store filter UI feedback
+   - Added functionality to add recipe ingredients to grocery list
+   - Added "Add All to Grocery List" button on meal plan page
+   - Fixed loading state issues in grocery list confirmation dialogs
+   - Restored pantry management for excluding items from grocery list
 
 4. Data Model Optimization
    - Simplified meal plan structure
@@ -179,16 +184,13 @@ npm run test:e2e
 
 ### Known Issues
 1. Meal Plan Page
-   - Loading state management needs refinement
    - Recipe import modal close/cancel functionality fixed
-   - Need to complete recipe-to-meal plan workflow
    - Need to implement meal editing
 
 2. Recipe Import and Creation
    - URL import error handling needs improvement
    - Need to add loading states during import
    - Future social media import placeholders
-   - Form validation refinements needed
 
 ### Next Steps
 1. Complete Meal Planning

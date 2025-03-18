@@ -59,11 +59,18 @@ Customize your shopping experience:
 - Map items to categories
 - Set store priority for specific items or categories
 
+#### Pantry Management
+- Define items you always have in your pantry
+- Add variant names for pantry items (e.g., "salt" can include "sea salt", "kosher salt")
+- Categorize pantry items for better organization
+- Pantry items are automatically excluded from generated grocery lists
+
 ## Tips & Tricks
 
 - **Quick Planning**: Use the copy feature to easily plan meals that repeat during the week
 - **Flexible Servings**: Adjust serving sizes individually for each meal occurrence
 - **Smart Organization**: Utilize store-specific organization to optimize your shopping route
+- **Pantry Exclusions**: Maintain your pantry list to avoid purchasing items you already have
 
 ## Keyboard Shortcuts
 

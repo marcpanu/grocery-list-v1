@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Recipe } from '../../types/recipe';
-import { getRecipe, deleteRecipe } from '../../firebase/firestore';
+import { getRecipe, deleteRecipe, toggleRecipeFavorite } from '../../firebase/firestore';
 import { 
   ClockIcon, 
   HeartIcon,
@@ -10,11 +10,19 @@ import {
   TrashIcon,
   LinkIcon,
   ShareIcon,
-  VideoCameraIcon
+  VideoCameraIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { RecipeEditModal } from './RecipeEditModal';
+import { ConfirmGroceryListDialog } from '../common/ConfirmGroceryListDialog';
+import { toast, Toaster } from 'react-hot-toast';
+import {
+  addRecipeIngredientsToGroceryList,
+  getUserShoppingLists,
+  updateShoppingList
+} from '../../firebase/firestore';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -27,6 +35,9 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
+  const [addingToGroceryList, setAddingToGroceryList] = useState(false);
+  const [servingMultiplier, setServingMultiplier] = useState(1);
 
   useEffect(() => {
     loadRecipe();
@@ -53,9 +64,101 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!recipe) return;
+    try {
+      await toggleRecipeFavorite(recipe.id, !recipe.isFavorite);
+      await loadRecipe(); // Reload the recipe to show updated favorite status
+    } catch (error) {
+      console.error('Failed to update favorite status:', error);
+    }
+  };
+
   const handleSave = async () => {
     setShowEditModal(false);
     await loadRecipe(); // Reload the recipe to show updated data
+  };
+
+  const handleAddToGroceryList = async () => {
+    if (!recipe) return;
+    
+    try {
+      // Check if user already has items in the grocery list
+      const userLists = await getUserShoppingLists('default');
+      if (userLists.length > 0 && userLists[0].items.length > 0) {
+        // Show confirmation dialog
+        setShowGroceryListConfirm(true);
+      } else {
+        // No items in list, set loading state here before adding ingredients
+        setAddingToGroceryList(true);
+        const loadingToast = toast.loading('Adding ingredients to your grocery list...');
+        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        toast.dismiss(loadingToast);
+        toast.success('Recipe ingredients added to your grocery list!');
+        setAddingToGroceryList(false);
+      }
+    } catch (error) {
+      console.error('Failed to add ingredients to grocery list:', error);
+      toast.error('Failed to add ingredients to grocery list');
+      setAddingToGroceryList(false);
+    }
+  };
+
+  const handleClearAndAddToGroceryList = async () => {
+    if (!recipe) return;
+    
+    try {
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Clearing grocery list and adding ingredients...');
+      
+      // Clear the existing list and add the new ingredients
+      const userLists = await getUserShoppingLists('default');
+      if (userLists.length > 0) {
+        const list = userLists[0];
+        await updateShoppingList(list.id, { items: [] });
+        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToast);
+        toast.success('Grocery list cleared and new ingredients added!');
+      }
+    } catch (error) {
+      console.error('Failed to clear and add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      setAddingToGroceryList(false);
+    }
+  };
+
+  const handleAddToExistingGroceryList = async () => {
+    if (!recipe) return;
+    
+    try {
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Adding ingredients to grocery list...');
+      
+      // Add to existing list
+      await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success('Recipe ingredients added to your grocery list!');
+    } catch (error) {
+      console.error('Failed to add ingredients:', error);
+      toast.error('Failed to add ingredients to grocery list');
+    } finally {
+      setAddingToGroceryList(false);
+    }
   };
 
   if (isLoading) {
@@ -106,6 +209,15 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
 
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex gap-2">
+          {/* Add to Grocery List Button */}
+          <button
+            onClick={handleAddToGroceryList}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+            title="Add to grocery list"
+          >
+            <ShoppingCartIcon className="w-5 h-5 text-zinc-600 hover:text-violet-600" />
+          </button>
+
           {/* Edit Button */}
           <button
             onClick={() => setShowEditModal(true)}
@@ -123,7 +235,10 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
           </button>
 
           {/* Favorite Button */}
-          <button className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200">
+          <button
+            onClick={handleToggleFavorite}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+          >
             {recipe.isFavorite ? (
               <HeartSolid className="w-5 h-5 text-violet-600" />
             ) : (
@@ -233,6 +348,26 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
             <p className="text-zinc-600">{recipe.notes}</p>
           </section>
         )}
+
+        {recipe && (
+          <div className="flex items-center space-x-4 mb-4">
+            <label htmlFor="servings" className="text-sm font-medium text-gray-700 dark:text-gray-200">
+              Servings:
+            </label>
+            <select
+              id="servings"
+              value={servingMultiplier}
+              onChange={(e) => setServingMultiplier(Number(e.target.value))}
+              className="block w-24 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
+            >
+              {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((value) => (
+                <option key={value} value={value}>
+                  {value}x
+                </option>
+              ))}
+            </select>
+          </div>
+        )}
       </div>
 
       {/* Delete Confirmation Dialog */}
@@ -252,6 +387,39 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
         onClose={() => setShowEditModal(false)}
         onSave={handleSave}
         recipe={recipe}
+      />
+
+      {/* Confirmation Dialog for Grocery List */}
+      <ConfirmGroceryListDialog
+        isOpen={showGroceryListConfirm}
+        onClose={() => {
+          if (!addingToGroceryList) {
+            setShowGroceryListConfirm(false);
+          }
+        }}
+        onConfirmClear={handleClearAndAddToGroceryList}
+        onConfirmAdd={handleAddToExistingGroceryList}
+        isLoading={addingToGroceryList}
+      />
+      
+      {/* Toast notifications */}
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          duration: 5000,
+          loading: {
+            duration: Infinity
+          },
+          success: {
+            duration: 3000,
+          },
+          error: {
+            duration: 4000,
+          },
+          style: {
+            maxWidth: '500px',
+          },
+        }}
       />
     </div>
   );

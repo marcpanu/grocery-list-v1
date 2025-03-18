@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { ShoppingItem, Store } from '../types';
 import { StoreSelector } from './StoreSelector';
 import { updateItemInList, removeItemFromList, toggleItemCheck } from '../firebase/firestore';
@@ -51,6 +51,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
     try {
       await updateItemInList(listId, item.id, { store });
       onUpdate();
+      setShowStorePopover(false);
     } catch (err) {
       console.error('Failed to update store:', err);
     } finally {
@@ -203,12 +204,6 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
                     }`}
                   >
                     <span className="truncate">{item.name}</span>
-                    {item.store && (
-                      <span className="ml-2 inline-flex items-center px-1 py-0.5 rounded text-xs font-normal bg-violet-50 text-violet-700 whitespace-nowrap">
-                        <BuildingStorefrontIcon className="w-2.5 h-2.5 mr-0.5" />
-                        {item.store.name}
-                      </span>
-                    )}
                   </span>
                 )}
               </div>

@@ -6,7 +6,7 @@ import { AddItemModal } from './AddItemModal';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 
 // Since this is a single-user app, we'll use a constant ID
-const USER_ID = 'default-user';
+const USER_ID = 'default';
 
 interface ShoppingListProps {
   viewMode: ViewMode;
