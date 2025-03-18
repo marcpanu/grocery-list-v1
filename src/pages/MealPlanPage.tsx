@@ -14,6 +14,7 @@ import { Timestamp } from 'firebase/firestore';
 import { useRecipeImport } from '../hooks/useRecipeImport';
 import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
 import { DayDetails } from '../components/mealPlan/DayDetails';
+import { PageHeader } from '../components/PageHeader';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -123,6 +124,8 @@ const MealPlanPage: React.FC = () => {
 
   return (
     <div className="min-h-full bg-zinc-50">
+      <PageHeader title="Meal Planning" />
+
       <div className="container mx-auto px-4 py-8">
         {error && (
           <div className="mb-4 p-4 bg-red-50 text-red-700 rounded-lg">
@@ -134,40 +137,40 @@ const MealPlanPage: React.FC = () => {
             {success}
           </div>
         )}
-        
-        <h1 className="text-2xl font-bold text-gray-900 mb-8">Meal Planning</h1>
 
+        {/* Action Buttons */}
+        <div className="flex justify-end mb-6">
+          <div className="flex gap-4">
+            <button
+              onClick={() => setShowRecipeSearch(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
+            >
+              <BookOpenIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Add from Recipes</span>
+              <span className="sm:hidden">Add</span>
+            </button>
+            <button
+              onClick={() => setShowImportModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <PencilSquareIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Add New Recipe</span>
+              <span className="sm:hidden">New</span>
+            </button>
+            <button
+              onClick={() => setShowQuickAddModal(true)}
+              className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
+            >
+              <DocumentTextIcon className="w-5 h-5" />
+              <span className="hidden sm:inline">Quick Add</span>
+              <span className="sm:hidden">Quick</span>
+            </button>
+          </div>
+        </div>
+        
         {/* Weekly Calendar */}
         <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-8">
-          <div className="flex justify-between items-center mb-6">
-            <h2 className="text-lg font-semibold">Weekly Overview</h2>
-            <div className="flex gap-4">
-              <button
-                onClick={() => setShowRecipeSearch(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700"
-              >
-                <BookOpenIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Add from Recipes</span>
-                <span className="sm:hidden">Add</span>
-              </button>
-              <button
-                onClick={() => setShowImportModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                <PencilSquareIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Add New Recipe</span>
-                <span className="sm:hidden">New</span>
-              </button>
-              <button
-                onClick={() => setShowQuickAddModal(true)}
-                className="flex items-center gap-2 px-4 py-2 bg-white text-gray-700 border border-gray-300 rounded-lg hover:bg-gray-50"
-              >
-                <DocumentTextIcon className="w-5 h-5" />
-                <span className="hidden sm:inline">Quick Add</span>
-                <span className="sm:hidden">Quick</span>
-              </button>
-            </div>
-          </div>
+          <h2 className="text-lg font-semibold mb-6">Weekly Overview</h2>
           <WeeklyCalendarView
             mealPlans={mealPlans}
             isLoading={isLoading}
