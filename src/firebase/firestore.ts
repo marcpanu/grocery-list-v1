@@ -15,7 +15,10 @@ import {
   writeBatch,
   limit,
   setDoc,
-  arrayUnion
+  arrayUnion,
+  arrayRemove,
+  runTransaction,
+  serverTimestamp
 } from 'firebase/firestore';
 import { db } from './config';
 import { 
@@ -582,12 +585,12 @@ export const updateShoppingList = async (shoppingListId: string, shoppingListDat
 export const getUserPreferences = async (): Promise<UserPreferences | null> => {
   try {
     // Get the preferences document
-    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default-user');
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
     const docSnap = await getDoc(userPrefsDoc);
     
     // Default preferences if none exist
     const defaultPrefs: UserPreferences = {
-      id: 'default-user',
+      id: 'default',
       recipeViewMode: 'grid' as const,
       recipeSortBy: 'name' as const,
       recipeSortOrder: 'asc' as const,
@@ -721,7 +724,7 @@ export const deleteAllImages = async (): Promise<void> => {
 // Update user pantry items
 export const updatePantryItems = async (pantryItems: PantryItem[]): Promise<void> => {
   try {
-    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default-user');
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
     await updateDoc(userPrefsDoc, {
       pantryItems,
       lastUpdated: Timestamp.now()
@@ -735,7 +738,7 @@ export const updatePantryItems = async (pantryItems: PantryItem[]): Promise<void
 // Reset pantry items to default
 export const resetPantryItemsToDefault = async (): Promise<void> => {
   try {
-    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default-user');
+    const userPrefsDoc = doc(db, COLLECTIONS.USER_PREFERENCES, 'default');
     await updateDoc(userPrefsDoc, {
       pantryItems: DEFAULT_PANTRY_ITEMS,
       lastUpdated: Timestamp.now()
@@ -770,17 +773,30 @@ const isIngredientInPantry = (ingredientName: string, pantryItems: PantryItem[])
 export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingMultiplier: number = 1): Promise<void> => {
   try {
     // Get the user's shopping list
-    const userLists = await getUserShoppingLists('default-user');
+    const userLists = await getUserShoppingLists('default');
     if (userLists.length === 0) {
       throw new Error('No shopping list found');
     }
     
     const list = userLists[0];
+    console.log('User shopping list:', list);
     
     // Get user preferences to check for default store and pantry items
     const preferences = await getUserPreferences();
+    console.log('User preferences:', preferences);
     const defaultStoreId = preferences?.defaultStore || null;
-    const defaultStore = defaultStoreId ? list.stores.find((s: Store) => s.id === defaultStoreId) : undefined;
+    console.log('Default store ID:', defaultStoreId);
+    
+    // Fix: Find the store object by ID and ensure it's found before using it
+    let defaultStore = undefined;
+    if (defaultStoreId && list.stores) {
+      console.log('Available stores:', list.stores);
+      defaultStore = list.stores.find((s: Store) => s.id === defaultStoreId);
+      console.log('Default store found:', defaultStoreId, defaultStore); // Debug log
+    } else {
+      console.log('Default store not found or no stores available');
+    }
+    
     const pantryItems = preferences?.pantryItems || [];
     
     // Add each ingredient to the list
@@ -809,9 +825,11 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
         quantity: quantity,
         unit: ingredient.unit && ingredient.unit.length > 0 ? ingredient.unit : undefined,
         checked: false,
-        store: defaultStore,
+        store: defaultStore, // This should be the actual store object, not just the ID
         category: undefined
       };
+      
+      console.log('Adding item with store:', newItem.name, newItem.store); // Debug log
       
       await addItemToList(list.id, newItem);
     }
