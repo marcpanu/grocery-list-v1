@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { MealType } from '../../types/recipe';
+import { MealType, CUISINES, Ingredient, Instruction } from '../../types/recipe';
 import { Recipe } from '../../types/recipe';
 
 interface AddMealModalProps {
@@ -13,77 +13,190 @@ interface AddMealModalProps {
     type: MealType;
     days: string[];
     servings: number;
+    prepTime?: string;
+    cookTime?: string;
+    totalTime?: string;
+    ingredients?: Ingredient[];
+    instructions?: Instruction[];
+    notes?: string;
+    mealTypes?: string[];
+    cuisine?: string[];
+    rating?: number;
     recipeId?: string;
   }) => void;
   selectedRecipe?: Recipe;
   isLoading?: boolean;
+  isAddingToMealPlan?: boolean;
 }
 
-export const AddMealModal: React.FC<AddMealModalProps> = ({ 
-  isOpen, 
-  onClose, 
+export const AddMealModal: React.FC<AddMealModalProps> = ({
+  isOpen,
+  onClose,
   onAdd,
   selectedRecipe,
-  isLoading = false
+  isLoading = false,
+  isAddingToMealPlan = false
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [type, setType] = useState<MealType>('dinner');
-  const [selectedDays, setSelectedDays] = useState<string[]>([]);
-  const [servings, setServings] = useState(2);
-  const [error, setError] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: '',
+    description: '',
+    type: 'dinner' as MealType,
+    days: [] as string[],
+    servings: 2,
+    prepTime: '<30',
+    cookTime: '',
+    totalTime: '',
+    ingredients: [] as Ingredient[],
+    instructions: [] as Instruction[],
+    notes: '',
+    mealTypes: [] as string[],
+    cuisine: [] as string[],
+    rating: undefined as number | undefined
+  });
 
-  const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-  const mealTypes: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
+  const [error, setError] = useState<string | null>(null);
 
   // Reset form when modal opens/closes or selectedRecipe changes
   useEffect(() => {
     if (isOpen && selectedRecipe) {
-      setName(selectedRecipe.name);
-      setDescription(selectedRecipe.description || '');
-      // Ensure we get a valid meal type from the recipe
-      const recipeMealType = selectedRecipe.mealTypes[0];
-      if (recipeMealType && mealTypes.includes(recipeMealType as MealType)) {
-        setType(recipeMealType as MealType);
-      } else {
-        setType('dinner'); // Default to dinner if no valid meal type
-      }
-      setServings(selectedRecipe.servings);
+      setFormData({
+        name: selectedRecipe.name,
+        description: selectedRecipe.description || '',
+        type: selectedRecipe.mealTypes[0] as MealType || 'dinner',
+        days: [],
+        servings: selectedRecipe.servings,
+        prepTime: selectedRecipe.prepTime,
+        cookTime: selectedRecipe.cookTime || '',
+        totalTime: selectedRecipe.totalTime || '',
+        ingredients: [...selectedRecipe.ingredients],
+        instructions: [...selectedRecipe.instructions],
+        notes: selectedRecipe.notes || '',
+        mealTypes: [...selectedRecipe.mealTypes],
+        cuisine: selectedRecipe.cuisine || [],
+        rating: selectedRecipe.rating
+      });
     } else if (!isOpen) {
-      // Only reset when modal closes
-      setName('');
-      setDescription('');
-      setType('dinner');
-      setServings(2);
-      setSelectedDays([]);
+      setFormData({
+        name: '',
+        description: '',
+        type: 'dinner',
+        days: [],
+        servings: 2,
+        prepTime: '<30',
+        cookTime: '',
+        totalTime: '',
+        ingredients: [],
+        instructions: [],
+        notes: '',
+        mealTypes: [],
+        cuisine: [],
+        rating: undefined
+      });
       setError(null);
     }
   }, [isOpen, selectedRecipe]);
 
+  const addIngredient = () => {
+    setFormData(prev => ({
+      ...prev,
+      ingredients: [...prev.ingredients, { name: '', quantity: '', unit: '', notes: '' }]
+    }));
+  };
+
+  const removeIngredient = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      ingredients: prev.ingredients.filter((_, i) => i !== index)
+    }));
+  };
+
+  const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number) => {
+    const newIngredients = [...formData.ingredients];
+    newIngredients[index] = {
+      ...newIngredients[index],
+      [field]: value
+    };
+    setFormData(prev => ({ ...prev, ingredients: newIngredients }));
+  };
+
+  const addInstruction = () => {
+    setFormData(prev => ({
+      ...prev,
+      instructions: [...prev.instructions, { order: prev.instructions.length + 1, instruction: '' }]
+    }));
+  };
+
+  const removeInstruction = (index: number) => {
+    setFormData(prev => ({
+      ...prev,
+      instructions: prev.instructions.filter((_, i) => i !== index).map((inst, i) => ({
+        ...inst,
+        order: i + 1
+      }))
+    }));
+  };
+
+  const handleInstructionChange = (index: number, value: string) => {
+    const newInstructions = [...formData.instructions];
+    newInstructions[index] = {
+      ...newInstructions[index],
+      instruction: value
+    };
+    setFormData(prev => ({ ...prev, instructions: newInstructions }));
+  };
+
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
-    // Validate days selection
-    if (selectedDays.length === 0) {
+    // Only validate days selection when adding to meal plan
+    if (isAddingToMealPlan && formData.days.length === 0) {
       setError('Please select at least one day');
       return;
     }
 
     // Validate servings
-    if (servings < 1) {
+    if (formData.servings < 1) {
       setError('Servings must be at least 1');
       return;
     }
 
     setError(null);
-    onAdd({
-      name,
-      description,
-      type,
-      days: selectedDays,
-      servings,
-      recipeId: selectedRecipe?.id,
-    });
+
+    // When creating a new recipe (not adding an existing one to meal plan)
+    if (!selectedRecipe) {
+      // Only include recipe fields if we have ingredients or instructions
+      const hasRecipeContent = formData.ingredients.length > 0 || formData.instructions.length > 0;
+      
+      onAdd({
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+        days: isAddingToMealPlan ? formData.days : [],
+        servings: formData.servings,
+        // Only include recipe fields if we have content
+        ...(hasRecipeContent && {
+          prepTime: formData.prepTime,
+          cookTime: formData.cookTime || undefined,
+          totalTime: formData.totalTime || undefined,
+          ingredients: formData.ingredients,
+          instructions: formData.instructions,
+          notes: formData.notes || undefined,
+          mealTypes: formData.mealTypes.length > 0 ? formData.mealTypes : [formData.type],
+          cuisine: formData.cuisine.length > 0 ? formData.cuisine : undefined,
+          rating: formData.rating
+        })
+      });
+    } else {
+      // When adding an existing recipe to meal plan, only include meal fields
+      onAdd({
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+        days: formData.days,
+        servings: formData.servings,
+        recipeId: selectedRecipe.id
+      });
+    }
   };
 
   return (
@@ -91,14 +204,14 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       
       <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-lg w-full rounded-lg bg-white p-6">
+        <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 max-h-[90vh] overflow-y-auto">
           <div className="flex justify-between items-center mb-4">
             <Dialog.Title className="text-lg font-semibold">
               {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Meal'}
             </Dialog.Title>
             <button 
               onClick={onClose} 
-              className="text-gray-500 hover:text-gray-700"
+              className="text-zinc-400 hover:text-zinc-500"
               disabled={isLoading}
             >
               <XMarkIcon className="w-6 h-6" />
@@ -111,122 +224,334 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
-            {selectedRecipe && (
-              <div className="bg-violet-50 p-4 rounded-lg mb-4">
-                <h3 className="font-medium text-violet-900">Selected Recipe</h3>
-                <p className="text-violet-800">{selectedRecipe.name}</p>
-                {selectedRecipe.description && (
-                  <p className="text-sm text-violet-700 mt-1">{selectedRecipe.description}</p>
-                )}
+          {selectedRecipe && (
+            <div className="bg-violet-50 p-4 rounded-lg mb-4">
+              <h3 className="font-medium text-violet-900">Selected Recipe</h3>
+              <p className="text-violet-800">{selectedRecipe.name}</p>
+              {selectedRecipe.description && (
+                <p className="text-sm text-violet-700 mt-1">{selectedRecipe.description}</p>
+              )}
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-6">
+            {/* Basic Information */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="name" className="block text-sm font-medium text-zinc-700">
+                  Recipe Name
+                </label>
+                <input
+                  type="text"
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                  className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  required
+                  disabled={!!selectedRecipe || isLoading}
+                />
               </div>
-            )}
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Meal Name
-              </label>
-              <input
-                type="text"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                required
-                disabled={!!selectedRecipe || isLoading}
-              />
-            </div>
+              <div>
+                <label htmlFor="description" className="block text-sm font-medium text-zinc-700">
+                  Description
+                </label>
+                <textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  disabled={!!selectedRecipe || isLoading}
+                />
+              </div>
 
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Description (Optional)
-              </label>
-              <textarea
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                rows={3}
-                disabled={!!selectedRecipe || isLoading}
-              />
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Meal Type
-              </label>
-              <select
-                value={type}
-                onChange={(e) => setType(e.target.value as MealType)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                disabled={isLoading}
-              >
-                {mealTypes.map((mealType) => (
-                  <option key={mealType} value={mealType}>
-                    {mealType.charAt(0).toUpperCase() + mealType.slice(1)}
-                  </option>
-                ))}
-              </select>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Days
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {daysOfWeek.map((day) => (
-                  <label 
-                    key={day} 
-                    className={`flex items-center gap-1 p-2 rounded ${
-                      selectedDays.includes(day) 
-                        ? 'bg-violet-100 text-violet-900' 
-                        : 'hover:bg-gray-100'
-                    }`}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={selectedDays.includes(day)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setSelectedDays([...selectedDays, day]);
-                        } else {
-                          setSelectedDays(selectedDays.filter((d) => d !== day));
-                        }
-                      }}
-                      className="rounded text-violet-600"
-                      disabled={isLoading}
-                    />
-                    <span className="text-sm">{day}</span>
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div>
+                  <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
+                    Prep Time
                   </label>
+                  <select
+                    id="prepTime"
+                    value={formData.prepTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    disabled={isLoading}
+                  >
+                    <option value="<30">Less than 30 minutes</option>
+                    <option value="30-60">30-60 minutes</option>
+                    <option value="60+">More than 60 minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
+                    Cook Time
+                  </label>
+                  <input
+                    type="text"
+                    id="cookTime"
+                    value={formData.cookTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    disabled={isLoading}
+                  />
+                </div>
+
+                <div>
+                  <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
+                    Servings
+                  </label>
+                  <input
+                    type="number"
+                    id="servings"
+                    value={formData.servings}
+                    onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
+                    min="1"
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    required
+                    disabled={isLoading}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Ingredients */}
+            <div>
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-zinc-900">Ingredients</h3>
+                <button
+                  type="button"
+                  onClick={addIngredient}
+                  className="text-sm text-violet-600 hover:text-violet-700"
+                  disabled={isLoading}
+                >
+                  + Add Ingredient
+                </button>
+              </div>
+              <div className="space-y-4">
+                {formData.ingredients.map((ingredient, index) => (
+                  <div key={index} className="flex gap-4 items-start">
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={ingredient.name}
+                        onChange={(e) => handleIngredientChange(index, 'name', e.target.value)}
+                        placeholder="Ingredient name"
+                        className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <input
+                        type="text"
+                        value={ingredient.quantity}
+                        onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
+                        placeholder="Amount"
+                        className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="w-24">
+                      <input
+                        type="text"
+                        value={ingredient.unit}
+                        onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
+                        placeholder="Unit"
+                        className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <div className="flex-1">
+                      <input
+                        type="text"
+                        value={ingredient.notes}
+                        onChange={(e) => handleIngredientChange(index, 'notes', e.target.value)}
+                        placeholder="Notes (optional)"
+                        className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeIngredient(index)}
+                      className="text-red-500 hover:text-red-700"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
                 ))}
               </div>
             </div>
 
+            {/* Instructions */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Servings
-              </label>
-              <input
-                type="number"
-                min="1"
-                value={servings}
-                onChange={(e) => setServings(parseInt(e.target.value))}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                disabled={isLoading}
-              />
+              <div className="flex justify-between items-center mb-4">
+                <h3 className="text-lg font-medium text-zinc-900">Instructions</h3>
+                <button
+                  type="button"
+                  onClick={addInstruction}
+                  className="text-sm text-violet-600 hover:text-violet-700"
+                  disabled={isLoading}
+                >
+                  + Add Step
+                </button>
+              </div>
+              <div className="space-y-4">
+                {formData.instructions.map((instruction, index) => (
+                  <div key={index} className="flex gap-4">
+                    <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 font-medium">
+                      {index + 1}
+                    </div>
+                    <div className="flex-1">
+                      <textarea
+                        value={instruction.instruction}
+                        onChange={(e) => handleInstructionChange(index, e.target.value)}
+                        placeholder="Step instruction"
+                        rows={2}
+                        className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        disabled={isLoading}
+                      />
+                    </div>
+                    <button
+                      type="button"
+                      onClick={() => removeInstruction(index)}
+                      className="text-red-500 hover:text-red-700"
+                      disabled={isLoading}
+                    >
+                      ×
+                    </button>
+                  </div>
+                ))}
+              </div>
             </div>
 
-            <div className="flex justify-end gap-3 mt-6">
+            {/* Additional Information */}
+            <div className="space-y-4">
+              <div>
+                <label htmlFor="notes" className="block text-sm font-medium text-zinc-700">
+                  Notes
+                </label>
+                <textarea
+                  id="notes"
+                  value={formData.notes}
+                  onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+                  rows={3}
+                  className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Meal Types
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
+                    <label key={type} className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.mealTypes.includes(type)}
+                        onChange={(e) => {
+                          const newTypes = e.target.checked
+                            ? [...formData.mealTypes, type]
+                            : formData.mealTypes.filter(t => t !== type);
+                          setFormData(prev => ({ ...prev, mealTypes: newTypes }));
+                        }}
+                        className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                        disabled={isLoading}
+                      />
+                      <span className="ml-2 text-sm text-zinc-700 capitalize">{type}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label className="block text-sm font-medium text-zinc-700 mb-2">
+                  Cuisine
+                </label>
+                <div className="flex flex-wrap gap-2">
+                  {CUISINES.map((cuisine) => (
+                    <label key={cuisine} className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.cuisine.includes(cuisine)}
+                        onChange={(e) => {
+                          const newCuisines = e.target.checked
+                            ? [...formData.cuisine, cuisine]
+                            : formData.cuisine.filter(c => c !== cuisine);
+                          setFormData(prev => ({ ...prev, cuisine: newCuisines }));
+                        }}
+                        className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                        disabled={isLoading}
+                      />
+                      <span className="ml-2 text-sm text-zinc-700">{cuisine}</span>
+                    </label>
+                  ))}
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="rating" className="block text-sm font-medium text-zinc-700">
+                  Rating (1-5)
+                </label>
+                <input
+                  type="number"
+                  id="rating"
+                  value={formData.rating || ''}
+                  onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value ? parseInt(e.target.value) : undefined }))}
+                  min="1"
+                  max="5"
+                  className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  disabled={isLoading}
+                />
+              </div>
+
+              {/* Only show days selection when adding to meal plan */}
+              {isAddingToMealPlan && (
+                <div>
+                  <label className="block text-sm font-medium text-zinc-700 mb-2">
+                    Days
+                  </label>
+                  <div className="grid grid-cols-4 gap-4">
+                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
+                      <label key={day} className="inline-flex items-center">
+                        <input
+                          type="checkbox"
+                          checked={formData.days.includes(day)}
+                          onChange={(e) => {
+                            const newDays = e.target.checked
+                              ? [...formData.days, day]
+                              : formData.days.filter(d => d !== day);
+                            setFormData(prev => ({ ...prev, days: newDays }));
+                          }}
+                          className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                          disabled={isLoading}
+                        />
+                        <span className="ml-2 text-sm text-zinc-700">{day}</span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            {/* Form Actions */}
+            <div className="flex justify-end gap-4">
               <button
                 type="button"
                 onClick={onClose}
-                className="px-4 py-2 text-gray-700 hover:text-gray-900 disabled:opacity-50"
+                className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
                 disabled={isLoading}
               >
                 Cancel
               </button>
               <button
                 type="submit"
-                className="px-4 py-2 bg-violet-600 text-white rounded-lg hover:bg-violet-700 disabled:opacity-50 disabled:cursor-not-allowed flex items-center gap-2"
                 disabled={isLoading}
+                className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50"
               >
                 {isLoading ? (
                   <>

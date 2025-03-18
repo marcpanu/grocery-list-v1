@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
-import { Recipe } from '../types/recipe';
+import { Recipe, Ingredient, Instruction } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal } from '../components/mealPlan/AddMealModal';
@@ -15,8 +15,21 @@ import { useRecipeImport } from '../hooks/useRecipeImport';
 import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
 import { DayDetails } from '../components/mealPlan/DayDetails';
 import { PageHeader } from '../components/PageHeader';
+import { addRecipe } from '../firebase/firestore';
 
 const DEFAULT_USER_ID = 'default';
+
+interface AddMealData extends Omit<Meal, 'id' | 'createdAt'> {
+  ingredients?: Ingredient[];
+  instructions?: Instruction[];
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  notes?: string;
+  cuisine?: string[];
+  rating?: number;
+  mealTypes?: string[];
+}
 
 const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
@@ -29,6 +42,8 @@ const MealPlanPage: React.FC = () => {
   const [success, setSuccess] = useState<string | null>(null);
   const [selectedDay, setSelectedDay] = useState<string>('Sun');
   const [showActionModal, setShowActionModal] = useState(false);
+  const [ingredientCount, setIngredientCount] = useState(1);
+  const [instructionCount, setInstructionCount] = useState(1);
 
   // Use the recipe import hook
   const {
@@ -69,23 +84,57 @@ const MealPlanPage: React.FC = () => {
     setShowAddMealModal(true);
   };
 
-  const handleAddMeal = async (meal: Omit<Meal, 'id' | 'createdAt'>) => {
+  const handleAddMeal = async (meal: AddMealData) => {
     try {
       setError(null);
       setSuccess(null);
       setIsLoading(true);
       const now = Timestamp.now();
+
+      // If we don't have a selectedRecipe, we need to create one first
+      let recipeId = selectedRecipe?.id;
+      if (!selectedRecipe && meal.ingredients && meal.ingredients.length > 0) {
+        const newRecipe = await addRecipe({
+          name: meal.name,
+          description: meal.description,
+          prepTime: meal.prepTime || '<30',
+          cookTime: meal.cookTime,
+          totalTime: meal.totalTime,
+          servings: meal.servings,
+          ingredients: meal.ingredients.map(ing => ({
+            ...ing,
+            unit: ing.unit,
+            notes: ing.notes
+          })),
+          instructions: meal.instructions || [],
+          imageUrl: undefined,
+          notes: meal.notes,
+          mealTypes: meal.mealTypes || [meal.type],
+          cuisine: meal.cuisine,
+          rating: meal.rating,
+          dateAdded: now.toDate(),
+          isFavorite: false
+        });
+        recipeId = newRecipe.id;
+      }
+
+      // Create the meal plan entry
       const mealPlanData = {
         userId: DEFAULT_USER_ID,
         meals: [{
-          ...meal,
           id: crypto.randomUUID(),
-          createdAt: now,
-          recipeId: selectedRecipe?.id,
+          name: meal.name,
+          description: meal.description,
+          type: meal.type,
+          days: meal.days,
+          servings: meal.servings,
+          recipeId,
+          createdAt: now
         }],
         createdAt: now,
         updatedAt: now,
       };
+
       await addMealPlan(DEFAULT_USER_ID, mealPlanData);
       
       // Add a small delay to ensure Firestore has processed the update
@@ -240,6 +289,7 @@ const MealPlanPage: React.FC = () => {
           onAdd={handleAddMeal}
           selectedRecipe={selectedRecipe}
           isLoading={isLoading}
+          isAddingToMealPlan={true}
         />
 
         <RecipeImportModal
@@ -276,67 +326,198 @@ const MealPlanPage: React.FC = () => {
                   description: formData.get('description') as string,
                   type: formData.get('type') as MealType,
                   servings: parseInt(formData.get('servings') as string),
+                  prepTime: formData.get('prepTime') as string,
+                  ingredients: Array.from({ length: ingredientCount }, (_, i) => ({
+                    name: formData.get(`ingredient-${i}-name`) as string,
+                    quantity: formData.get(`ingredient-${i}-quantity`) as string,
+                    unit: formData.get(`ingredient-${i}-unit`) as string,
+                  })).filter(ing => ing.name.trim() !== ''),
+                  instructions: Array.from({ length: instructionCount }, (_, i) => ({
+                    order: i + 1,
+                    instruction: formData.get(`instruction-${i}`) as string,
+                  })).filter(inst => inst.instruction.trim() !== ''),
                   days: Array.from(formData.getAll('days')).map(value => value.toString()),
                 };
                 handleAddMeal(meal);
               }}>
-                <div className="space-y-4">
-                  <div>
-                    <label htmlFor="name" className="block text-sm font-medium text-gray-700">
-                      Name
-                    </label>
-                    <input
-                      type="text"
-                      name="name"
-                      id="name"
-                      required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    />
+                <div className="space-y-6">
+                  {/* Basic Information */}
+                  <div className="space-y-4">
+                    <div>
+                      <label htmlFor="name" className="block text-sm font-medium text-zinc-700">
+                        Meal Name
+                      </label>
+                      <input
+                        type="text"
+                        name="name"
+                        id="name"
+                        required
+                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div>
+                      <label htmlFor="description" className="block text-sm font-medium text-zinc-700">
+                        Description
+                      </label>
+                      <textarea
+                        name="description"
+                        id="description"
+                        rows={3}
+                        className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      />
+                    </div>
+
+                    <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      <div>
+                        <label htmlFor="type" className="block text-sm font-medium text-zinc-700">
+                          Type
+                        </label>
+                        <select
+                          name="type"
+                          id="type"
+                          required
+                          className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        >
+                          <option value="breakfast">Breakfast</option>
+                          <option value="lunch">Lunch</option>
+                          <option value="dinner">Dinner</option>
+                          <option value="snack">Snack</option>
+                          <option value="dessert">Dessert</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
+                          Prep Time
+                        </label>
+                        <select
+                          name="prepTime"
+                          id="prepTime"
+                          className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        >
+                          <option value="<30">Less than 30 minutes</option>
+                          <option value="30-60">30-60 minutes</option>
+                          <option value="60+">More than 60 minutes</option>
+                        </select>
+                      </div>
+
+                      <div>
+                        <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
+                          Servings
+                        </label>
+                        <input
+                          type="number"
+                          name="servings"
+                          id="servings"
+                          min="1"
+                          defaultValue="1"
+                          className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                        />
+                      </div>
+                    </div>
                   </div>
+
+                  {/* Ingredients */}
                   <div>
-                    <label htmlFor="description" className="block text-sm font-medium text-gray-700">
-                      Description
-                    </label>
-                    <textarea
-                      name="description"
-                      id="description"
-                      rows={2}
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    />
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-zinc-900">Ingredients</h3>
+                      <button
+                        type="button"
+                        onClick={() => setIngredientCount(prev => prev + 1)}
+                        className="text-sm text-violet-600 hover:text-violet-700"
+                      >
+                        + Add Ingredient
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {Array.from({ length: ingredientCount }, (_, index) => (
+                        <div key={index} className="flex gap-4 items-start">
+                          <div className="flex-1">
+                            <input
+                              type="text"
+                              name={`ingredient-${index}-name`}
+                              placeholder="Ingredient name"
+                              className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                            />
+                          </div>
+                          <div className="w-24">
+                            <input
+                              type="text"
+                              name={`ingredient-${index}-quantity`}
+                              placeholder="Amount"
+                              className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                            />
+                          </div>
+                          <div className="w-24">
+                            <input
+                              type="text"
+                              name={`ingredient-${index}-unit`}
+                              placeholder="Unit"
+                              className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                            />
+                          </div>
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setIngredientCount(prev => prev - 1);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Instructions */}
                   <div>
-                    <label htmlFor="type" className="block text-sm font-medium text-gray-700">
-                      Type
-                    </label>
-                    <select
-                      name="type"
-                      id="type"
-                      required
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    >
-                      <option value="breakfast">Breakfast</option>
-                      <option value="lunch">Lunch</option>
-                      <option value="dinner">Dinner</option>
-                      <option value="snack">Snack</option>
-                      <option value="dessert">Dessert</option>
-                    </select>
+                    <div className="flex justify-between items-center mb-4">
+                      <h3 className="text-lg font-medium text-zinc-900">Instructions</h3>
+                      <button
+                        type="button"
+                        onClick={() => setInstructionCount(prev => prev + 1)}
+                        className="text-sm text-violet-600 hover:text-violet-700"
+                      >
+                        + Add Step
+                      </button>
+                    </div>
+                    <div className="space-y-4">
+                      {Array.from({ length: instructionCount }, (_, index) => (
+                        <div key={index} className="flex gap-4 items-start">
+                          <span className="flex items-center text-sm text-zinc-500 w-8">
+                            {index + 1}.
+                          </span>
+                          <div className="flex-1">
+                            <textarea
+                              name={`instruction-${index}`}
+                              rows={2}
+                              placeholder={`Step ${index + 1}...`}
+                              className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                            />
+                          </div>
+                          {index > 0 && (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setInstructionCount(prev => prev - 1);
+                              }}
+                              className="text-red-500 hover:text-red-700"
+                            >
+                              ×
+                            </button>
+                          )}
+                        </div>
+                      ))}
+                    </div>
                   </div>
+
+                  {/* Days Selection */}
                   <div>
-                    <label htmlFor="servings" className="block text-sm font-medium text-gray-700">
-                      Servings
-                    </label>
-                    <input
-                      type="number"
-                      name="servings"
-                      id="servings"
-                      required
-                      min="1"
-                      defaultValue="1"
-                      className="mt-1 block w-full rounded-md border-gray-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-2">
+                    <label className="block text-sm font-medium text-zinc-700 mb-2">
                       Days
                     </label>
                     <div className="grid grid-cols-4 gap-4">
@@ -346,19 +527,20 @@ const MealPlanPage: React.FC = () => {
                             type="checkbox"
                             name="days"
                             value={day}
-                            className="rounded border-gray-300 text-violet-600 focus:ring-violet-500"
+                            className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
                           />
-                          <span className="text-sm text-gray-700">{day}</span>
+                          <span className="text-sm text-zinc-700">{day}</span>
                         </label>
                       ))}
                     </div>
                   </div>
                 </div>
+
                 <div className="mt-6 flex justify-end gap-3">
                   <button
                     type="button"
                     onClick={() => setShowQuickAddModal(false)}
-                    className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+                    className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
                   >
                     Cancel
                   </button>
