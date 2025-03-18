@@ -1,6 +1,6 @@
 import { useState, useEffect } from 'react';
 import { Recipe } from '../../types/recipe';
-import { getRecipe, deleteRecipe } from '../../firebase/firestore';
+import { getRecipe, deleteRecipe, toggleRecipeFavorite } from '../../firebase/firestore';
 import { 
   ClockIcon, 
   HeartIcon,
@@ -10,11 +10,19 @@ import {
   TrashIcon,
   LinkIcon,
   ShareIcon,
-  VideoCameraIcon
+  VideoCameraIcon,
+  ShoppingCartIcon
 } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { RecipeEditModal } from './RecipeEditModal';
+import { ConfirmGroceryListDialog } from '../common/ConfirmGroceryListDialog';
+import { toast, Toaster } from 'react-hot-toast';
+import {
+  addRecipeIngredientsToGroceryList,
+  getUserShoppingLists,
+  updateShoppingList
+} from '../../firebase/firestore';
 
 interface RecipeDetailProps {
   recipeId: string;
@@ -27,6 +35,8 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
+  const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
     loadRecipe();
@@ -53,9 +63,80 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     }
   };
 
+  const handleToggleFavorite = async () => {
+    if (!recipe) return;
+    try {
+      await toggleRecipeFavorite(recipe.id, !recipe.isFavorite);
+      await loadRecipe(); // Reload the recipe to show updated favorite status
+    } catch (error) {
+      console.error('Failed to update favorite status:', error);
+    }
+  };
+
   const handleSave = async () => {
     setShowEditModal(false);
     await loadRecipe(); // Reload the recipe to show updated data
+  };
+
+  const handleAddToGroceryList = async () => {
+    if (!recipe) return;
+
+    try {
+      // Check if user already has items in the grocery list
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0 && userLists[0].items.length > 0) {
+        // Show confirmation dialog
+        setShowGroceryListConfirm(true);
+      } else {
+        // No items in list, just add ingredients
+        await addRecipeIngredientsToGroceryList(recipe);
+        toast.success('Recipe ingredients added to your grocery list!');
+      }
+    } catch (error) {
+      console.error('Failed to add ingredients to grocery list:', error);
+      toast.error('Failed to add ingredients to grocery list');
+    }
+  };
+
+  const handleClearAndAddToGroceryList = async () => {
+    if (!recipe) return;
+    
+    try {
+      // Clear the existing list and add the new ingredients
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0) {
+        const list = userLists[0];
+        
+        // Clear all items
+        await updateShoppingList(list.id, { items: [] });
+        
+        // Add the new ingredients
+        await addRecipeIngredientsToGroceryList(recipe);
+        toast.success('Grocery list cleared and new ingredients added!');
+      }
+    } catch (error) {
+      console.error('Failed to clear and add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Close the dialog
+      setShowGroceryListConfirm(false);
+    }
+  };
+
+  const handleAddToExistingGroceryList = async () => {
+    if (!recipe) return;
+    
+    try {
+      // Add to existing list
+      await addRecipeIngredientsToGroceryList(recipe);
+      toast.success('Ingredients added to your grocery list!');
+    } catch (error) {
+      console.error('Failed to add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Close the dialog
+      setShowGroceryListConfirm(false);
+    }
   };
 
   if (isLoading) {
@@ -106,6 +187,15 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
 
         {/* Action Buttons */}
         <div className="absolute top-4 right-4 flex gap-2">
+          {/* Add to Grocery List Button */}
+          <button
+            onClick={handleAddToGroceryList}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+            title="Add to grocery list"
+          >
+            <ShoppingCartIcon className="w-5 h-5 text-zinc-600 hover:text-violet-600" />
+          </button>
+
           {/* Edit Button */}
           <button
             onClick={() => setShowEditModal(true)}
@@ -123,7 +213,10 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
           </button>
 
           {/* Favorite Button */}
-          <button className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200">
+          <button
+            onClick={handleToggleFavorite}
+            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+          >
             {recipe.isFavorite ? (
               <HeartSolid className="w-5 h-5 text-violet-600" />
             ) : (
@@ -253,6 +346,17 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
         onSave={handleSave}
         recipe={recipe}
       />
+
+      {/* Confirmation Dialog for Grocery List */}
+      <ConfirmGroceryListDialog
+        isOpen={showGroceryListConfirm}
+        onClose={() => setShowGroceryListConfirm(false)}
+        onConfirmClear={handleClearAndAddToGroceryList}
+        onConfirmAdd={handleAddToExistingGroceryList}
+      />
+      
+      {/* Toast notifications */}
+      <Toaster position="bottom-center" />
     </div>
   );
 }; 

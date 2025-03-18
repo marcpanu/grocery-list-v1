@@ -18,7 +18,11 @@ import {
   getUserPreferences,
   updateUserPreferences,
   deleteRecipe,
-  addRecipe
+  addRecipe,
+  getRecipe,
+  getUserShoppingLists,
+  addRecipeIngredientsToGroceryList,
+  updateShoppingList
 } from '../../firebase/firestore';
 import { UserPreferences } from '../../types';
 import { RecipeImportModal } from './RecipeImportModal';
@@ -27,6 +31,8 @@ import ConfirmDialog from '../common/ConfirmDialog';
 import { useRecipeImport } from '../../hooks/useRecipeImport';
 import { AddMealModal } from '../mealPlan/AddMealModal';
 import { AddMealData } from '../mealPlan/AddMealModal';
+import { toast, Toaster } from 'react-hot-toast';
+import { ConfirmGroceryListDialog } from '../common/ConfirmGroceryListDialog';
 
 interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
@@ -50,6 +56,8 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
+  const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
+  const [pendingRecipeForGroceryList, setPendingRecipeForGroceryList] = useState<string | null>(null);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -257,6 +265,87 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       console.error('Failed to add recipe:', error);
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleAddToGroceryList = async (recipeId: string) => {
+    try {
+      // Get the recipe details
+      const recipe = await getRecipe(recipeId);
+      if (!recipe) {
+        console.error('Recipe not found');
+        return;
+      }
+
+      // Check if user already has items in the grocery list
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0 && userLists[0].items.length > 0) {
+        // Show confirmation dialog
+        setPendingRecipeForGroceryList(recipeId);
+        setShowGroceryListConfirm(true);
+      } else {
+        // No items in list, just add ingredients
+        await addRecipeIngredientsToGroceryList(recipe);
+        toast.success('Recipe ingredients added to your grocery list!');
+      }
+    } catch (error) {
+      console.error('Failed to add ingredients to grocery list:', error);
+      toast.error('Failed to add ingredients to grocery list');
+    }
+  };
+
+  const handleClearAndAddToGroceryList = async () => {
+    if (!pendingRecipeForGroceryList) return;
+    
+    try {
+      const recipe = await getRecipe(pendingRecipeForGroceryList);
+      if (!recipe) {
+        console.error('Recipe not found');
+        return;
+      }
+      
+      // Clear the existing list and add the new ingredients
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0) {
+        const list = userLists[0];
+        
+        // Clear all items
+        await updateShoppingList(list.id, { items: [] });
+        
+        // Add the new ingredients
+        await addRecipeIngredientsToGroceryList(recipe);
+        toast.success('Grocery list cleared and new ingredients added!');
+      }
+    } catch (error) {
+      console.error('Failed to clear and add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Close the dialog and reset the pending recipe
+      setShowGroceryListConfirm(false);
+      setPendingRecipeForGroceryList(null);
+    }
+  };
+
+  const handleAddToExistingGroceryList = async () => {
+    if (!pendingRecipeForGroceryList) return;
+    
+    try {
+      const recipe = await getRecipe(pendingRecipeForGroceryList);
+      if (!recipe) {
+        console.error('Recipe not found');
+        return;
+      }
+      
+      // Add to existing list
+      await addRecipeIngredientsToGroceryList(recipe);
+      toast.success('Ingredients added to your grocery list!');
+    } catch (error) {
+      console.error('Failed to add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Close the dialog and reset the pending recipe
+      setShowGroceryListConfirm(false);
+      setPendingRecipeForGroceryList(null);
     }
   };
 
@@ -518,6 +607,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
                 onDelete={handleDeleteRecipe}
                 onClick={onRecipeSelect}
                 view={viewMode}
+                onAddToGroceryList={handleAddToGroceryList}
               />
             ))}
           </div>
@@ -531,6 +621,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
                 onDelete={handleDeleteRecipe}
                 onClick={onRecipeSelect}
                 view={viewMode}
+                onAddToGroceryList={handleAddToGroceryList}
               />
             ))}
           </div>
@@ -577,6 +668,20 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         isLoading={isLoading}
         isAddingToMealPlan={false}
       />
+
+      {/* Confirmation Dialog for Grocery List */}
+      <ConfirmGroceryListDialog
+        isOpen={showGroceryListConfirm}
+        onClose={() => {
+          setShowGroceryListConfirm(false);
+          setPendingRecipeForGroceryList(null);
+        }}
+        onConfirmClear={handleClearAndAddToGroceryList}
+        onConfirmAdd={handleAddToExistingGroceryList}
+      />
+      
+      {/* Toast notifications */}
+      <Toaster position="bottom-center" />
     </div>
   );
 }; 

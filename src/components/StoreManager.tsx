@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { addStore, getStores, deleteStore, reorderStores } from '../firebase/firestore';
+import { addStore, getStores, deleteStore, reorderStores, getUserPreferences, updateUserPreferences } from '../firebase/firestore';
 import { Store } from '../types';
 
 export const StoreManager: React.FC = () => {
@@ -8,18 +8,31 @@ export const StoreManager: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [defaultStore, setDefaultStore] = useState<string | null>(null);
 
   useEffect(() => {
-    loadStores();
+    loadData();
   }, []);
 
-  const loadStores = async () => {
+  const loadData = async () => {
     try {
       const fetchedStores = await getStores();
       setStores(fetchedStores);
+
+      // Get user preferences to check for default store
+      const preferences = await getUserPreferences();
+      if (preferences && preferences.defaultStore) {
+        setDefaultStore(preferences.defaultStore);
+      } else {
+        // If no default store is set and we have stores, set the first one as default
+        if (fetchedStores.length > 0) {
+          setDefaultStore(fetchedStores[0].id);
+          await updateUserPreferences({ defaultStore: fetchedStores[0].id });
+        }
+      }
     } catch (err) {
-      console.error('Failed to load stores:', err);
-      setError('Failed to load stores');
+      console.error('Failed to load data:', err);
+      setError('Failed to load data');
     } finally {
       setIsLoading(false);
     }
@@ -38,9 +51,16 @@ export const StoreManager: React.FC = () => {
         order: stores.length,
         isActive: true
       };
-      await addStore(newStore);
+      const addedStore = await addStore(newStore);
+      
+      // If this is the first store, set it as default
+      if (stores.length === 0) {
+        setDefaultStore(addedStore.id);
+        await updateUserPreferences({ defaultStore: addedStore.id });
+      }
+      
       setNewStoreName('');
-      loadStores();
+      loadData();
     } catch (err) {
       setError('Failed to add store');
       console.error(err);
@@ -49,10 +69,33 @@ export const StoreManager: React.FC = () => {
     }
   };
 
+  const handleSetDefaultStore = async (storeId: string) => {
+    try {
+      setDefaultStore(storeId);
+      await updateUserPreferences({ defaultStore: storeId });
+    } catch (err) {
+      setError('Failed to set default store');
+      console.error(err);
+    }
+  };
+
   const handleDeleteStore = async (storeId: string) => {
     try {
       await deleteStore(storeId);
-      loadStores();
+      
+      // If we're deleting the default store, update the default
+      if (defaultStore === storeId) {
+        const remainingStores = stores.filter(store => store.id !== storeId);
+        if (remainingStores.length > 0) {
+          setDefaultStore(remainingStores[0].id);
+          await updateUserPreferences({ defaultStore: remainingStores[0].id });
+        } else {
+          setDefaultStore(null);
+          await updateUserPreferences({ defaultStore: null });
+        }
+      }
+      
+      loadData();
     } catch (err) {
       setError('Failed to delete store');
       console.error(err);
@@ -77,7 +120,7 @@ export const StoreManager: React.FC = () => {
     } catch (err) {
       setError('Failed to reorder stores');
       console.error(err);
-      loadStores();
+      loadData();
     }
   };
 
@@ -108,13 +151,31 @@ export const StoreManager: React.FC = () => {
       </form>
 
       {/* List existing stores */}
+      <div className="mb-2 text-sm text-zinc-700 font-medium">
+        Select your default store:
+      </div>
       <div className="space-y-2">
         {stores.map((store, index) => (
           <div
             key={store.id}
             className="flex items-center justify-between py-2 group"
           >
-            <span className="text-sm text-gray-900">{store.name}</span>
+            <div className="flex items-center gap-2">
+              <input
+                type="radio"
+                id={`default-store-${store.id}`}
+                name="default-store"
+                checked={defaultStore === store.id}
+                onChange={() => handleSetDefaultStore(store.id)}
+                className="rounded-full border-zinc-300 text-violet-600 focus:ring-violet-500"
+              />
+              <label
+                htmlFor={`default-store-${store.id}`}
+                className="text-sm text-gray-900 cursor-pointer"
+              >
+                {store.name}
+              </label>
+            </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex gap-1">
                 <button

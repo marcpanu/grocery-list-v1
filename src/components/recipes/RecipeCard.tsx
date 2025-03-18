@@ -1,7 +1,7 @@
 import { RecipePreview } from '../../types/recipe';
 import { HeartIcon as HeartOutline } from '@heroicons/react/24/outline';
 import { HeartIcon as HeartSolid } from '@heroicons/react/24/solid';
-import { ClockIcon, TrashIcon } from '@heroicons/react/24/outline';
+import { ClockIcon, TrashIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 
 interface RecipeCardProps {
   recipe: RecipePreview;
@@ -9,9 +9,17 @@ interface RecipeCardProps {
   onDelete: (id: string) => void;
   onClick: (id: string) => void;
   view: 'grid' | 'compact';
+  onAddToGroceryList?: (id: string) => void;
 }
 
-export const RecipeCard = ({ recipe, onFavoriteToggle, onDelete, onClick, view }: RecipeCardProps) => {
+export const RecipeCard = ({ 
+  recipe, 
+  onFavoriteToggle, 
+  onDelete, 
+  onClick, 
+  view,
+  onAddToGroceryList 
+}: RecipeCardProps) => {
   const handleFavoriteClick = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await onFavoriteToggle(recipe.id, !recipe.isFavorite);
@@ -20,6 +28,13 @@ export const RecipeCard = ({ recipe, onFavoriteToggle, onDelete, onClick, view }
   const handleDeleteClick = (e: React.MouseEvent) => {
     e.stopPropagation();
     onDelete(recipe.id);
+  };
+
+  const handleAddToGroceryListClick = (e: React.MouseEvent) => {
+    e.stopPropagation();
+    if (onAddToGroceryList) {
+      onAddToGroceryList(recipe.id);
+    }
   };
 
   if (view === 'compact') {
@@ -49,7 +64,7 @@ export const RecipeCard = ({ recipe, onFavoriteToggle, onDelete, onClick, view }
             {recipe.name}
           </h3>
           <div className="flex items-center gap-3 mt-1">
-            <div className="flex items-center text-xs text-zinc-600">
+            <div className="flex items-center text-xs text-zinc-500">
               <ClockIcon className="w-3 h-3 mr-1" />
               <span>{recipe.prepTime}</span>
             </div>
@@ -70,6 +85,15 @@ export const RecipeCard = ({ recipe, onFavoriteToggle, onDelete, onClick, view }
 
         {/* Action Buttons */}
         <div className="flex items-center gap-1">
+          {onAddToGroceryList && (
+            <button
+              onClick={handleAddToGroceryListClick}
+              className="flex-shrink-0 p-2 rounded-full hover:bg-zinc-50 transition-colors duration-200"
+              title="Add to grocery list"
+            >
+              <ShoppingCartIcon className="w-5 h-5 text-zinc-400 hover:text-violet-600" />
+            </button>
+          )}
           <button
             onClick={handleFavoriteClick}
             className="flex-shrink-0 p-2 rounded-full hover:bg-zinc-50 transition-colors duration-200"
@@ -111,6 +135,15 @@ export const RecipeCard = ({ recipe, onFavoriteToggle, onDelete, onClick, view }
         )}
         {/* Action Buttons */}
         <div className="absolute top-2 right-2 flex gap-2">
+          {onAddToGroceryList && (
+            <button
+              onClick={handleAddToGroceryListClick}
+              className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+              title="Add to grocery list"
+            >
+              <ShoppingCartIcon className="w-5 h-5 text-zinc-600 hover:text-violet-600" />
+            </button>
+          )}
           <button
             onClick={handleFavoriteClick}
             className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"

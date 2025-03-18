@@ -469,13 +469,22 @@ export const addItemToList = async (
   
   if (!list) throw new Error('Shopping list not found');
   
+  // Create the new item with the required fields
   const newItem: ShoppingItem = {
     ...item,
     id: crypto.randomUUID(),
     addedAt: Timestamp.now(),
   };
 
-  const updatedItems = [...list.items, newItem];
+  // Convert undefined optional fields to null for Firestore
+  const firestoreItem = {
+    ...newItem,
+    unit: newItem.unit ?? null,
+    store: newItem.store ?? null,
+    category: newItem.category ?? null
+  };
+
+  const updatedItems = [...list.items, firestoreItem];
   
   await updateDoc(listRef, {
     items: updatedItems,
@@ -585,6 +594,7 @@ export const getUserPreferences = async (): Promise<UserPreferences | null> => {
         cuisines: [],
         showFavorites: false
       },
+      defaultStore: null,
       lastUpdated: Timestamp.now()
     };
     
@@ -694,4 +704,50 @@ export const deleteAllImages = async (): Promise<void> => {
 
   // TODO: Actually delete the images from Firebase Storage
   // This will be implemented when we add image upload functionality
+};
+
+// Function to add recipe ingredients to the grocery list
+export const addRecipeIngredientsToGroceryList = async (recipe: Recipe): Promise<void> => {
+  try {
+    // Get the user's shopping list
+    const userLists = await getUserShoppingLists('default-user');
+    if (userLists.length === 0) {
+      throw new Error('No shopping list found');
+    }
+    
+    const list = userLists[0];
+    
+    // Get user preferences to check for default store
+    const preferences = await getUserPreferences();
+    const defaultStoreId = preferences?.defaultStore || null;
+    const defaultStore = defaultStoreId ? list.stores.find(s => s.id === defaultStoreId) : undefined;
+    
+    // Add each ingredient to the list
+    for (const ingredient of recipe.ingredients) {
+      // Convert quantity to number if it's a string
+      let quantity: number;
+      if (typeof ingredient.quantity === 'string') {
+        // Convert string to number if possible, or default to 1
+        const parsedQuantity = parseFloat(ingredient.quantity);
+        quantity = isNaN(parsedQuantity) ? 1 : parsedQuantity;
+      } else {
+        quantity = ingredient.quantity;
+      }
+      
+      // Create item matching the TypeScript interface (with undefined for optional fields)
+      const newItem: NewShoppingItem = {
+        name: ingredient.name,
+        quantity: quantity,
+        unit: ingredient.unit && ingredient.unit.length > 0 ? ingredient.unit : undefined,
+        checked: false,
+        store: defaultStore,
+        category: undefined
+      };
+      
+      await addItemToList(list.id, newItem);
+    }
+  } catch (error) {
+    console.error('Error adding recipe ingredients to grocery list:', error);
+    throw new Error('Failed to add recipe ingredients to grocery list');
+  }
 }; 

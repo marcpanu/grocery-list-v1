@@ -73,6 +73,7 @@ export interface UserPreferences {
     cuisines: string[];
     showFavorites: boolean;
   };
+  defaultStore: string | null;  // ID of the default store
   // We can add more preferences here later
   lastUpdated: Timestamp;
 }
