@@ -40,18 +40,41 @@ interface Ingredient {
 ### Meal Planning
 ```typescript
 interface MealPlan {
-  weekStartDate: Date;
-  meals: {
-    [day: string]: {
-      [mealType: string]: PlannedMeal[];
-    };
-  };
+  userId: string;
+  meals: PlannedMeal[];
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface PlannedMeal {
-  recipeId: string;
+  id: string;
+  name: string;
+  description?: string;
+  type: MealType;
+  days: string[];
   servings: number;
-  notes?: string;
+  recipeId?: string;
+  ingredients?: Ingredient[];
+  instructions?: string[];
+  cuisine?: string[];
+  rating?: number;
+  createdAt: Date;
+}
+
+interface AddMealData {
+  name: string;           // required
+  description?: string;   // optional
+  type: MealType;        // required
+  days: string[];        // required
+  servings: number;      // required
+  prepTime?: string;     // optional
+  cookTime?: string;     // optional
+  totalTime?: string;    // optional
+  ingredients?: Ingredient[];  // optional for meal plan, required for recipe
+  instructions?: string[];    // optional for meal plan, required for recipe
+  cuisine?: string[];    // optional
+  rating?: number;       // optional
+  recipeId?: string;     // optional
 }
 ```
 
@@ -59,18 +82,35 @@ interface PlannedMeal {
 ```typescript
 interface ShoppingList {
   id: string;
+  userId: string;
+  name: string;
   items: ShoppingItem[];
   stores: Store[];
-  dateCreated: Date;
+  categories: Category[];
+  viewMode: ViewMode;
+  showCompleted: boolean;
+  currentStore: string;
+  createdAt: Date;
+  updatedAt: Date;
   status: 'active' | 'completed';
 }
 
 interface ShoppingItem {
-  ingredient: Ingredient;
-  quantity: number;
+  id: string;
+  name: string;
+  quantity: string;
+  unit?: string;
+  category?: Category;
   store?: Store;
-  category: string;
   checked: boolean;
+  addedAt: Date;
+}
+
+interface Store {
+  id: string;
+  name: string;
+  isActive: boolean;
+  order: number;
 }
 ```
 
@@ -137,3 +177,34 @@ App
 - CDN integration
 - Caching strategies
 - API versioning 
+
+## Form Validation
+
+### Recipe Creation
+- Required fields:
+  - Name
+  - Type
+  - Prep Time
+  - Servings
+  - At least one valid ingredient
+  - At least one valid instruction
+
+### Meal Planning
+- Required fields when adding to meal plan:
+  - Name
+  - Type
+  - Servings
+  - At least one day selected
+
+### Shopping List
+- Required fields for items:
+  - Name
+  - Quantity
+
+## State Management
+
+### Shopping List Filters
+- Store selection persistence
+- Filter state in URL
+- Clear UI feedback for active filters
+- Proper handling of "All Stores" view 
