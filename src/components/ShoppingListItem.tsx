@@ -56,6 +56,7 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
       console.error('Failed to update store:', err);
     } finally {
       setIsUpdating(false);
+      setShowStorePopover(false);
     }
   };
 
@@ -196,13 +197,13 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
                 ) : (
                   <span 
                     onClick={() => setIsEditing(true)}
-                    className={`text-sm font-medium cursor-text transition-colors ${
+                    className={`text-sm font-medium cursor-text transition-colors flex-1 flex items-center ${
                       item.checked 
                         ? 'line-through text-zinc-400' 
                         : 'text-zinc-900 hover:text-violet-600'
                     }`}
                   >
-                    {item.name}
+                    <span className="truncate">{item.name}</span>
                   </span>
                 )}
               </div>

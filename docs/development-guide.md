@@ -51,6 +51,7 @@ shopping-list/
 - Shopping route optimization
 - List sharing capabilities
 - Automatic item categorization
+- Automatic item categorization
 
 ### Phase 4: Configuration and Optimization
 - Store management system
@@ -417,7 +418,6 @@ interface MealPlanView {
    - Loading indicators
    - Error states
    - Empty states 
-
 ## Feature Ideas
 
 ### Automatic Item Categorization (Icebox)
