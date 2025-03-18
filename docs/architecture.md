@@ -114,6 +114,16 @@ interface Store {
 }
 ```
 
+### Pantry Management
+```typescript
+interface PantryItem {
+  id: string;           // Unique identifier
+  name: string;         // Main name of the pantry item
+  variants: string[];   // List of variants/alternate names
+  category: 'basic' | 'dry-goods' | 'spices' | 'other'; // Category for organization
+}
+```
+
 ## Data Flow
 
 1. **Recipe Selection**
@@ -128,6 +138,7 @@ interface Store {
 
 3. **Shopping List Generation**
    - Aggregates ingredients
+   - Filters out pantry items
    - Applies store preferences
    - Generates optimized list
 
@@ -148,10 +159,11 @@ App
 │   ├── CategoryGroup
 │   ├── StoreFilter
 │   └── ItemList
-└── Configuration
+└── Settings
     ├── StoreManager
-    ├── CategoryMapper
-    └── Preferences
+    ├── CategoryManager
+    ├── PantryManager
+    └── DataManagement
 ```
 
 ## Performance Considerations
