@@ -3,11 +3,12 @@ import { StoreManager } from './StoreManager';
 import { CategoryManager } from './CategoryManager';
 import { SettingsMenuItem } from './SettingsMenuItem';
 import { DataManagement } from './settings/DataManagement';
+import { PantryManager } from './settings/PantryManager';
 import { getUserData, addStoredCredential, deleteStoredCredential, deleteAllImages } from '../firebase/firestore';
 import { formatBytes } from '../utils/format';
 import { UserData, StoredCredential } from '../types';
 
-type SettingsSection = 'main' | 'stores' | 'categories' | 'data';
+type SettingsSection = 'main' | 'stores' | 'categories' | 'data' | 'pantry';
 
 export const Settings = () => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('main');
@@ -128,6 +129,27 @@ export const Settings = () => {
     );
   }
 
+  if (activeSection === 'pantry') {
+    return (
+      <div className="h-full bg-zinc-100">
+        <button
+          onClick={() => setActiveSection('main')}
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Settings
+        </button>
+        <div className="p-4">
+          <div className="bg-white rounded-lg shadow-sm">
+            <PantryManager />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full bg-zinc-100">
       <div className="p-4 space-y-4">
@@ -155,6 +177,17 @@ export const Settings = () => {
               title="Manage Categories"
               description="Customize item categories and their order"
               onClick={() => setActiveSection('categories')}
+            />
+
+            <SettingsMenuItem
+              icon={
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2" />
+                </svg>
+              }
+              title="Manage Pantry Items"
+              description="Configure items that you always have on hand"
+              onClick={() => setActiveSection('pantry')}
             />
           </div>
         </div>
