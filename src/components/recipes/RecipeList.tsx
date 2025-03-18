@@ -10,20 +10,23 @@ import {
   ChevronDownIcon,
   XMarkIcon
 } from '@heroicons/react/24/outline';
-import { RecipePreview } from '../../types/recipe';
+import { Recipe, RecipePreview } from '../../types/recipe';
 import { RecipeCard } from './RecipeCard';
 import { 
   getAllRecipes, 
   toggleRecipeFavorite,
   getUserPreferences,
   updateUserPreferences,
-  deleteRecipe
+  deleteRecipe,
+  addRecipe
 } from '../../firebase/firestore';
 import { UserPreferences } from '../../types';
 import { RecipeImportModal } from './RecipeImportModal';
 import { RecipeUrlImport } from './RecipeUrlImport';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { useRecipeImport } from '../../hooks/useRecipeImport';
+import { AddMealModal } from '../mealPlan/AddMealModal';
+import { AddMealData } from '../mealPlan/AddMealModal';
 
 interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
@@ -46,6 +49,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showFilters, setShowFilters] = useState(false);
   const [showSortOptions, setShowSortOptions] = useState(false);
   const [recipeToDelete, setRecipeToDelete] = useState<string | null>(null);
+  const [showAddMealModal, setShowAddMealModal] = useState(false);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -64,8 +68,8 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
     handleUrlImport,
     closeUrlImport
   } = useRecipeImport((recipe) => {
-    // Just refresh the recipe list after import
     if (recipe) {
+      // Handle imported recipe
       setRecipes(prevRecipes => [{
         id: recipe.id,
         name: recipe.name,
@@ -77,6 +81,9 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         dateAdded: recipe.dateAdded,
         isFavorite: recipe.isFavorite
       }, ...prevRecipes]);
+    } else {
+      // Handle manual entry
+      setShowAddMealModal(true);
     }
   });
 
@@ -221,6 +228,35 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       console.error('Error deleting recipe:', error);
     } finally {
       setRecipeToDelete(null);
+    }
+  };
+
+  const handleAddRecipe = async (recipeData: Recipe | AddMealData) => {
+    try {
+      setIsLoading(true);
+      const newRecipe = await addRecipe({
+        ...recipeData,
+        dateAdded: new Date(),
+        isFavorite: false
+      } as Recipe);
+      
+      setRecipes(prevRecipes => [{
+        id: newRecipe.id,
+        name: newRecipe.name,
+        imageUrl: newRecipe.imageUrl,
+        prepTime: newRecipe.prepTime,
+        mealTypes: newRecipe.mealTypes,
+        cuisine: newRecipe.cuisine?.[0],
+        rating: newRecipe.rating,
+        dateAdded: newRecipe.dateAdded,
+        isFavorite: newRecipe.isFavorite
+      }, ...prevRecipes]);
+      
+      setShowAddMealModal(false);
+    } catch (error) {
+      console.error('Failed to add recipe:', error);
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -531,6 +567,15 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         message="Are you sure you want to delete this recipe? This action cannot be undone."
         confirmText="Delete"
         cancelText="Cancel"
+      />
+
+      {/* Add Recipe Modal */}
+      <AddMealModal
+        isOpen={showAddMealModal}
+        onClose={() => setShowAddMealModal(false)}
+        onAdd={handleAddRecipe}
+        isLoading={isLoading}
+        isAddingToMealPlan={false}
       />
     </div>
   );

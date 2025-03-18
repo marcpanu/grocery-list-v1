@@ -7,36 +7,36 @@ import { Recipe } from '../../types/recipe';
 interface AddMealModalProps {
   isOpen: boolean;
   onClose: () => void;
-  onAdd: (meal: {
-    name: string;
-    description?: string;
-    type: MealType;
-    days: string[];
-    servings: number;
-    prepTime?: string;
-    cookTime?: string;
-    totalTime?: string;
-    ingredients?: Ingredient[];
-    instructions?: Instruction[];
-    notes?: string;
-    mealTypes?: string[];
-    cuisine?: string[];
-    rating?: number;
-    recipeId?: string;
-  }) => void;
+  onAdd: (data: Recipe | AddMealData) => void;
   selectedRecipe?: Recipe;
   isLoading?: boolean;
-  isAddingToMealPlan?: boolean;
+  isAddingToMealPlan: boolean;
 }
 
-export const AddMealModal: React.FC<AddMealModalProps> = ({
+export interface AddMealData {
+  name: string;
+  description?: string;
+  type: MealType;
+  days: string[];
+  servings: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
+  ingredients?: Ingredient[];
+  instructions?: string[];
+  cuisine?: string[];
+  rating?: number;
+  recipeId?: string;
+}
+
+export const AddMealModal = ({
   isOpen,
   onClose,
   onAdd,
   selectedRecipe,
   isLoading = false,
-  isAddingToMealPlan = false
-}) => {
+  isAddingToMealPlan
+}: AddMealModalProps) => {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
@@ -147,56 +147,33 @@ export const AddMealModal: React.FC<AddMealModalProps> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Only validate days selection when adding to meal plan
     if (isAddingToMealPlan && formData.days.length === 0) {
       setError('Please select at least one day');
       return;
     }
 
-    // Validate servings
-    if (formData.servings < 1) {
-      setError('Servings must be at least 1');
+    if (formData.servings <= 0) {
+      setError('Servings must be greater than 0');
       return;
     }
 
-    setError(null);
+    const formDataToAdd = {
+      name: formData.name,
+      description: formData.description || undefined,
+      type: formData.type,
+      servings: Number(formData.servings),
+      prepTime: formData.prepTime,
+      cookTime: formData.cookTime || undefined,
+      totalTime: formData.totalTime || undefined,
+      ingredients: formData.ingredients,
+      instructions: formData.instructions.map(i => i.instruction),
+      cuisine: formData.cuisine,
+      rating: formData.rating,
+      ...(isAddingToMealPlan ? { days: formData.days } : { days: [] }),
+      ...(selectedRecipe && { recipeId: selectedRecipe.id })
+    };
 
-    // When creating a new recipe (not adding an existing one to meal plan)
-    if (!selectedRecipe) {
-      // Only include recipe fields if we have ingredients or instructions
-      const hasRecipeContent = formData.ingredients.length > 0 || formData.instructions.length > 0;
-      
-      onAdd({
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-        days: isAddingToMealPlan ? formData.days : [],
-        servings: formData.servings,
-        // Only include recipe fields if we have content
-        ...(hasRecipeContent && {
-          prepTime: formData.prepTime,
-          cookTime: formData.cookTime || undefined,
-          totalTime: formData.totalTime || undefined,
-          ingredients: formData.ingredients,
-          instructions: formData.instructions,
-          notes: formData.notes || undefined,
-          mealTypes: formData.mealTypes.length > 0 ? formData.mealTypes : [formData.type],
-          cuisine: formData.cuisine.length > 0 ? formData.cuisine : undefined,
-          rating: formData.rating
-        })
-      });
-    } else {
-      // When adding an existing recipe to meal plan, only include meal fields
-      onAdd({
-        name: formData.name,
-        description: formData.description || undefined,
-        type: formData.type,
-        days: formData.days,
-        servings: formData.servings,
-        recipeId: selectedRecipe.id
-      });
-    }
+    onAdd(formDataToAdd);
   };
 
   return (
