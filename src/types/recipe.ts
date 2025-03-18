@@ -5,8 +5,8 @@ export type PrepTime = '<30' | '30-60' | '60+';
 export interface Ingredient {
   name: string;
   quantity: number | string;
-  unit?: string;
-  notes?: string;
+  unit: string | null;
+  notes: string | null;
 }
 
 export interface RecipeStep {
@@ -17,36 +17,36 @@ export interface RecipeStep {
 export interface Recipe {
   id: string;
   name: string;
-  description?: string;
+  description: string | null;
   prepTime: string;
-  cookTime?: string;
-  totalTime?: string;
+  cookTime: string | null;
+  totalTime: string | null;
   servings: number;
   ingredients: Ingredient[];
   instructions: Instruction[];
-  imageUrl?: string;
-  notes?: string;
+  imageUrl: string | null;
+  notes: string | null;
   mealTypes: string[];
-  cuisine?: string[];
-  rating?: number;
+  cuisine: string[] | null;
+  rating: number | null;
   dateAdded: Date;
   isFavorite: boolean;
-  source?: {
+  source: {
     type: 'url' | 'instagram' | 'tiktok';
     url: string;
-    title?: string;
-  };
+    title: string | null;
+  } | null;
 }
 
 // For recipe list views and previews
 export interface RecipePreview {
   id: string;
   name: string;
-  imageUrl?: string;
+  imageUrl: string | null;
   prepTime: string;
   mealTypes: string[];
-  cuisine?: string;
-  rating?: number;
+  cuisine: string | null;
+  rating: number | null;
   dateAdded: Date;
   isFavorite: boolean;
 }

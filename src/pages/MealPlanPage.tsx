@@ -3,7 +3,7 @@ import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDup
 import { Recipe, Ingredient, Instruction } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
-import { AddMealModal } from '../components/mealPlan/AddMealModal';
+import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
 import { addMealPlan, getUserMealPlans } from '../firebase/firestore';
@@ -18,18 +18,6 @@ import { PageHeader } from '../components/PageHeader';
 import { addRecipe } from '../firebase/firestore';
 
 const DEFAULT_USER_ID = 'default';
-
-interface AddMealData extends Omit<Meal, 'id' | 'createdAt'> {
-  ingredients?: Ingredient[];
-  instructions?: Instruction[];
-  prepTime?: string;
-  cookTime?: string;
-  totalTime?: string;
-  notes?: string;
-  cuisine?: string[];
-  rating?: number;
-  mealTypes?: string[];
-}
 
 const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
@@ -84,36 +72,41 @@ const MealPlanPage: React.FC = () => {
     setShowAddMealModal(true);
   };
 
-  const handleAddMeal = async (meal: AddMealData) => {
+  const handleAddMeal = async (data: Recipe | AddMealData) => {
     try {
       setError(null);
       setSuccess(null);
       setIsLoading(true);
       const now = Timestamp.now();
 
-      // If we don't have a selectedRecipe, we need to create one first
+      // If we don't have a selectedRecipe and data is AddMealData with ingredients, create a recipe
       let recipeId = selectedRecipe?.id;
-      if (!selectedRecipe && meal.ingredients && meal.ingredients.length > 0) {
+      if (!selectedRecipe && 'type' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
         const newRecipe = await addRecipe({
-          name: meal.name,
-          description: meal.description,
-          prepTime: meal.prepTime || '<30',
-          cookTime: meal.cookTime,
-          totalTime: meal.totalTime,
-          servings: meal.servings,
-          ingredients: meal.ingredients.map(ing => ({
-            ...ing,
-            unit: ing.unit,
-            notes: ing.notes
+          name: data.name,
+          description: data.description ?? null,
+          prepTime: data.prepTime ?? '<30',
+          cookTime: data.cookTime ?? null,
+          totalTime: data.totalTime ?? null,
+          servings: data.servings,
+          ingredients: data.ingredients.map(ing => ({
+            name: ing.name,
+            quantity: ing.quantity,
+            unit: ing.unit ?? null,
+            notes: ing.notes ?? null
           })),
-          instructions: meal.instructions || [],
-          imageUrl: undefined,
-          notes: meal.notes,
-          mealTypes: meal.mealTypes || [meal.type],
-          cuisine: meal.cuisine,
-          rating: meal.rating,
+          instructions: data.instructions?.map(instruction => ({
+            order: 1,
+            instruction: instruction ?? ''
+          })) || [],
+          imageUrl: null,
+          notes: null,
+          mealTypes: [data.type],
+          cuisine: data.cuisine ?? null,
+          rating: data.rating ?? null,
           dateAdded: now.toDate(),
-          isFavorite: false
+          isFavorite: false,
+          source: null
         });
         recipeId = newRecipe.id;
       }
@@ -123,12 +116,12 @@ const MealPlanPage: React.FC = () => {
         userId: DEFAULT_USER_ID,
         meals: [{
           id: crypto.randomUUID(),
-          name: meal.name,
-          description: meal.description,
-          type: meal.type,
-          days: meal.days,
-          servings: meal.servings,
-          recipeId,
+          name: data.name,
+          description: data.description ?? null,
+          type: 'type' in data ? data.type : data.mealTypes[0],
+          days: 'days' in data ? data.days : [],
+          servings: data.servings,
+          recipeId: recipeId ?? null,
           createdAt: now
         }],
         createdAt: now,
@@ -171,6 +164,29 @@ const MealPlanPage: React.FC = () => {
   const selectedDayMeals = mealPlans
     .flatMap(plan => plan.meals)
     .filter(meal => meal.days.includes(selectedDay));
+
+  const handleQuickAdd = (e: React.FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    const formData = new FormData(e.currentTarget);
+    const meal: AddMealData = {
+      name: formData.get('name') as string,
+      description: formData.get('description') as string,
+      type: formData.get('type') as MealType,
+      servings: parseInt(formData.get('servings') as string),
+      prepTime: formData.get('prepTime') as string,
+      ingredients: Array.from({ length: ingredientCount }, (_, i) => ({
+        name: formData.get(`ingredient-${i}-name`) as string,
+        quantity: formData.get(`ingredient-${i}-quantity`) as string,
+        unit: formData.get(`ingredient-${i}-unit`) as string,
+        notes: ''
+      })).filter(ing => ing.name.trim() !== ''),
+      instructions: Array.from({ length: instructionCount }, (_, i) => 
+        formData.get(`instruction-${i}`) as string
+      ).filter(inst => inst.trim() !== ''),
+      days: Array.from(formData.getAll('days')).map(value => value.toString())
+    };
+    handleAddMeal(meal);
+  };
 
   return (
     <div className="min-h-full bg-zinc-50">
@@ -318,28 +334,7 @@ const MealPlanPage: React.FC = () => {
                   <XMarkIcon className="h-6 w-6" />
                 </button>
               </div>
-              <form onSubmit={(e) => {
-                e.preventDefault();
-                const formData = new FormData(e.currentTarget);
-                const meal = {
-                  name: formData.get('name') as string,
-                  description: formData.get('description') as string,
-                  type: formData.get('type') as MealType,
-                  servings: parseInt(formData.get('servings') as string),
-                  prepTime: formData.get('prepTime') as string,
-                  ingredients: Array.from({ length: ingredientCount }, (_, i) => ({
-                    name: formData.get(`ingredient-${i}-name`) as string,
-                    quantity: formData.get(`ingredient-${i}-quantity`) as string,
-                    unit: formData.get(`ingredient-${i}-unit`) as string,
-                  })).filter(ing => ing.name.trim() !== ''),
-                  instructions: Array.from({ length: instructionCount }, (_, i) => ({
-                    order: i + 1,
-                    instruction: formData.get(`instruction-${i}`) as string,
-                  })).filter(inst => inst.instruction.trim() !== ''),
-                  days: Array.from(formData.getAll('days')).map(value => value.toString()),
-                };
-                handleAddMeal(meal);
-              }}>
+              <form onSubmit={handleQuickAdd}>
                 <div className="space-y-6">
                   {/* Basic Information */}
                   <div className="space-y-4">
