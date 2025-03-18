@@ -76,7 +76,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         imageUrl: recipe.imageUrl,
         prepTime: recipe.prepTime,
         mealTypes: recipe.mealTypes,
-        cuisine: recipe.cuisine?.[0],
+        cuisine: recipe.cuisine?.[0] || null,
         rating: recipe.rating,
         dateAdded: recipe.dateAdded,
         isFavorite: recipe.isFavorite
@@ -246,7 +246,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         imageUrl: newRecipe.imageUrl,
         prepTime: newRecipe.prepTime,
         mealTypes: newRecipe.mealTypes,
-        cuisine: newRecipe.cuisine?.[0],
+        cuisine: newRecipe.cuisine?.[0] || null,
         rating: newRecipe.rating,
         dateAdded: newRecipe.dateAdded,
         isFavorite: newRecipe.isFavorite

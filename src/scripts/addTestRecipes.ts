@@ -9,13 +9,14 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     servings: 4,
     prepTime: '<30' as PrepTime,
     cookTime: '20',
+    totalTime: '50',
     ingredients: [
-      { name: 'spaghetti', quantity: 1, unit: 'pound' },
+      { name: 'spaghetti', quantity: 1, unit: 'pound', notes: null },
       { name: 'pancetta or guanciale', quantity: 0.5, unit: 'pound', notes: 'diced' },
-      { name: 'large eggs', quantity: 4, unit: 'whole' },
+      { name: 'large eggs', quantity: 4, unit: 'whole', notes: null },
       { name: 'Pecorino Romano', quantity: 1, unit: 'cup', notes: 'freshly grated' },
       { name: 'black pepper', quantity: 2, unit: 'teaspoons', notes: 'freshly ground' },
-      { name: 'salt', quantity: 1, unit: 'teaspoon' }
+      { name: 'salt', quantity: 1, unit: 'teaspoon', notes: null }
     ],
     instructions: [
       { order: 1, instruction: 'Bring a large pot of salted water to boil' },
@@ -27,8 +28,10 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     mealTypes: ['dinner'],
     cuisine: ['Italian'],
     isFavorite: false,
+    notes: 'For an authentic carbonara, never add cream. The creaminess comes from the eggs and cheese.',
     rating: 5,
-    dateAdded: new Date()
+    dateAdded: new Date(),
+    source: null
   },
   {
     name: 'Overnight Oats with Berries',
@@ -36,12 +39,14 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     imageUrl: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&q=80&w=800',
     servings: 1,
     prepTime: '<30' as PrepTime,
+    cookTime: null,
+    totalTime: '8 hours',
     ingredients: [
-      { name: 'rolled oats', quantity: 0.5, unit: 'cup' },
+      { name: 'rolled oats', quantity: 0.5, unit: 'cup', notes: null },
       { name: 'milk', quantity: 0.5, unit: 'cup', notes: 'any kind' },
       { name: 'yogurt', quantity: 0.25, unit: 'cup', notes: 'plain or vanilla' },
-      { name: 'chia seeds', quantity: 1, unit: 'tablespoon' },
-      { name: 'honey', quantity: 1, unit: 'tablespoon' },
+      { name: 'chia seeds', quantity: 1, unit: 'tablespoon', notes: null },
+      { name: 'honey', quantity: 1, unit: 'tablespoon', notes: null },
       { name: 'mixed berries', quantity: 0.5, unit: 'cup', notes: 'fresh or frozen' }
     ],
     instructions: [
@@ -51,41 +56,45 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
       { order: 4, instruction: 'Top with berries before serving' }
     ],
     mealTypes: ['breakfast'],
-    isFavorite: true,
-    notes: 'Can be stored in refrigerator for up to 3 days',
-    dateAdded: new Date()
+    cuisine: ['American'],
+    isFavorite: false,
+    notes: 'Can be stored in refrigerator for up to 3 days. For added protein, mix in your favorite protein powder.',
+    rating: 4,
+    dateAdded: new Date(),
+    source: null
   },
   {
     name: 'Thai Green Curry',
     description: 'Fragrant and creamy coconut curry with vegetables.',
     imageUrl: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&q=80&w=800',
     servings: 4,
-    prepTime: '30-60' as PrepTime,
+    prepTime: '<30' as PrepTime,
     cookTime: '45',
+    totalTime: '75',
     ingredients: [
-      { name: 'green curry paste', quantity: 4, unit: 'tablespoons' },
+      { name: 'green curry paste', quantity: 4, unit: 'tablespoons', notes: null },
       { name: 'coconut milk', quantity: 2, unit: 'cans', notes: '14 oz each' },
       { name: 'chicken breast', quantity: 1, unit: 'pound', notes: 'cut into chunks' },
       { name: 'bamboo shoots', quantity: 1, unit: 'can', notes: 'drained' },
       { name: 'bell peppers', quantity: 2, unit: 'whole', notes: 'sliced' },
-      { name: 'fish sauce', quantity: 2, unit: 'tablespoons' },
-      { name: 'palm sugar', quantity: 1, unit: 'tablespoon' },
+      { name: 'fish sauce', quantity: 2, unit: 'tablespoons', notes: null },
+      { name: 'palm sugar', quantity: 1, unit: 'tablespoon', notes: null },
       { name: 'Thai basil', quantity: 1, unit: 'cup', notes: 'leaves only' }
     ],
     instructions: [
-      { order: 1, instruction: 'Heat coconut cream until oil separates' },
-      { order: 2, instruction: 'Fry curry paste until fragrant' },
-      { order: 3, instruction: 'Add chicken and cook until nearly done' },
-      { order: 4, instruction: 'Add remaining coconut milk and vegetables' },
-      { order: 5, instruction: 'Season with fish sauce and palm sugar' },
-      { order: 6, instruction: 'Simmer until vegetables are tender' },
-      { order: 7, instruction: 'Stir in Thai basil before serving' }
+      { order: 1, instruction: 'Heat coconut milk in a large pot' },
+      { order: 2, instruction: 'Add curry paste and stir until fragrant' },
+      { order: 3, instruction: 'Add chicken and cook until done' },
+      { order: 4, instruction: 'Add remaining ingredients and simmer' },
+      { order: 5, instruction: 'Season with fish sauce and palm sugar' }
     ],
     mealTypes: ['dinner'],
     cuisine: ['Thai'],
     isFavorite: false,
-    notes: 'Can be made vegetarian by substituting chicken with tofu',
-    dateAdded: new Date()
+    notes: 'Can be made vegetarian by substituting chicken with tofu. Adjust curry paste amount based on desired spiciness.',
+    rating: 5,
+    dateAdded: new Date(),
+    source: null
   }
 ];
 

@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { MealType, CUISINES, Ingredient, Instruction } from '../../types/recipe';
+import { MealType, CUISINES, Ingredient } from '../../types/recipe';
 import { Recipe } from '../../types/recipe';
 
 interface AddMealModalProps {
@@ -29,6 +29,22 @@ export interface AddMealData {
   recipeId?: string;
 }
 
+interface FormData {
+  name: string;
+  description: string;
+  type: string;
+  days: string[];
+  servings: number;
+  prepTime: string;
+  cookTime: string;
+  totalTime: string;
+  ingredients: Ingredient[];
+  instructions: { order: number; instruction: string }[];
+  notes: string;
+  cuisine: string[];
+  rating: number | undefined;
+}
+
 export const AddMealModal = ({
   isOpen,
   onClose,
@@ -37,21 +53,20 @@ export const AddMealModal = ({
   isLoading = false,
   isAddingToMealPlan
 }: AddMealModalProps) => {
-  const [formData, setFormData] = useState({
+  const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     type: '',
-    days: [] as string[],
+    days: [],
     servings: 2,
     prepTime: '',
     cookTime: '',
     totalTime: '',
-    ingredients: [{ name: '', quantity: '', unit: null, notes: null }],
+    ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
     instructions: [{ order: 1, instruction: '' }],
     notes: '',
-    mealTypes: [],
     cuisine: [],
-    rating: undefined as number | undefined
+    rating: undefined
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -71,9 +86,8 @@ export const AddMealModal = ({
         ingredients: [...selectedRecipe.ingredients],
         instructions: [...selectedRecipe.instructions],
         notes: selectedRecipe.notes || '',
-        mealTypes: [...selectedRecipe.mealTypes],
         cuisine: selectedRecipe.cuisine || [],
-        rating: selectedRecipe.rating
+        rating: selectedRecipe.rating || undefined
       });
     } else if (!isOpen) {
       setFormData({
@@ -85,10 +99,9 @@ export const AddMealModal = ({
         prepTime: '',
         cookTime: '',
         totalTime: '',
-        ingredients: [{ name: '', quantity: '', unit: null, notes: null }],
+        ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
         instructions: [{ order: 1, instruction: '' }],
         notes: '',
-        mealTypes: [],
         cuisine: [],
         rating: undefined
       });
@@ -171,7 +184,7 @@ export const AddMealModal = ({
 
     // Validate ingredients
     const validIngredients = formData.ingredients.filter(ing => 
-      ing.name.trim() && (typeof ing.quantity === 'number' || String(ing.quantity).trim())
+      ing.name.trim() && (typeof ing.quantity === 'string' ? ing.quantity.trim() : ing.quantity)
     );
     if (validIngredients.length === 0) {
       setError('At least one ingredient with name and quantity is required');
@@ -193,10 +206,10 @@ export const AddMealModal = ({
       return;
     }
 
-    const formDataToAdd = {
+    const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
-      type: formData.type,
+      type: formData.type as MealType,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
       cookTime: formData.cookTime || undefined,
@@ -205,7 +218,7 @@ export const AddMealModal = ({
       instructions: validInstructions.map(i => i.instruction),
       cuisine: formData.cuisine,
       rating: formData.rating,
-      ...(isAddingToMealPlan ? { days: formData.days } : { days: [] }),
+      days: isAddingToMealPlan ? formData.days : [],
       ...(selectedRecipe && { recipeId: selectedRecipe.id })
     };
 
@@ -377,7 +390,7 @@ export const AddMealModal = ({
                     <div className="w-24">
                       <input
                         type="text"
-                        value={ingredient.unit}
+                        value={ingredient.unit || ''}
                         onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
                         placeholder="Unit"
                         className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
@@ -387,7 +400,7 @@ export const AddMealModal = ({
                     <div className="flex-1">
                       <input
                         type="text"
-                        value={ingredient.notes}
+                        value={ingredient.notes || ''}
                         onChange={(e) => handleIngredientChange(index, 'notes', e.target.value)}
                         placeholder="Notes (optional)"
                         className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
@@ -463,31 +476,6 @@ export const AddMealModal = ({
                   className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   disabled={isLoading}
                 />
-              </div>
-
-              <div>
-                <label className="block text-sm font-medium text-zinc-700 mb-2">
-                  Meal Types
-                </label>
-                <div className="flex flex-wrap gap-2">
-                  {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
-                    <label key={type} className="inline-flex items-center">
-                      <input
-                        type="checkbox"
-                        checked={formData.mealTypes.includes(type)}
-                        onChange={(e) => {
-                          const newTypes = e.target.checked
-                            ? [...formData.mealTypes, type]
-                            : formData.mealTypes.filter(t => t !== type);
-                          setFormData(prev => ({ ...prev, mealTypes: newTypes }));
-                        }}
-                        className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
-                        disabled={isLoading}
-                      />
-                      <span className="ml-2 text-sm text-zinc-700 capitalize">{type}</span>
-                    </label>
-                  ))}
-                </div>
               </div>
 
               <div>

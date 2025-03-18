@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
-import { Recipe, Ingredient, Instruction } from '../types/recipe';
+import { Recipe } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';

@@ -12,25 +12,20 @@ interface RecipeEditFormProps {
 export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps) => {
   const [formData, setFormData] = useState<Omit<Recipe, 'id' | 'dateAdded'>>({
     name: recipe.name,
-    description: recipe.description || '',
+    description: recipe.description,
     prepTime: recipe.prepTime,
-    cookTime: recipe.cookTime || '',
-    totalTime: recipe.totalTime || '',
+    cookTime: recipe.cookTime,
+    totalTime: recipe.totalTime,
     servings: recipe.servings,
     ingredients: [...recipe.ingredients],
     instructions: [...recipe.instructions],
-    imageUrl: recipe.imageUrl || '',
-    notes: recipe.notes || '',
+    imageUrl: recipe.imageUrl,
+    notes: recipe.notes,
     mealTypes: [...recipe.mealTypes],
-    cuisine: (recipe.cuisine || []).map(c => {
-      // If the cuisine is not in the standard list or our additional options, treat it as "Other"
-      if (!CUISINES.includes(c as typeof CUISINES[number]) && c !== 'Caribbean' && c !== 'African') {
-        return `Other:${c}`;
-      }
-      return c;
-    }),
+    cuisine: recipe.cuisine || [],
     rating: recipe.rating,
-    isFavorite: recipe.isFavorite
+    isFavorite: recipe.isFavorite,
+    source: recipe.source
   });
 
   const [isSaving, setIsSaving] = useState(false);
@@ -53,7 +48,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     }
   };
 
-  const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number) => {
+  const handleIngredientChange = (index: number, field: keyof Ingredient, value: string | number | null) => {
     const newIngredients = [...formData.ingredients];
     newIngredients[index] = {
       ...newIngredients[index],
@@ -74,7 +69,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
   const addIngredient = () => {
     setFormData(prev => ({
       ...prev,
-      ingredients: [...prev.ingredients, { name: '', quantity: 0, unit: '', notes: '' }]
+      ingredients: [...prev.ingredients, { name: '', quantity: '', unit: null, notes: null }]
     }));
   };
 
@@ -126,8 +121,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           </label>
           <textarea
             id="description"
-            value={formData.description}
-            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+            value={formData.description || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value || null }))}
             rows={3}
             className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
           />
@@ -158,8 +153,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
             <input
               type="text"
               id="cookTime"
-              value={formData.cookTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
+              value={formData.cookTime || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value || null }))}
               className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
             />
           </div>
@@ -217,8 +212,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
               <div className="w-24">
                 <input
                   type="text"
-                  value={ingredient.unit}
-                  onChange={(e) => handleIngredientChange(index, 'unit', e.target.value)}
+                  value={ingredient.unit || ''}
+                  onChange={(e) => handleIngredientChange(index, 'unit', e.target.value || null)}
                   placeholder="Unit"
                   className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                 />
@@ -226,8 +221,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
               <div className="flex-1">
                 <input
                   type="text"
-                  value={ingredient.notes}
-                  onChange={(e) => handleIngredientChange(index, 'notes', e.target.value)}
+                  value={ingredient.notes || ''}
+                  onChange={(e) => handleIngredientChange(index, 'notes', e.target.value || null)}
                   placeholder="Notes (optional)"
                   className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                 />
@@ -292,8 +287,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           <input
             type="url"
             id="imageUrl"
-            value={formData.imageUrl}
-            onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value }))}
+            value={formData.imageUrl || ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value || null }))}
             className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
           />
         </div>
@@ -304,8 +299,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           </label>
           <textarea
             id="notes"
-            value={formData.notes}
-            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value }))}
+            value={formData.notes ?? ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, notes: e.target.value || null }))}
             rows={3}
             className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
           />
@@ -428,8 +423,8 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           <input
             type="number"
             id="rating"
-            value={formData.rating || ''}
-            onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value ? parseInt(e.target.value) : undefined }))}
+            value={formData.rating ?? ''}
+            onChange={(e) => setFormData(prev => ({ ...prev, rating: e.target.value ? parseInt(e.target.value) : null }))}
             min="1"
             max="5"
             className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"

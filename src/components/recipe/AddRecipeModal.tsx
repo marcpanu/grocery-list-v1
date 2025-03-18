@@ -18,7 +18,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
   const [description, setDescription] = useState('');
   const [prepTime, setPrepTime] = useState('');
   const [servings, setServings] = useState(4);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', quantity: '', unit: '' }]);
+  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', quantity: '', unit: null, notes: null }]);
   const [instructions, setInstructions] = useState<Instruction[]>([{ order: 1, instruction: '' }]);
   const [mealTypes, setMealTypes] = useState<string[]>(['dinner']);
   const [cuisine, setCuisine] = useState<string[]>(['']);
@@ -29,7 +29,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
     const newRecipe: Recipe = {
       id: crypto.randomUUID(),
       name,
-      description,
+      description: description || null,
       prepTime,
       servings,
       ingredients: ingredients.filter(ing => ing.name.trim() !== ''),
@@ -38,13 +38,19 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
       cuisine: cuisine.filter(c => c.trim() !== ''),
       dateAdded: new Date(),
       isFavorite: false,
+      cookTime: null,
+      totalTime: null,
+      imageUrl: null,
+      notes: null,
+      rating: null,
+      source: null
     };
 
     onAdd(newRecipe);
   };
 
   const addIngredient = () => {
-    setIngredients([...ingredients, { name: '', quantity: '', unit: '' }]);
+    setIngredients([...ingredients, { name: '', quantity: '', unit: null, notes: null }]);
   };
 
   const addInstruction = () => {
