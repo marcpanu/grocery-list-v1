@@ -289,7 +289,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         setShowGroceryListConfirm(true);
       } else {
         // No items in list, just add ingredients
-        await addRecipeIngredientsToGroceryList(recipe);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
       }
@@ -325,7 +325,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -361,7 +361,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       }
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe);
+      await addRecipeIngredientsToGroceryList(recipe, 1);
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);

@@ -36,7 +36,6 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
 
   useEffect(() => {
@@ -93,7 +92,7 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
       } else {
         // No items in list, just add ingredients
         const loadingToast = toast.loading('Adding ingredients to your grocery list...');
-        await addRecipeIngredientsToGroceryList(recipe);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         toast.dismiss(loadingToast);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
@@ -120,7 +119,7 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe);
+        await addRecipeIngredientsToGroceryList(recipe, 1);
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -145,7 +144,7 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
       const loadingToast = toast.loading('Adding ingredients to grocery list...');
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe);
+      await addRecipeIngredientsToGroceryList(recipe, 1);
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
