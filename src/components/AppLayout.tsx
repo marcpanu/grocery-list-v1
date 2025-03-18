@@ -1,11 +1,11 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { ShoppingList } from './ShoppingList';
 import { PageHeader } from './PageHeader';
 import { Settings } from './Settings';
 import { RecipeList } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
-import { ViewMode } from '../types';
+import { ViewMode, Store } from '../types';
 import { getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
 import { 
   Squares2X2Icon,
@@ -37,6 +37,7 @@ export const AppLayout: React.FC = () => {
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
   const [showCompleted, setShowCompleted] = useState(true);
   const [currentStore, setCurrentStore] = useState<string>('all');
+  const [selectedStoreObj, setSelectedStoreObj] = useState<Store | undefined>();
   const [showStoreFilter, setShowStoreFilter] = useState(false);
 
   // Load view settings from Firestore
@@ -50,6 +51,12 @@ export const AppLayout: React.FC = () => {
           setViewMode(list.viewMode || 'combined');
           setShowCompleted(list.showCompleted ?? true);
           setCurrentStore(list.currentStore || 'all');
+          // Set selected store object based on current store
+          if (list.stores && list.currentStore !== 'all') {
+            setSelectedStoreObj(list.stores.find(s => s.id === list.currentStore));
+          } else {
+            setSelectedStoreObj(undefined);
+          }
         }
       } catch (err) {
         console.error('Failed to load view settings:', err);
@@ -98,6 +105,16 @@ export const AppLayout: React.FC = () => {
     setCurrentStore(storeId);
     try {
       await updateShoppingList(listId, { currentStore: storeId });
+      // Update selected store object
+      if (storeId === 'all') {
+        setSelectedStoreObj(undefined);
+      } else {
+        const userLists = await getUserShoppingLists(USER_ID);
+        const list = userLists[0];
+        if (list?.stores) {
+          setSelectedStoreObj(list.stores.find(s => s.id === storeId));
+        }
+      }
     } catch (err) {
       console.error('Failed to update current store:', err);
     }
@@ -156,7 +173,7 @@ export const AppLayout: React.FC = () => {
                             Store Filter
                           </label>
                           <StoreSelector
-                            selectedStore={undefined}
+                            selectedStore={selectedStoreObj}
                             onStoreSelect={(store) => {
                               handleStoreChange(store?.id || 'all');
                               setShowStoreFilter(false);

@@ -85,9 +85,6 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     }
   };
 
-
-
-
   // Filter and sort items
   const getFilteredAndSortedItems = () => {
     if (!list) return [];
@@ -97,10 +94,21 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
       ? list.items 
       : list.items.filter(item => !item.checked);
 
+    console.log('Current store:', currentStore);
+    console.log('Items before store filter:', items.map(item => ({ 
+      name: item.name, 
+      store: item.store?.id 
+    })));
+
     // Then filter by current store if not in "all" view
     if (currentStore !== 'all') {
       items = items.filter(item => item.store?.id === currentStore);
     }
+
+    console.log('Items after store filter:', items.map(item => ({ 
+      name: item.name, 
+      store: item.store?.id 
+    })));
 
     // Sort by category order
     return items.sort((a, b) => {
