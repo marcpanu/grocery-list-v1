@@ -83,15 +83,14 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     if (!recipe) return;
     
     try {
-      setAddingToGroceryList(true);
-      
       // Check if user already has items in the grocery list
       const userLists = await getUserShoppingLists('default');
       if (userLists.length > 0 && userLists[0].items.length > 0) {
         // Show confirmation dialog
         setShowGroceryListConfirm(true);
       } else {
-        // No items in list, just add ingredients
+        // No items in list, set loading state here before adding ingredients
+        setAddingToGroceryList(true);
         const loadingToast = toast.loading('Adding ingredients to your grocery list...');
         await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
         toast.dismiss(loadingToast);
@@ -109,7 +108,9 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     if (!recipe) return;
     
     try {
-      // Close dialog but keep loading state
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
       setShowGroceryListConfirm(false);
       
       // Show loading toast
@@ -138,7 +139,9 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     if (!recipe) return;
     
     try {
-      // Close dialog but keep loading state
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
       setShowGroceryListConfirm(false);
       
       // Show loading toast

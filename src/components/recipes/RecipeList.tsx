@@ -271,13 +271,10 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
 
   const handleAddToGroceryList = async (recipeId: string) => {
     try {
-      setAddingToGroceryList(true);
-      
       // Get the recipe details
       const recipe = await getRecipe(recipeId);
       if (!recipe) {
         console.error('Recipe not found');
-        setAddingToGroceryList(false);
         return;
       }
       
@@ -288,7 +285,8 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         setPendingRecipeForGroceryList(recipeId);
         setShowGroceryListConfirm(true);
       } else {
-        // No items in list, just add ingredients
+        // No items in list, set loading state here and add ingredients
+        setAddingToGroceryList(true);
         await addRecipeIngredientsToGroceryList(recipe, 1);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
@@ -304,7 +302,9 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
     if (!pendingRecipeForGroceryList) return;
 
     try {
-      // Close dialog but keep loading state
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
       setShowGroceryListConfirm(false);
       
       // Show loading toast
@@ -344,7 +344,9 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
     if (!pendingRecipeForGroceryList) return;
     
     try {
-      // Close dialog but keep loading state
+      // Set loading state here after user makes a choice
+      setAddingToGroceryList(true);
+      // Close dialog
       setShowGroceryListConfirm(false);
       
       // Show loading toast
