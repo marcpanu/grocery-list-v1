@@ -268,6 +268,23 @@ export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
   return [mealPlan];
 };
 
+export const deleteMeal = async (userId: string, mealId: string): Promise<void> => {
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  const mealPlanSnap = await getDoc(mealPlanRef);
+  
+  if (!mealPlanSnap.exists()) {
+    throw new Error('Meal plan not found');
+  }
+
+  const data = mealPlanSnap.data();
+  const updatedMeals = data.meals.filter((meal: any) => meal.id !== mealId);
+  
+  await updateDoc(mealPlanRef, {
+    meals: updatedMeals,
+    updatedAt: Timestamp.now()
+  });
+};
+
 // Store Operations
 export const addStore = async (store: Omit<Store, 'id'>): Promise<Store> => {
   const storesRef = collection(db, COLLECTIONS.STORES);

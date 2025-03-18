@@ -6,7 +6,7 @@ import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
-import { addMealPlan, getUserMealPlans } from '../firebase/firestore';
+import { addMealPlan, getUserMealPlans, deleteMeal } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
@@ -16,6 +16,7 @@ import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
 import { DayDetails } from '../components/mealPlan/DayDetails';
 import { PageHeader } from '../components/PageHeader';
 import { addRecipe } from '../firebase/firestore';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -32,6 +33,7 @@ const MealPlanPage: React.FC = () => {
   const [showActionModal, setShowActionModal] = useState(false);
   const [ingredientCount, setIngredientCount] = useState(1);
   const [instructionCount, setInstructionCount] = useState(1);
+  const [mealToDelete, setMealToDelete] = useState<string | null>(null);
 
   // Use the recipe import hook
   const {
@@ -156,8 +158,33 @@ const MealPlanPage: React.FC = () => {
   };
 
   const handleDeleteMeal = (mealId: string) => {
-    // TODO: Implement meal deletion
-    console.log('Delete meal:', mealId);
+    setMealToDelete(mealId);
+  };
+
+  const confirmDeleteMeal = async () => {
+    if (!mealToDelete) return;
+
+    try {
+      setIsLoading(true);
+      setError(null);
+      await deleteMeal(DEFAULT_USER_ID, mealToDelete);
+      
+      // Update local state
+      setMealPlans(prevPlans => 
+        prevPlans.map(plan => ({
+          ...plan,
+          meals: plan.meals.filter(meal => meal.id !== mealToDelete)
+        }))
+      );
+      
+      setSuccess('Meal deleted successfully!');
+    } catch (error) {
+      console.error('Failed to delete meal:', error);
+      setError('Failed to delete meal. Please try again.');
+    } finally {
+      setMealToDelete(null);
+      setIsLoading(false);
+    }
   };
 
   // Get meals for selected day
@@ -550,6 +577,17 @@ const MealPlanPage: React.FC = () => {
             </Dialog.Panel>
           </div>
         </Dialog>
+
+        {/* Delete Confirmation Dialog */}
+        <ConfirmDialog
+          isOpen={!!mealToDelete}
+          onClose={() => setMealToDelete(null)}
+          onConfirm={confirmDeleteMeal}
+          title="Delete Meal"
+          message="Are you sure you want to delete this meal? This action cannot be undone."
+          confirmText="Delete"
+          cancelText="Cancel"
+        />
       </div>
     </div>
   );
