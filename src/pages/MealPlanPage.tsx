@@ -1,12 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
-import { addMealPlan, getUserMealPlans, deleteMeal } from '../firebase/firestore';
+import { addMealPlan, getUserMealPlans, deleteMeal, getRecipe, getUserShoppingLists, updateShoppingList, addRecipeIngredientsToGroceryList } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType } from '../types/recipe';
@@ -17,6 +17,8 @@ import { DayDetails } from '../components/mealPlan/DayDetails';
 import { PageHeader } from '../components/PageHeader';
 import { addRecipe } from '../firebase/firestore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
+import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
+import { toast, Toaster } from 'react-hot-toast';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -34,6 +36,9 @@ const MealPlanPage: React.FC = () => {
   const [ingredientCount, setIngredientCount] = useState(1);
   const [instructionCount, setInstructionCount] = useState(1);
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
+  const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
+  const [pendingMealPlanForGroceryList, setPendingMealPlanForGroceryList] = useState(false);
+  const [addingToGroceryList, setAddingToGroceryList] = useState(false);
 
   // Use the recipe import hook
   const {
@@ -215,9 +220,181 @@ const MealPlanPage: React.FC = () => {
     handleAddMeal(meal);
   };
 
+  // Function to collect all recipes from the meal plan
+  const getAllMealPlanRecipes = async () => {
+    const recipesToAdd = [];
+    
+    // Get all meals with recipeId
+    const mealsWithRecipeIds = mealPlans.flatMap(plan => 
+      plan.meals.filter(meal => meal.recipeId)
+    );
+    
+    // Deduplicate recipes by ID
+    const uniqueRecipeIds = [...new Set(mealsWithRecipeIds.map(meal => meal.recipeId))];
+    
+    // Fetch all recipe details
+    for (const recipeId of uniqueRecipeIds) {
+      if (recipeId) {
+        const recipe = await getRecipe(recipeId);
+        if (recipe) {
+          recipesToAdd.push(recipe);
+        }
+      }
+    }
+    
+    return recipesToAdd;
+  };
+
+  // Function to handle adding all meal plan ingredients to grocery list
+  const handleAddAllToGroceryList = async () => {
+    try {
+      setAddingToGroceryList(true);
+      
+      // Check if user already has items in the grocery list
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0 && userLists[0].items.length > 0) {
+        // Show confirmation dialog
+        setPendingMealPlanForGroceryList(true);
+        setShowGroceryListConfirm(true);
+      } else {
+        // No items in list, just add ingredients
+        await addAllIngredientsToGroceryList();
+      }
+    } catch (error) {
+      console.error('Failed to add ingredients to grocery list:', error);
+      toast.error('Failed to add meal plan ingredients to grocery list');
+    } finally {
+      if (!showGroceryListConfirm) {
+        setAddingToGroceryList(false);
+      }
+    }
+  };
+
+  // Function to add all ingredients from all recipes
+  const addAllIngredientsToGroceryList = async () => {
+    try {
+      const recipes = await getAllMealPlanRecipes();
+      
+      if (recipes.length === 0) {
+        toast.error('No recipes found in meal plan');
+        return;
+      }
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Adding ingredients to your grocery list...');
+      
+      // Add each recipe's ingredients
+      for (const recipe of recipes) {
+        await addRecipeIngredientsToGroceryList(recipe);
+      }
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success(`Added ingredients from ${recipes.length} recipes to your grocery list!`);
+    } catch (error) {
+      console.error('Failed to add ingredients to grocery list:', error);
+      toast.error('Failed to add ingredients to grocery list');
+    } finally {
+      setAddingToGroceryList(false);
+    }
+  };
+
+  // Function to clear grocery list and add all ingredients
+  const handleClearAndAddToGroceryList = async () => {
+    try {
+      // Close the dialog but keep the loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Clearing grocery list and adding ingredients...');
+      
+      // Clear the existing list and add the new ingredients
+      const userLists = await getUserShoppingLists('default-user');
+      if (userLists.length > 0) {
+        const list = userLists[0];
+        
+        // Clear all items
+        await updateShoppingList(list.id, { items: [] });
+        
+        // Add all ingredients
+        const recipes = await getAllMealPlanRecipes();
+        for (const recipe of recipes) {
+          await addRecipeIngredientsToGroceryList(recipe);
+        }
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToast);
+        toast.success(`Grocery list cleared and ingredients from ${recipes.length} recipes added!`);
+      }
+    } catch (error) {
+      console.error('Failed to clear and add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Reset all states
+      setAddingToGroceryList(false);
+      setPendingMealPlanForGroceryList(false);
+    }
+  };
+
+  // Function to add to existing grocery list
+  const handleAddToExistingGroceryList = async () => {
+    try {
+      // Close the dialog but keep the loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Adding ingredients to grocery list...');
+      
+      // Add to existing list
+      const recipes = await getAllMealPlanRecipes();
+      for (const recipe of recipes) {
+        await addRecipeIngredientsToGroceryList(recipe);
+      }
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success(`Ingredients from ${recipes.length} recipes added to your grocery list!`);
+    } catch (error) {
+      console.error('Failed to add ingredients:', error);
+      toast.error('Failed to update grocery list');
+    } finally {
+      // Reset all states
+      setAddingToGroceryList(false);
+      setPendingMealPlanForGroceryList(false);
+    }
+  };
+
   return (
     <div className="min-h-full bg-zinc-50">
-      <PageHeader title="Meal Planning" />
+      <PageHeader 
+        title="Meal Planning"
+        actions={
+          <button
+            onClick={handleAddAllToGroceryList}
+            disabled={addingToGroceryList}
+            className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md text-white ${
+              addingToGroceryList 
+              ? 'bg-violet-400 cursor-not-allowed' 
+              : 'bg-violet-600 hover:bg-violet-700'
+            } transition-colors duration-200`}
+          >
+            {addingToGroceryList ? (
+              <>
+                <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                  <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                Processing...
+              </>
+            ) : (
+              <>
+                <ShoppingCartIcon className="h-5 w-5" />
+                Add All to Grocery List
+              </>
+            )}
+          </button>
+        }
+      />
 
       <div className="container mx-auto px-4 py-8">
         {error && (
@@ -587,6 +764,40 @@ const MealPlanPage: React.FC = () => {
           message="Are you sure you want to delete this meal? This action cannot be undone."
           confirmText="Delete"
           cancelText="Cancel"
+        />
+
+        {/* Add the ConfirmGroceryListDialog */}
+        <ConfirmGroceryListDialog
+          isOpen={showGroceryListConfirm}
+          onClose={() => {
+            if (!addingToGroceryList) {
+              setShowGroceryListConfirm(false);
+              setPendingMealPlanForGroceryList(false);
+            }
+          }}
+          onConfirmClear={handleClearAndAddToGroceryList}
+          onConfirmAdd={handleAddToExistingGroceryList}
+          isLoading={addingToGroceryList}
+        />
+
+        {/* Add the Toaster for notifications */}
+        <Toaster 
+          position="bottom-center"
+          toastOptions={{
+            duration: 5000,
+            loading: {
+              duration: Infinity
+            },
+            success: {
+              duration: 3000,
+            },
+            error: {
+              duration: 4000,
+            },
+            style: {
+              maxWidth: '500px',
+            },
+          }}
         />
       </div>
     </div>

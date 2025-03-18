@@ -58,6 +58,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [pendingRecipeForGroceryList, setPendingRecipeForGroceryList] = useState<string | null>(null);
+  const [addingToGroceryList, setAddingToGroceryList] = useState(false);
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -270,13 +271,16 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
 
   const handleAddToGroceryList = async (recipeId: string) => {
     try {
+      setAddingToGroceryList(true);
+      
       // Get the recipe details
       const recipe = await getRecipe(recipeId);
       if (!recipe) {
         console.error('Recipe not found');
+        setAddingToGroceryList(false);
         return;
       }
-
+      
       // Check if user already has items in the grocery list
       const userLists = await getUserShoppingLists('default-user');
       if (userLists.length > 0 && userLists[0].items.length > 0) {
@@ -287,42 +291,52 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         // No items in list, just add ingredients
         await addRecipeIngredientsToGroceryList(recipe);
         toast.success('Recipe ingredients added to your grocery list!');
+        setAddingToGroceryList(false);
       }
     } catch (error) {
-      console.error('Failed to add ingredients to grocery list:', error);
+      console.error('Failed to add recipe to grocery list:', error);
       toast.error('Failed to add ingredients to grocery list');
+      setAddingToGroceryList(false);
     }
   };
 
   const handleClearAndAddToGroceryList = async () => {
     if (!pendingRecipeForGroceryList) return;
-    
+
     try {
+      // Close dialog but keep loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Clearing grocery list and adding ingredients...');
+      
+      // Get the recipe details
       const recipe = await getRecipe(pendingRecipeForGroceryList);
       if (!recipe) {
         console.error('Recipe not found');
+        toast.error('Recipe not found');
+        setAddingToGroceryList(false);
+        setPendingRecipeForGroceryList(null);
         return;
       }
       
-      // Clear the existing list and add the new ingredients
+      // Clear existing list and add new ingredients
       const userLists = await getUserShoppingLists('default-user');
       if (userLists.length > 0) {
         const list = userLists[0];
-        
-        // Clear all items
         await updateShoppingList(list.id, { items: [] });
-        
-        // Add the new ingredients
         await addRecipeIngredientsToGroceryList(recipe);
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToast);
         toast.success('Grocery list cleared and new ingredients added!');
       }
     } catch (error) {
-      console.error('Failed to clear and add ingredients:', error);
+      console.error('Failed to update grocery list:', error);
       toast.error('Failed to update grocery list');
     } finally {
-      // Close the dialog and reset the pending recipe
-      setShowGroceryListConfirm(false);
       setPendingRecipeForGroceryList(null);
+      setAddingToGroceryList(false);
     }
   };
 
@@ -330,22 +344,34 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
     if (!pendingRecipeForGroceryList) return;
     
     try {
+      // Close dialog but keep loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Adding ingredients to grocery list...');
+      
+      // Get the recipe details
       const recipe = await getRecipe(pendingRecipeForGroceryList);
       if (!recipe) {
         console.error('Recipe not found');
+        toast.error('Recipe not found');
+        setAddingToGroceryList(false);
+        setPendingRecipeForGroceryList(null);
         return;
       }
       
       // Add to existing list
       await addRecipeIngredientsToGroceryList(recipe);
-      toast.success('Ingredients added to your grocery list!');
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success('Recipe ingredients added to your grocery list!');
     } catch (error) {
-      console.error('Failed to add ingredients:', error);
+      console.error('Failed to add to grocery list:', error);
       toast.error('Failed to update grocery list');
     } finally {
-      // Close the dialog and reset the pending recipe
-      setShowGroceryListConfirm(false);
       setPendingRecipeForGroceryList(null);
+      setAddingToGroceryList(false);
     }
   };
 
@@ -673,15 +699,35 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       <ConfirmGroceryListDialog
         isOpen={showGroceryListConfirm}
         onClose={() => {
-          setShowGroceryListConfirm(false);
-          setPendingRecipeForGroceryList(null);
+          if (!addingToGroceryList) {
+            setShowGroceryListConfirm(false);
+            setPendingRecipeForGroceryList(null);
+          }
         }}
         onConfirmClear={handleClearAndAddToGroceryList}
         onConfirmAdd={handleAddToExistingGroceryList}
+        isLoading={addingToGroceryList}
       />
       
       {/* Toast notifications */}
-      <Toaster position="bottom-center" />
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          duration: 5000,
+          loading: {
+            duration: Infinity
+          },
+          success: {
+            duration: 3000,
+          },
+          error: {
+            duration: 4000,
+          },
+          style: {
+            maxWidth: '500px',
+          },
+        }}
+      />
     </div>
   );
 }; 

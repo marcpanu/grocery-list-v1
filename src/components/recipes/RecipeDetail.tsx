@@ -37,6 +37,7 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [addingToGroceryList, setAddingToGroceryList] = useState(false);
 
   useEffect(() => {
     loadRecipe();
@@ -80,8 +81,10 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
 
   const handleAddToGroceryList = async () => {
     if (!recipe) return;
-
+    
     try {
+      setAddingToGroceryList(true);
+      
       // Check if user already has items in the grocery list
       const userLists = await getUserShoppingLists('default-user');
       if (userLists.length > 0 && userLists[0].items.length > 0) {
@@ -89,12 +92,16 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
         setShowGroceryListConfirm(true);
       } else {
         // No items in list, just add ingredients
+        const loadingToast = toast.loading('Adding ingredients to your grocery list...');
         await addRecipeIngredientsToGroceryList(recipe);
+        toast.dismiss(loadingToast);
         toast.success('Recipe ingredients added to your grocery list!');
+        setAddingToGroceryList(false);
       }
     } catch (error) {
       console.error('Failed to add ingredients to grocery list:', error);
       toast.error('Failed to add ingredients to grocery list');
+      setAddingToGroceryList(false);
     }
   };
 
@@ -102,24 +109,28 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     if (!recipe) return;
     
     try {
+      // Close dialog but keep loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Clearing grocery list and adding ingredients...');
+      
       // Clear the existing list and add the new ingredients
       const userLists = await getUserShoppingLists('default-user');
       if (userLists.length > 0) {
         const list = userLists[0];
-        
-        // Clear all items
         await updateShoppingList(list.id, { items: [] });
-        
-        // Add the new ingredients
         await addRecipeIngredientsToGroceryList(recipe);
+        
+        // Dismiss loading toast and show success
+        toast.dismiss(loadingToast);
         toast.success('Grocery list cleared and new ingredients added!');
       }
     } catch (error) {
       console.error('Failed to clear and add ingredients:', error);
       toast.error('Failed to update grocery list');
     } finally {
-      // Close the dialog
-      setShowGroceryListConfirm(false);
+      setAddingToGroceryList(false);
     }
   };
 
@@ -127,15 +138,23 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
     if (!recipe) return;
     
     try {
+      // Close dialog but keep loading state
+      setShowGroceryListConfirm(false);
+      
+      // Show loading toast
+      const loadingToast = toast.loading('Adding ingredients to grocery list...');
+      
       // Add to existing list
       await addRecipeIngredientsToGroceryList(recipe);
-      toast.success('Ingredients added to your grocery list!');
+      
+      // Dismiss loading toast and show success
+      toast.dismiss(loadingToast);
+      toast.success('Recipe ingredients added to your grocery list!');
     } catch (error) {
       console.error('Failed to add ingredients:', error);
       toast.error('Failed to update grocery list');
     } finally {
-      // Close the dialog
-      setShowGroceryListConfirm(false);
+      setAddingToGroceryList(false);
     }
   };
 
@@ -350,13 +369,35 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
       {/* Confirmation Dialog for Grocery List */}
       <ConfirmGroceryListDialog
         isOpen={showGroceryListConfirm}
-        onClose={() => setShowGroceryListConfirm(false)}
+        onClose={() => {
+          if (!addingToGroceryList) {
+            setShowGroceryListConfirm(false);
+          }
+        }}
         onConfirmClear={handleClearAndAddToGroceryList}
         onConfirmAdd={handleAddToExistingGroceryList}
+        isLoading={addingToGroceryList}
       />
       
       {/* Toast notifications */}
-      <Toaster position="bottom-center" />
+      <Toaster 
+        position="bottom-center"
+        toastOptions={{
+          duration: 5000,
+          loading: {
+            duration: Infinity
+          },
+          success: {
+            duration: 3000,
+          },
+          error: {
+            duration: 4000,
+          },
+          style: {
+            maxWidth: '500px',
+          },
+        }}
+      />
     </div>
   );
 }; 
