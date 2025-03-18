@@ -50,6 +50,7 @@ shopping-list/
 - Category management
 - Shopping route optimization
 - List sharing capabilities
+- Automatic item categorization
 
 ### Phase 4: Configuration and Optimization
 - Store management system
@@ -415,3 +416,67 @@ interface MealPlanView {
    - Loading indicators
    - Error states
    - Empty states 
+## Feature Ideas
+
+### Automatic Item Categorization (Icebox)
+
+We plan to implement an automatic categorization system for grocery list items to improve user experience. The feature will automatically assign appropriate categories to items like "chicken" (e.g., "Poultry" or "Meat & Seafood").
+
+#### Implementation Options
+
+1. **Keyword-Based System**
+   - Maintain a dictionary of common grocery items and their categories
+   - Simple but limited to predefined items
+   - Doesn't handle spelling variations well
+
+2. **Machine Learning Classification**
+   - Use a text classification model trained on grocery items
+   - Better at handling variations and new items
+   - More complex to implement and may require API calls
+
+3. **Hybrid Approach (Recommended)**
+   - Start with a basic keyword dictionary for common items
+   - Add fuzzy matching for spelling variations
+   - Allow user customizations of categorizations
+   - Store and learn from user customizations over time
+   - Balance of simplicity and effectiveness
+
+#### Implementation Strategy (Future)
+
+When this feature is implemented, we should:
+
+1. Create a base categorization system:
+   - JSON mapping of common grocery items to categories
+   - Include category hierarchies
+   - Support partial matching
+
+2. Add user customization layer:
+   - Store user-defined categorizations in Firestore
+   - Prioritize user customizations over defaults
+
+3. Implement fuzzy matching:
+   - Use string similarity algorithms
+   - Set appropriate thresholds
+
+4. Build a learning mechanism:
+   - Track patterns in user categorizations
+   - Update base categories based on user behavior
+
+#### Example Storage Structure
+
+```typescript
+// Base categories (application-wide)
+interface CategoryMapping {
+  keywords: Record<string, string>; // e.g., {"chicken": "poultry", "apple": "fruits"}
+  hierarchy: Record<string, string>; // e.g., {"poultry": "meat-seafood"}
+}
+
+// User customizations (in Firestore)
+interface UserCategorizations {
+  userId: string;
+  customMappings: Record<string, string>; // e.g., {"chicken breasts": "proteins"}
+  categoryPreferences: Record<string, UserCategory>;
+}
+```
+
+## Technical Details 
