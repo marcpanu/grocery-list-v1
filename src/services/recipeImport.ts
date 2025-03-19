@@ -1,6 +1,7 @@
 import { parseRecipeUrl } from './recipeParser';
 import { addRecipe } from '../firebase/firestore';
 import { Recipe } from '../types/recipe';
+import { normalizeIngredientQuantity } from '../utils/recipeProcessing';
 
 export async function importRecipeFromUrl(data: { 
   url: string;
@@ -8,17 +9,16 @@ export async function importRecipeFromUrl(data: {
   // Parse the recipe from the URL
   const parsedRecipe = await parseRecipeUrl(data.url);
 
-  // Convert parsed recipe to our Recipe format, handling all optional fields
+  // Convert parsed recipe to our Recipe format
   const recipe: Omit<Recipe, 'id'> = {
     name: parsedRecipe.name,
-    description: parsedRecipe.description || null,
-    prepTime: parsedRecipe.prepTime || '<30',
-    cookTime: parsedRecipe.cookTime || null,
-    totalTime: parsedRecipe.totalTime || null,
+    description: parsedRecipe.description || undefined,
+    prepTime: parsedRecipe.prepTime ? parseInt(parsedRecipe.prepTime) : undefined,
+    cookTime: parsedRecipe.cookTime ? parseInt(parsedRecipe.cookTime) : undefined,
     servings: parsedRecipe.servings || 4,
     ingredients: parsedRecipe.ingredients.map(ing => ({
       name: ing.name,
-      quantity: ing.quantity || '',
+      quantity: normalizeIngredientQuantity(ing.quantity || '1'),
       unit: ing.unit || null,
       notes: ing.notes || null
     })),
@@ -26,11 +26,11 @@ export async function importRecipeFromUrl(data: {
       order: index + 1,
       instruction: inst
     })),
-    imageUrl: parsedRecipe.imageUrl || null,
-    notes: parsedRecipe.author ? `Author: ${parsedRecipe.author}` : null,
+    imageUrl: parsedRecipe.imageUrl || undefined,
+    notes: parsedRecipe.author ? `Author: ${parsedRecipe.author}` : undefined,
     mealTypes: ['dinner'],
-    cuisine: parsedRecipe.cuisine || [],
-    rating: null,
+    cuisine: parsedRecipe.cuisine || undefined,
+    rating: undefined,
     dateAdded: new Date(),
     isFavorite: false,
     source: {

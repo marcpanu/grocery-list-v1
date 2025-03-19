@@ -241,11 +241,28 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
     return instruction.text || instruction.description || '';
   }).filter(Boolean);
 
-  // Helper function to clean up time strings
-  const cleanTimeString = (time: string | undefined): string | undefined => {
+  // Helper function to convert time strings to minutes
+  const timeToMinutes = (time: string | undefined): number | undefined => {
     if (!time) return undefined;
-    // Remove any PT prefix (ISO duration format) and convert to simple format
-    return time.replace(/^PT/, '').replace(/H/, ' hours ').replace(/M/, ' minutes').trim();
+    
+    // Remove any PT prefix (ISO duration format)
+    time = time.replace(/^PT/, '');
+    
+    let minutes = 0;
+    
+    // Handle hours
+    const hoursMatch = time.match(/(\d+)H/);
+    if (hoursMatch) {
+      minutes += parseInt(hoursMatch[1]) * 60;
+    }
+    
+    // Handle minutes
+    const minutesMatch = time.match(/(\d+)M/);
+    if (minutesMatch) {
+      minutes += parseInt(minutesMatch[1]);
+    }
+    
+    return minutes;
   };
 
   // Handle image URL (can be string or object)
@@ -258,9 +275,8 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
   return {
     name: schema.name || 'Untitled Recipe',
     description: schema.description || undefined,
-    prepTime: cleanTimeString(schema.prepTime) || '30-60',
-    cookTime: cleanTimeString(schema.cookTime),
-    totalTime: cleanTimeString(schema.totalTime),
+    prepTime: timeToMinutes(schema.prepTime),
+    cookTime: timeToMinutes(schema.cookTime),
     servings: parseServings(schema.recipeYield) || 4,
     ingredients,
     instructions,
@@ -271,7 +287,7 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
       ? schema.recipeCuisine 
       : schema.recipeCuisine 
         ? [schema.recipeCuisine] 
-        : []
+        : undefined
   };
 }
 
@@ -282,7 +298,8 @@ function parseIngredient(text: string): ParsedIngredient {
   // Basic ingredient parsing - this can be enhanced
   const ingredient: ParsedIngredient = {
     original: text,
-    name: text
+    name: text,
+    quantity: 1 // Default to 1 if parsing fails
   };
 
   // Try to extract quantity and unit
