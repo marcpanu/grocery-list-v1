@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, ArrowLeftIcon, ArrowRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
@@ -40,6 +40,7 @@ export const MealPlanPage: React.FC = () => {
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
+  const [currentWeekLabel, setCurrentWeekLabel] = useState('October 1-7, 2023');
 
   // Use the recipe import hook
   const {
@@ -478,9 +479,80 @@ export const MealPlanPage: React.FC = () => {
           </div>
         )}
         
+        {/* Week Navigation - Non-functional UI component */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <div className="flex items-center justify-between">
+            <div className="flex items-center space-x-2">
+              <button className="p-2 rounded-full text-zinc-500 hover:bg-zinc-100">
+                <ArrowLeftIcon className="h-5 w-5" />
+              </button>
+              <div className="flex items-center gap-2">
+                <CalendarIcon className="h-5 w-5 text-violet-600" />
+                <span className="font-medium">{currentWeekLabel}</span>
+              </div>
+              <button className="p-2 rounded-full text-zinc-500 hover:bg-zinc-100">
+                <ArrowRightIcon className="h-5 w-5" />
+              </button>
+            </div>
+            <div className="flex items-center space-x-2">
+              <button className="px-3 py-1.5 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
+                Today
+              </button>
+              <button className="px-3 py-1.5 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
+                Select Date
+              </button>
+            </div>
+          </div>
+        </div>
+        
+        {/* Week Timeline - Non-functional UI component */}
+        <div className="bg-white rounded-lg shadow p-4 mb-4">
+          <div className="flex items-center justify-between mb-2">
+            <h3 className="text-sm font-medium text-zinc-700">Timeline</h3>
+          </div>
+          <div className="flex items-center space-x-2 py-2 overflow-x-auto">
+            {[
+              { week: 'Sep 17-23', isPast: true, hasPlans: true },
+              { week: 'Sep 24-30', isPast: true, hasPlans: true },
+              { week: 'Oct 1-7', isCurrent: true, hasPlans: true },
+              { week: 'Oct 8-14', isFuture: true, hasPlans: false },
+              { week: 'Oct 15-21', isFuture: true, hasPlans: false }
+            ].map((weekData, index) => (
+              <div 
+                key={index}
+                className={`flex-shrink-0 p-2 rounded-md border ${
+                  weekData.isCurrent 
+                    ? 'border-violet-600 bg-violet-50' 
+                    : weekData.isPast 
+                      ? 'border-zinc-200 bg-zinc-50' 
+                      : 'border-zinc-200'
+                }`}
+              >
+                <div className="text-xs font-medium">{weekData.week}</div>
+                <div className="mt-1 flex items-center">
+                  <div 
+                    className={`h-1 w-full rounded-full ${
+                      weekData.hasPlans 
+                        ? weekData.isCurrent 
+                          ? 'bg-violet-600' 
+                          : 'bg-zinc-400' 
+                        : 'bg-zinc-200'
+                    }`}
+                  ></div>
+                </div>
+              </div>
+            ))}
+          </div>
+        </div>
+        
         {/* Weekly Calendar */}
         <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-8">
-          <h2 className="text-lg font-semibold mb-6">Weekly Overview</h2>
+          <div className="flex items-center justify-between mb-6">
+            <h2 className="text-lg font-semibold">Weekly Overview</h2>
+            {/* Current week indicator - Non-functional UI component */}
+            <span className="text-sm text-zinc-500">Week of Oct 1, 2023</span>
+          </div>
+          
           <WeeklyCalendarView
             mealPlans={mealPlans}
             isLoading={isLoading}
@@ -516,7 +588,7 @@ export const MealPlanPage: React.FC = () => {
             </button>
           </div>
         </div>
-
+        
         {/* Day Details */}
         <div className="bg-white rounded-lg shadow p-4 md:p-6">
           <DayDetails
