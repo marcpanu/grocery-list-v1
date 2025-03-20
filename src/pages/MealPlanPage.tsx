@@ -8,7 +8,7 @@ import { AddMealData } from '../types/mealPlan';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
 import { ScheduleMealModal, ScheduleMealData } from '../components/mealPlan/ScheduleMealModal';
-import { addMealPlan, getUserMealPlans, deleteMeal, getRecipe, getUserShoppingLists, updateShoppingList, addRecipeIngredientsToGroceryList } from '../firebase/firestore';
+import { addMealPlan, getUserMealPlans, deleteMeal, getRecipe, getUserShoppingLists, updateShoppingList, addRecipeIngredientsToGroceryList, updateMeal } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Timestamp } from 'firebase/firestore';
@@ -226,8 +226,18 @@ export const MealPlanPage: React.FC = () => {
   };
 
   const handleEditMeal = (meal: Meal) => {
-    // TODO: Implement meal editing
-    console.log('Edit meal:', meal);
+    // Open the ScheduleMealModal to replace with a different recipe
+    if (meal.recipeId) {
+      getRecipe(meal.recipeId).then(recipe => {
+        if (recipe) {
+          setSelectedRecipe(recipe);
+          setShowScheduleMealModal(true);
+        }
+      });
+    } else {
+      // For quick add meals, open the quick add modal
+      setShowQuickAddModal(true);
+    }
   };
 
   const handleDeleteMeal = (mealId: string) => {
@@ -460,6 +470,34 @@ export const MealPlanPage: React.FC = () => {
     }
   };
 
+  // New function to update a meal in Firestore
+  const handleUpdateMeal = async (mealId: string, updates: Partial<Meal>) => {
+    try {
+      setIsLoading(true);
+      setError(null);
+      
+      // Update in Firestore
+      await updateMeal(DEFAULT_USER_ID, mealId, updates);
+      
+      // Update local state
+      setMealPlans(prevPlans => 
+        prevPlans.map(plan => ({
+          ...plan,
+          meals: plan.meals.map(meal => 
+            meal.id === mealId ? { ...meal, ...updates } : meal
+          )
+        }))
+      );
+      
+      toast.success('Meal updated successfully!');
+    } catch (error) {
+      console.error('Failed to update meal:', error);
+      toast.error('Failed to update meal. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-full bg-zinc-50">
       <PageHeader 
@@ -479,36 +517,19 @@ export const MealPlanPage: React.FC = () => {
           </div>
         )}
         
-        {/* Week Navigation - Non-functional UI component */}
+        {/* Week Timeline with Today button */}
         <div className="bg-white rounded-lg shadow p-3 mb-3">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-1">
-              <button className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100">
-                <ArrowLeftIcon className="h-4 w-4" />
-              </button>
+          <div className="flex items-center justify-between mb-1">
+            <div className="flex items-center gap-2">
+              <h3 className="text-xs font-medium text-zinc-700">Timeline</h3>
               <div className="flex items-center gap-1.5">
                 <CalendarIcon className="h-4 w-4 text-violet-600" />
                 <span className="font-medium text-sm">{currentWeekLabel}</span>
               </div>
-              <button className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100">
-                <ArrowRightIcon className="h-4 w-4" />
-              </button>
             </div>
-            <div className="flex items-center space-x-1.5">
-              <button className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
-                Today
-              </button>
-              <button className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
-                Select
-              </button>
-            </div>
-          </div>
-        </div>
-        
-        {/* Week Timeline - Non-functional UI component (more compact) */}
-        <div className="bg-white rounded-lg shadow p-3 mb-3">
-          <div className="flex items-center justify-between mb-1">
-            <h3 className="text-xs font-medium text-zinc-700">Timeline</h3>
+            <button className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
+              Today
+            </button>
           </div>
           <div className="flex items-center space-x-1.5 py-1 overflow-x-auto scrollbar-hide">
             {[
@@ -596,6 +617,7 @@ export const MealPlanPage: React.FC = () => {
             meals={selectedDayMeals}
             onEditMeal={handleEditMeal}
             onDeleteMeal={handleDeleteMeal}
+            onUpdateMeal={handleUpdateMeal}
           />
         </div>
 

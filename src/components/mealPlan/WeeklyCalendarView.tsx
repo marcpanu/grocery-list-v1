@@ -86,8 +86,8 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
             key={day}
             onClick={() => onDateSelect(day)}
             className={`
-              relative flex flex-col items-center p-2 md:p-4 rounded-lg border
-              transition-all duration-200 min-h-[80px] md:min-h-[120px]
+              relative flex flex-col items-center p-1.5 md:p-3 rounded-lg border
+              transition-all duration-200 min-h-[60px] md:min-h-[90px]
               ${isSelected 
                 ? 'border-violet-600 bg-violet-50 shadow-sm' 
                 : 'border-gray-200 hover:border-violet-300 hover:bg-violet-50/50'
@@ -95,7 +95,7 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
             `}
           >
             {/* Day header */}
-            <div className="w-full flex justify-between items-center mb-2">
+            <div className="w-full flex justify-between items-center mb-1">
               <span className="md:hidden font-medium">{daysOfWeek[index]}</span>
               <span className="hidden md:block font-medium">{day}</span>
               {totalMeals > 0 && (
@@ -106,7 +106,7 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
             </div>
 
             {/* Meal type indicators */}
-            <div className="flex flex-col gap-1 items-center mt-auto">
+            <div className="flex flex-col gap-0.5 items-center mt-auto">
               {Object.entries(dayMeals).map(([type, meals]) => 
                 getMealTypeIndicator(type as MealPlanMealType, meals.length) && (
                   <div key={type}>

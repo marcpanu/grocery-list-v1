@@ -285,20 +285,90 @@ export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
 };
 
 export const deleteMeal = async (userId: string, mealId: string): Promise<void> => {
-  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
-  const mealPlanSnap = await getDoc(mealPlanRef);
-  
-  if (!mealPlanSnap.exists()) {
-    throw new Error('Meal plan not found');
-  }
+  try {
+    // Get all meal plans for the user
+    const userMealPlansRef = collection(db, COLLECTIONS.MEAL_PLANS);
+    const userMealPlansQuery = query(userMealPlansRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(userMealPlansQuery);
 
-  const data = mealPlanSnap.data();
-  const updatedMeals = data.meals.filter((meal: any) => meal.id !== mealId);
-  
-  await updateDoc(mealPlanRef, {
-    meals: updatedMeals,
-    updatedAt: Timestamp.now()
-  });
+    // For each meal plan, check if it contains the meal to delete
+    const batch = writeBatch(db);
+    let mealFound = false;
+
+    querySnapshot.forEach((docSnap) => {
+      const mealPlan = docSnap.data() as MealPlan;
+      // Check if this meal plan contains the meal to delete
+      const mealIndex = mealPlan.meals.findIndex(meal => meal.id === mealId);
+      if (mealIndex >= 0) {
+        mealFound = true;
+        // Remove the meal from the meals array
+        const updatedMeals = [...mealPlan.meals];
+        updatedMeals.splice(mealIndex, 1);
+        
+        // Update the meal plan in the batch
+        const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, docSnap.id);
+        batch.update(mealPlanRef, { 
+          meals: updatedMeals,
+          updatedAt: Timestamp.now()
+        });
+      }
+    });
+
+    if (!mealFound) {
+      throw new Error(`Meal with ID ${mealId} not found for user ${userId}`);
+    }
+
+    // Commit the batch
+    await batch.commit();
+  } catch (error) {
+    console.error("Error deleting meal:", error);
+    throw error;
+  }
+};
+
+export const updateMeal = async (userId: string, mealId: string, updates: Partial<DocumentData>): Promise<void> => {
+  try {
+    // Get all meal plans for the user
+    const userMealPlansRef = collection(db, COLLECTIONS.MEAL_PLANS);
+    const userMealPlansQuery = query(userMealPlansRef, where('userId', '==', userId));
+    const querySnapshot = await getDocs(userMealPlansQuery);
+
+    // For each meal plan, check if it contains the meal to update
+    const batch = writeBatch(db);
+    let mealFound = false;
+
+    querySnapshot.forEach((docSnap) => {
+      const mealPlan = docSnap.data() as MealPlan;
+      // Check if this meal plan contains the meal to update
+      const mealIndex = mealPlan.meals.findIndex(meal => meal.id === mealId);
+      if (mealIndex >= 0) {
+        mealFound = true;
+        // Update the meal in the meals array
+        const updatedMeals = [...mealPlan.meals];
+        updatedMeals[mealIndex] = {
+          ...updatedMeals[mealIndex],
+          ...updates
+        };
+        
+        // Update the meal plan in the batch
+        const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, docSnap.id);
+        batch.update(mealPlanRef, { 
+          meals: updatedMeals,
+          updatedAt: Timestamp.now()
+        });
+      }
+    });
+
+    if (!mealFound) {
+      throw new Error(`Meal with ID ${mealId} not found for user ${userId}`);
+    }
+
+    // Commit the batch
+    await batch.commit();
+  } catch (error) {
+    console.error("Error updating meal:", error);
+    throw error;
+  }
 };
 
 // Store Operations
