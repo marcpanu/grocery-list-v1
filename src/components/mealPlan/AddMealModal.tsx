@@ -208,11 +208,6 @@ export const AddMealModal = ({
       return;
     }
 
-    if (!selectedRecipe && formData.mealTypes.length === 0) {
-      setError('Please select at least one meal type for the recipe');
-      return;
-    }
-
     const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
@@ -302,7 +297,7 @@ export const AddMealModal = ({
 
               <div>
                 <label className="block text-sm font-medium text-zinc-700">
-                  Recipe Type <span className="text-red-500">*</span>
+                  Recipe Type
                 </label>
                 <div className="mt-1 flex flex-wrap gap-2">
                   {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
@@ -325,9 +320,62 @@ export const AddMealModal = ({
                 </div>
               </div>
 
-              {/* Only show meal plan specific fields when adding to meal plan */}
+              <div className="grid grid-cols-1 gap-4 sm:grid-cols-2">
+                <div>
+                  <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
+                    Prep Time
+                  </label>
+                  <select
+                    id="prepTime"
+                    value={formData.prepTime}
+                    onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    disabled={isLoading}
+                  >
+                    <option value="">Select prep time</option>
+                    <option value="<30">Less than 30 minutes</option>
+                    <option value="30-60">30-60 minutes</option>
+                    <option value="60+">More than 60 minutes</option>
+                  </select>
+                </div>
+
+                <div>
+                  <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
+                    Cook Time
+                  </label>
+                  <select
+                    id="cookTime"
+                    value={formData.cookTime || ''}
+                    onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
+                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                    disabled={isLoading}
+                  >
+                    <option value="">Select cook time</option>
+                    <option value="<30">Less than 30 minutes</option>
+                    <option value="30-60">30-60 minutes</option>
+                    <option value="60+">More than 60 minutes</option>
+                  </select>
+                </div>
+              </div>
+
+              <div>
+                <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
+                  Servings <span className="text-red-500">*</span>
+                </label>
+                <input
+                  type="number"
+                  id="servings"
+                  value={formData.servings}
+                  onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
+                  min="1"
+                  className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  required
+                  disabled={isLoading}
+                />
+              </div>
+
               {isAddingToMealPlan && (
-                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                <div className="grid grid-cols-1 gap-4">
                   <div>
                     <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
                       Meal of the Day <span className="text-red-500">*</span>
@@ -347,58 +395,6 @@ export const AddMealModal = ({
                       <option value="snack">Snack</option>
                       <option value="dessert">Dessert</option>
                     </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-                      Prep Time
-                    </label>
-                    <select
-                      id="prepTime"
-                      value={formData.prepTime}
-                      onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                      disabled={isLoading}
-                    >
-                      <option value="">Select prep time</option>
-                      <option value="<30">Less than 30 minutes</option>
-                      <option value="30-60">30-60 minutes</option>
-                      <option value="60+">More than 60 minutes</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
-                      Cook Time
-                    </label>
-                    <select
-                      id="cookTime"
-                      value={formData.cookTime || ''}
-                      onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                      disabled={isLoading}
-                    >
-                      <option value="">Select cook time</option>
-                      <option value="<30">Less than 30 minutes</option>
-                      <option value="30-60">30-60 minutes</option>
-                      <option value="60+">More than 60 minutes</option>
-                    </select>
-                  </div>
-
-                  <div>
-                    <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
-                      Servings <span className="text-red-500">*</span>
-                    </label>
-                    <input
-                      type="number"
-                      id="servings"
-                      value={formData.servings}
-                      onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
-                      min="1"
-                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                      required
-                      disabled={isLoading}
-                    />
                   </div>
                 </div>
               )}
