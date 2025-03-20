@@ -806,18 +806,37 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     
     const pantryItems = preferences?.pantryItems || [];
     
-    // Import the ingredient processing utilities - using dynamic import
+    // Import the ingredient processing utilities
     const { processIngredientsToShoppingItems } = await import('../services/recipeIngredientProcessing');
+    const { processIngredientsForGrocery } = await import('../utils/groceryStandardization');
+    
+    // First - standardize ingredients for grocery shopping (convert to whole items where appropriate)
+    const standardizedItems = processIngredientsForGrocery(recipe.ingredients.map(ing => ({
+      ...ing,
+      quantity: typeof ing.quantity === 'string' 
+        ? parseFloat(ing.quantity) || 1 
+        : ing.quantity * servingMultiplier
+    })));
+    
+    console.log('Standardized grocery items:', standardizedItems);
+    
+    // Then - convert them to shopping items with categories
+    // Create properly formatted ingredients for the categorization process
+    const formattedIngredients = standardizedItems.map(item => ({
+      name: item.name,
+      quantity: item.quantity,
+      unit: item.unit,
+      notes: null  // Add the required notes property
+    }));
     
     // Process ingredients to standardized shopping items with automatic categorization
-    // Pass the user's categories from the shopping list
     const shoppingItems = processIngredientsToShoppingItems(
-      recipe.ingredients,
-      servingMultiplier,
+      formattedIngredients,
+      1, // We've already applied the multiplier
       list.categories // Pass the user's categories
     );
     
-    console.log('Processed shopping items:', shoppingItems);
+    console.log('Processed shopping items with categories:', shoppingItems);
     
     // Add each processed item to the list
     for (const item of shoppingItems) {
