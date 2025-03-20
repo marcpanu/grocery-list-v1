@@ -17,6 +17,7 @@ interface AddMealModalProps {
 export interface AddMealData {
   name: string;
   description?: string;
+  mealTypes: string[];
   mealPlanMeal: MealPlanMealType;
   days: string[];
   servings: number;
@@ -33,6 +34,7 @@ export interface AddMealData {
 interface FormData {
   name: string;
   description: string;
+  mealTypes: string[];
   mealPlanMeal: string;
   days: string[];
   servings: number;
@@ -57,6 +59,7 @@ export const AddMealModal = ({
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
+    mealTypes: [],
     mealPlanMeal: '',
     days: [],
     servings: 2,
@@ -78,7 +81,8 @@ export const AddMealModal = ({
       setFormData({
         name: selectedRecipe.name,
         description: selectedRecipe.description || '',
-        mealPlanMeal: (selectedRecipe.mealTypes && selectedRecipe.mealTypes.length > 0) ? selectedRecipe.mealTypes[0] : '',
+        mealTypes: selectedRecipe.mealTypes || [],
+        mealPlanMeal: '',
         days: [],
         servings: selectedRecipe.servings,
         prepTime: selectedRecipe.prepTime?.toString() || '',
@@ -94,6 +98,7 @@ export const AddMealModal = ({
       setFormData({
         name: '',
         description: '',
+        mealTypes: [],
         mealPlanMeal: '',
         days: [],
         servings: 2,
@@ -168,8 +173,8 @@ export const AddMealModal = ({
       return;
     }
 
-    if (!formData.mealPlanMeal) {
-      setError('Meal type is required');
+    if (isAddingToMealPlan && !formData.mealPlanMeal) {
+      setError('Please select which meal of the day this is for');
       return;
     }
 
@@ -207,9 +212,15 @@ export const AddMealModal = ({
       return;
     }
 
+    if (!selectedRecipe && formData.mealTypes.length === 0) {
+      setError('Please select at least one meal type for the recipe');
+      return;
+    }
+
     const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
+      mealTypes: formData.mealTypes,
       mealPlanMeal: formData.mealPlanMeal as MealPlanMealType,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
@@ -293,63 +304,91 @@ export const AddMealModal = ({
                 />
               </div>
 
-              <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
-                <div>
-                  <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
-                    Meal Type <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="mealPlanMeal"
-                    value={formData.mealPlanMeal}
-                    onChange={(e) => setFormData(prev => ({ ...prev, mealPlanMeal: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    required
-                    disabled={isLoading}
-                  >
-                    <option value="">Select a meal type</option>
-                    <option value="breakfast">Breakfast</option>
-                    <option value="lunch">Lunch</option>
-                    <option value="dinner">Dinner</option>
-                    <option value="snack">Snack</option>
-                    <option value="dessert">Dessert</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-                    Prep Time <span className="text-red-500">*</span>
-                  </label>
-                  <select
-                    id="prepTime"
-                    value={formData.prepTime}
-                    onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
-                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    required
-                    disabled={isLoading}
-                  >
-                    <option value="">Select prep time</option>
-                    <option value="<30">Less than 30 minutes</option>
-                    <option value="30-60">30-60 minutes</option>
-                    <option value="60+">More than 60 minutes</option>
-                  </select>
-                </div>
-
-                <div>
-                  <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
-                    Servings <span className="text-red-500">*</span>
-                  </label>
-                  <input
-                    type="number"
-                    id="servings"
-                    value={formData.servings}
-                    onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
-                    min="1"
-                    className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                    required
-                    disabled={isLoading}
-                  />
+              <div>
+                <label className="block text-sm font-medium text-zinc-700">
+                  Recipe Type <span className="text-red-500">*</span>
+                </label>
+                <div className="mt-1 flex flex-wrap gap-2">
+                  {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
+                    <label key={type} className="inline-flex items-center">
+                      <input
+                        type="checkbox"
+                        checked={formData.mealTypes.includes(type)}
+                        onChange={(e) => {
+                          const newMealTypes = e.target.checked
+                            ? [...formData.mealTypes, type]
+                            : formData.mealTypes.filter(t => t !== type);
+                          setFormData(prev => ({ ...prev, mealTypes: newMealTypes }));
+                        }}
+                        className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                        disabled={isLoading || !!selectedRecipe}
+                      />
+                      <span className="ml-2 text-sm text-zinc-700 capitalize">{type}</span>
+                    </label>
+                  ))}
                 </div>
               </div>
+
+              {/* Only show meal plan specific fields when adding to meal plan */}
+              {isAddingToMealPlan && (
+                <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                  <div>
+                    <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
+                      Meal of the Day <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="mealPlanMeal"
+                      value={formData.mealPlanMeal}
+                      onChange={(e) => setFormData(prev => ({ ...prev, mealPlanMeal: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      required={isAddingToMealPlan}
+                      disabled={isLoading}
+                    >
+                      <option value="">Select a meal</option>
+                      <option value="breakfast">Breakfast</option>
+                      <option value="lunch">Lunch</option>
+                      <option value="dinner">Dinner</option>
+                      <option value="snack">Snack</option>
+                      <option value="dessert">Dessert</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
+                      Prep Time <span className="text-red-500">*</span>
+                    </label>
+                    <select
+                      id="prepTime"
+                      value={formData.prepTime}
+                      onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      required
+                      disabled={isLoading}
+                    >
+                      <option value="">Select prep time</option>
+                      <option value="<30">Less than 30 minutes</option>
+                      <option value="30-60">30-60 minutes</option>
+                      <option value="60+">More than 60 minutes</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
+                      Servings <span className="text-red-500">*</span>
+                    </label>
+                    <input
+                      type="number"
+                      id="servings"
+                      value={formData.servings}
+                      onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
+                      min="1"
+                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      required
+                      disabled={isLoading}
+                    />
+                  </div>
+                </div>
+              )}
             </div>
 
             {/* Ingredients */}

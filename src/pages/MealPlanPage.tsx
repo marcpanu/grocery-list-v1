@@ -89,7 +89,6 @@ export const MealPlanPage: React.FC = () => {
       let recipeId = selectedRecipe?.id;
       if (!selectedRecipe && 'mealPlanMeal' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
         // Creating a new recipe from the meal plan data
-        // Note: we save the mealPlanMeal in the recipe's mealTypes for convenience
         const newRecipe = await addRecipe({
           name: data.name,
           description: data.description ?? null,
@@ -110,7 +109,7 @@ export const MealPlanPage: React.FC = () => {
           })) || [],
           imageUrl: null,
           notes: null,
-          mealTypes: [data.mealPlanMeal], // Store the meal plan meal type in recipe's mealTypes
+          mealTypes: data.mealTypes, // Use the mealTypes from AddMealData
           cuisine: data.cuisine ?? null,
           rating: data.rating ?? null,
           dateAdded: now.toDate(),
@@ -127,8 +126,7 @@ export const MealPlanPage: React.FC = () => {
           id: crypto.randomUUID(),
           name: data.name,
           description: data.description ?? null,
-          mealPlanMeal: 'mealPlanMeal' in data ? data.mealPlanMeal : 
-                        (data.mealTypes && data.mealTypes.length > 0) ? data.mealTypes[0] as MealPlanMealType : 'dinner',
+          mealPlanMeal: 'mealPlanMeal' in data ? data.mealPlanMeal : 'dinner', // Default to dinner if not specified
           days: 'days' in data ? data.days : [],
           servings: data.servings,
           recipeId: recipeId ?? null,
@@ -203,9 +201,14 @@ export const MealPlanPage: React.FC = () => {
   const handleQuickAdd = (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     const formData = new FormData(e.currentTarget);
+    
+    // Get meal types from checkboxes (might be multiple)
+    const mealTypes = Array.from(formData.getAll('mealTypes')).map(value => value.toString());
+    
     const meal: AddMealData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
+      mealTypes: mealTypes, // Add meal types for recipe classification
       mealPlanMeal: formData.get('mealPlanMeal') as MealPlanMealType,
       servings: parseInt(formData.get('servings') as string),
       prepTime: formData.get('prepTime') as string,
@@ -593,10 +596,31 @@ export const MealPlanPage: React.FC = () => {
                       />
                     </div>
 
+                    {/* Recipe Classification (meal types) */}
+                    <div>
+                      <label className="block text-sm font-medium text-zinc-700 mb-2">
+                        Recipe Types (select all that apply)
+                      </label>
+                      <div className="flex flex-wrap gap-3">
+                        {['breakfast', 'lunch', 'dinner', 'snack', 'dessert'].map((type) => (
+                          <label key={type} className="flex items-center space-x-3">
+                            <input
+                              type="checkbox"
+                              name="mealTypes"
+                              value={type}
+                              className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                            />
+                            <span className="text-sm text-zinc-700 capitalize">{type}</span>
+                          </label>
+                        ))}
+                      </div>
+                    </div>
+
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+                      {/* Meal Planning (mealPlanMeal) */}
                       <div>
                         <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
-                          Type
+                          Meal of the Day
                         </label>
                         <select
                           name="mealPlanMeal"
