@@ -40,25 +40,21 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Categorize items (produce, meat, etc.)
 
 ### Meal Planning
-- Add recipes to your weekly meal plan
-  - Select recipes from your recipe box
-  - Import new recipes directly to meal plan
-  - Quick add custom meals without recipes
-  - Manual recipe creation with full details
-- Flexible meal scheduling
-  - Assign meals to multiple days
-  - Customize servings per planned meal
-  - Adjust meal types (breakfast, lunch, dinner, etc.)
-  - Delete meals from plan
+- Improved two-step workflow:
+  - Step 1: Recipe selection or creation
+    - Choose from existing recipes
+    - Import new recipes on the fly
+    - Create new recipes with simplified form (prep time now optional)
+  - Step 2: Meal scheduling
+    - Assign selected recipe to specific days
+    - Select meal type (breakfast, lunch, dinner, etc.)
+    - Customize servings if needed
+- Clear separation between recipe management and meal planning
 - Weekly overview with planned meals
-  - Current: Basic weekly grid view
-  - Planned: Mobile-optimized calendar view
-  - Planned: Detailed daily meal breakdown
-- Unified recipe and meal management
-  - Consistent form interface across features
-  - Required field validation
-  - Optional fields for quick entry
-  - Full recipe details when needed
+- Enhanced meal organization by meal type
+- Simplified required fields:
+  - Recipe creation: name, servings, ingredients, instructions
+  - Meal scheduling: meal type, at least one day
 
 ### User Preferences
 - Customize recipe view mode (grid/compact)
@@ -146,7 +142,8 @@ src/
 - `MealPlanPage`: Weekly meal planning interface
 - `RecipeImportModal`: Recipe import options modal
 - `RecipeUrlImport`: URL-based recipe import
-- `AddMealModal`: Meal planning form
+- `AddMealModal`: Recipe creation and editing form (simplified with optional fields)
+- `ScheduleMealModal`: Dedicated form for scheduling selected recipes in the meal plan
 
 ### State Management
 - Firebase Firestore for data persistence

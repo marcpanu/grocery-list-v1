@@ -21,60 +21,78 @@
 interface Recipe {
   id: string;
   name: string;
-  ingredients: Ingredient[];
-  instructions: string[];
+  description: string | null;
+  prepTime: number | null;  // Now optional
+  cookTime: number | null;  // Now optional
+  totalTime: number | null;
+  displayTotalTime: string;
   servings: number;
-  prepTime: number;
-  cookTime: number;
-  tags: string[];
+  ingredients: Ingredient[];
+  instructions: Instruction[];
+  imageUrl: string | null;
+  notes: string | null;
+  mealTypes: string[] | null;  // Optional
+  cuisine: string[] | null;
+  rating: number | null;
+  dateAdded: Date;
+  isFavorite: boolean;
+  source: {
+    type: 'url' | 'instagram' | 'tiktok';
+    url: string;
+    title: string | null;
+  } | null;
 }
 
 interface Ingredient {
   name: string;
-  amount: number;
-  unit: string;
-  category: string;
+  quantity: number | string;
+  unit: string | null;
+  notes: string | null;
+}
+
+interface Instruction {
+  order: number;
+  instruction: string;
 }
 ```
 
 ### Meal Planning
 ```typescript
+// Define meal types in meal planning
+export type MealPlanMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
+
 interface MealPlan {
+  id: string;
   userId: string;
-  meals: PlannedMeal[];
+  meals: Meal[];
   createdAt: Date;
   updatedAt: Date;
 }
 
-interface PlannedMeal {
+interface Meal {
   id: string;
   name: string;
   description?: string;
-  type: MealType;
+  mealPlanMeal: MealPlanMealType;  // Changed from 'type: MealType' to separate concerns
   days: string[];
   servings: number;
   recipeId?: string;
-  ingredients?: Ingredient[];
-  instructions?: string[];
-  cuisine?: string[];
-  rating?: number;
   createdAt: Date;
 }
 
 interface AddMealData {
   name: string;           // required
   description?: string;   // optional
-  type: MealType;        // required
-  days: string[];        // required
-  servings: number;      // required
-  prepTime?: string;     // optional
-  cookTime?: string;     // optional
-  totalTime?: string;    // optional
-  ingredients?: Ingredient[];  // optional for meal plan, required for recipe
-  instructions?: string[];    // optional for meal plan, required for recipe
-  cuisine?: string[];    // optional
-  rating?: number;       // optional
-  recipeId?: string;     // optional
+  mealTypes: string[];    // optional
+  servings: number;       // required
+  prepTime?: string;      // optional
+  cookTime?: string;      // optional
+  totalTime?: string;     // optional
+  ingredients?: Ingredient[];  // required - at least one
+  instructions?: string[];    // required - at least one
+  cuisine?: string[];     // optional
+  rating?: number;        // optional
+  recipeId?: string;      // optional
 }
 ```
 
@@ -195,18 +213,25 @@ App
 ### Recipe Creation
 - Required fields:
   - Name
-  - Type
-  - Prep Time
   - Servings
   - At least one valid ingredient
   - At least one valid instruction
+- Optional fields:
+  - Description
+  - Prep Time
+  - Cook Time
+  - Meal Types
+  - Cuisine
+  - Rating
+  - Notes
 
-### Meal Planning
-- Required fields when adding to meal plan:
-  - Name
-  - Type
-  - Servings
+### Meal Planning (via ScheduleMealModal)
+- Required fields when scheduling a meal:
+  - Recipe (must be selected first)
+  - Meal of the Day
   - At least one day selected
+- Optional fields:
+  - Servings override (defaults to recipe servings)
 
 ### Shopping List
 - Required fields for items:
