@@ -11,15 +11,12 @@ interface AddMealModalProps {
   onAdd: (data: Recipe | AddMealData) => void;
   selectedRecipe?: Recipe;
   isLoading?: boolean;
-  isAddingToMealPlan: boolean;
 }
 
 export interface AddMealData {
   name: string;
   description?: string;
   mealTypes: string[];
-  mealPlanMeal: MealPlanMealType;
-  days: string[];
   servings: number;
   prepTime?: string;
   cookTime?: string;
@@ -35,8 +32,6 @@ interface FormData {
   name: string;
   description: string;
   mealTypes: string[];
-  mealPlanMeal: string;
-  days: string[];
   servings: number;
   prepTime: string;
   cookTime: string;
@@ -53,15 +48,12 @@ export const AddMealModal = ({
   onClose,
   onAdd,
   selectedRecipe,
-  isLoading = false,
-  isAddingToMealPlan
+  isLoading = false
 }: AddMealModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
     mealTypes: [],
-    mealPlanMeal: '',
-    days: [],
     servings: 2,
     prepTime: '',
     cookTime: '',
@@ -82,8 +74,6 @@ export const AddMealModal = ({
         name: selectedRecipe.name,
         description: selectedRecipe.description || '',
         mealTypes: selectedRecipe.mealTypes || [],
-        mealPlanMeal: '',
-        days: [],
         servings: selectedRecipe.servings,
         prepTime: selectedRecipe.prepTime?.toString() || '',
         cookTime: selectedRecipe.cookTime?.toString() || '',
@@ -99,8 +89,6 @@ export const AddMealModal = ({
         name: '',
         description: '',
         mealTypes: [],
-        mealPlanMeal: '',
-        days: [],
         servings: 2,
         prepTime: '',
         cookTime: '',
@@ -174,11 +162,6 @@ export const AddMealModal = ({
       return;
     }
 
-    if (isAddingToMealPlan && !formData.mealPlanMeal) {
-      setError('Please select which meal of the day this is for');
-      return;
-    }
-
     if (formData.servings <= 0) {
       setError('Servings must be greater than 0');
       return;
@@ -202,17 +185,10 @@ export const AddMealModal = ({
       return;
     }
 
-    // Validate days if adding to meal plan
-    if (isAddingToMealPlan && formData.days.length === 0) {
-      setError('Please select at least one day');
-      return;
-    }
-
     const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
       mealTypes: formData.mealTypes,
-      mealPlanMeal: formData.mealPlanMeal as MealPlanMealType,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
       cookTime: formData.cookTime || undefined,
@@ -221,7 +197,6 @@ export const AddMealModal = ({
       instructions: validInstructions.map(i => i.instruction),
       cuisine: formData.cuisine,
       rating: formData.rating,
-      days: isAddingToMealPlan ? formData.days : [],
       ...(selectedRecipe && { recipeId: selectedRecipe.id })
     };
 
@@ -373,31 +348,6 @@ export const AddMealModal = ({
                   disabled={isLoading}
                 />
               </div>
-
-              {isAddingToMealPlan && (
-                <div className="grid grid-cols-1 gap-4">
-                  <div>
-                    <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
-                      Meal of the Day <span className="text-red-500">*</span>
-                    </label>
-                    <select
-                      id="mealPlanMeal"
-                      value={formData.mealPlanMeal}
-                      onChange={(e) => setFormData(prev => ({ ...prev, mealPlanMeal: e.target.value }))}
-                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                      required={isAddingToMealPlan}
-                      disabled={isLoading}
-                    >
-                      <option value="">Select a meal</option>
-                      <option value="breakfast">Breakfast</option>
-                      <option value="lunch">Lunch</option>
-                      <option value="dinner">Dinner</option>
-                      <option value="snack">Snack</option>
-                      <option value="dessert">Dessert</option>
-                    </select>
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Ingredients */}
@@ -567,34 +517,6 @@ export const AddMealModal = ({
                   disabled={isLoading}
                 />
               </div>
-
-              {/* Only show days selection when adding to meal plan */}
-              {isAddingToMealPlan && (
-                <div>
-                  <label className="block text-sm font-medium text-zinc-700 mb-2">
-                    Days
-                  </label>
-                  <div className="grid grid-cols-4 gap-4">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <label key={day} className="inline-flex items-center">
-                        <input
-                          type="checkbox"
-                          checked={formData.days.includes(day)}
-                          onChange={(e) => {
-                            const newDays = e.target.checked
-                              ? [...formData.days, day]
-                              : formData.days.filter(d => d !== day);
-                            setFormData(prev => ({ ...prev, days: newDays }));
-                          }}
-                          className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
-                          disabled={isLoading}
-                        />
-                        <span className="ml-2 text-sm text-zinc-700">{day}</span>
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
             </div>
 
             {/* Form Actions */}
