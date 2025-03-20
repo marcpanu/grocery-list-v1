@@ -40,7 +40,7 @@ export const MealPlanPage: React.FC = () => {
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
-  const [currentWeekLabel, setCurrentWeekLabel] = useState('October 1-7, 2023');
+  const [currentWeekLabel] = useState('October 1-7, 2023');
 
   // Use the recipe import hook
   const {
