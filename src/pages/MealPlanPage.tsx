@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { Recipe } from '../types/recipe';
+import { Recipe, getDisplayTotalTime } from '../types/recipe';
 import { MealPlan, Meal } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
@@ -19,6 +19,7 @@ import { addRecipe } from '../firebase/firestore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
 import { toast, Toaster } from 'react-hot-toast';
+import { getCurrentDateString, formatDateString } from '../utils/dateUtils';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -88,12 +89,19 @@ export const MealPlanPage: React.FC = () => {
       // If we don't have a selectedRecipe and data is AddMealData with ingredients, create a recipe
       let recipeId = selectedRecipe?.id;
       if (!selectedRecipe && 'type' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
+        // Convert time strings to numbers if needed
+        const prepTimeMinutes = data.prepTime ? parseInt(data.prepTime, 10) : 15; // Default to 15 mins
+        const cookTimeMinutes = data.cookTime ? parseInt(data.cookTime, 10) : null;
+        const totalTimeMinutes = prepTimeMinutes + (cookTimeMinutes || 0);
+        const displayTotalTime = getDisplayTotalTime(totalTimeMinutes);
+        
         const newRecipe = await addRecipe({
           name: data.name,
           description: data.description ?? null,
-          prepTime: data.prepTime ?? '<30',
-          cookTime: data.cookTime ?? null,
-          totalTime: data.totalTime ?? null,
+          prepTime: prepTimeMinutes,
+          cookTime: cookTimeMinutes,
+          totalTime: totalTimeMinutes,
+          displayTotalTime,
           servings: data.servings,
           ingredients: data.ingredients.map(ing => ({
             name: ing.name,
@@ -124,7 +132,9 @@ export const MealPlanPage: React.FC = () => {
           id: crypto.randomUUID(),
           name: data.name,
           description: data.description ?? null,
-          type: 'type' in data ? data.type : data.mealTypes[0],
+          mealPlanMeal: 'type' in data 
+            ? data.type 
+            : ((data.mealTypes && data.mealTypes.length > 0) ? data.mealTypes[0] as any : 'dinner'),
           days: 'days' in data ? data.days : [],
           servings: data.servings,
           recipeId: recipeId ?? null,

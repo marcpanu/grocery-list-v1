@@ -3,6 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { MealType, CUISINES, Ingredient } from '../../types/recipe';
 import { Recipe } from '../../types/recipe';
+import { MealPlanMealType } from '../../types/mealPlan';
 
 interface AddMealModalProps {
   isOpen: boolean;
@@ -16,12 +17,12 @@ interface AddMealModalProps {
 export interface AddMealData {
   name: string;
   description?: string;
-  type: MealType;
+  type: MealPlanMealType;
   days: string[];
   servings: number;
-  prepTime?: string;
-  cookTime?: string;
-  totalTime?: string;
+  prepTime?: number;
+  cookTime?: number;
+  totalTime?: number;
   ingredients?: Ingredient[];
   instructions?: string[];
   cuisine?: string[];
@@ -32,12 +33,12 @@ export interface AddMealData {
 interface FormData {
   name: string;
   description: string;
-  type: string;
+  type: MealPlanMealType;
   days: string[];
   servings: number;
-  prepTime: string;
-  cookTime: string;
-  totalTime: string;
+  prepTime: number | null;
+  cookTime: number | null;
+  totalTime: number | null;
   ingredients: Ingredient[];
   instructions: { order: number; instruction: string }[];
   notes: string;
@@ -59,9 +60,9 @@ export const AddMealModal = ({
     type: '',
     days: [],
     servings: 2,
-    prepTime: '',
-    cookTime: '',
-    totalTime: '',
+    prepTime: null,
+    cookTime: null,
+    totalTime: null,
     ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
     instructions: [{ order: 1, instruction: '' }],
     notes: '',
@@ -81,8 +82,8 @@ export const AddMealModal = ({
         days: [],
         servings: selectedRecipe.servings,
         prepTime: selectedRecipe.prepTime,
-        cookTime: selectedRecipe.cookTime || '',
-        totalTime: selectedRecipe.totalTime || '',
+        cookTime: selectedRecipe.cookTime || 0,
+        totalTime: selectedRecipe.totalTime || 0,
         ingredients: [...selectedRecipe.ingredients],
         instructions: [...selectedRecipe.instructions],
         notes: selectedRecipe.notes || '',
@@ -96,9 +97,9 @@ export const AddMealModal = ({
         type: '',
         days: [],
         servings: 2,
-        prepTime: '',
-        cookTime: '',
-        totalTime: '',
+        prepTime: null,
+        cookTime: null,
+        totalTime: null,
         ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
         instructions: [{ order: 1, instruction: '' }],
         notes: '',
@@ -172,11 +173,6 @@ export const AddMealModal = ({
       return;
     }
 
-    if (!formData.prepTime) {
-      setError('Prep time is required');
-      return;
-    }
-
     if (formData.servings <= 0) {
       setError('Servings must be greater than 0');
       return;
@@ -209,7 +205,7 @@ export const AddMealModal = ({
     const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
-      type: formData.type as MealType,
+      type: formData.type as MealPlanMealType,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
       cookTime: formData.cookTime || undefined,

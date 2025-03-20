@@ -1,6 +1,5 @@
 import React from 'react';
-import { MealPlan, Meal } from '../../types/mealPlan';
-import { MealType } from '../../types/recipe';
+import { MealPlan, Meal, MealPlanMealType } from '../../types/mealPlan';
 
 interface WeeklyCalendarViewProps {
   mealPlans: MealPlan[];
@@ -19,13 +18,13 @@ interface DayMeals {
   };
 }
 
-const groupMealsByType = (meals: Meal[]): Record<MealType, Meal[]> => {
+const groupMealsByType = (meals: Meal[]): Record<MealPlanMealType, Meal[]> => {
   return {
-    breakfast: meals.filter(meal => meal.type === 'breakfast'),
-    lunch: meals.filter(meal => meal.type === 'lunch'),
-    dinner: meals.filter(meal => meal.type === 'dinner'),
-    snack: meals.filter(meal => meal.type === 'snack'),
-    dessert: meals.filter(meal => meal.type === 'dessert'),
+    breakfast: meals.filter(meal => meal.mealPlanMeal === 'breakfast'),
+    lunch: meals.filter(meal => meal.mealPlanMeal === 'lunch'),
+    dinner: meals.filter(meal => meal.mealPlanMeal === 'dinner'),
+    snack: meals.filter(meal => meal.mealPlanMeal === 'snack'),
+    dessert: meals.filter(meal => meal.mealPlanMeal === 'dessert'),
   };
 };
 
@@ -48,7 +47,7 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
     return acc;
   }, {} as DayMeals);
 
-  const getMealTypeIndicator = (type: MealType, count: number) => {
+  const getMealTypeIndicator = (type: MealPlanMealType, count: number) => {
     if (count === 0) return null;
     
     const colors = {
@@ -109,9 +108,9 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
             {/* Meal type indicators */}
             <div className="flex flex-col gap-1 items-center mt-auto">
               {Object.entries(dayMeals).map(([type, meals]) => 
-                getMealTypeIndicator(type as MealType, meals.length) && (
+                getMealTypeIndicator(type as MealPlanMealType, meals.length) && (
                   <div key={type}>
-                    {getMealTypeIndicator(type as MealType, meals.length)}
+                    {getMealTypeIndicator(type as MealPlanMealType, meals.length)}
                   </div>
                 )
               )}

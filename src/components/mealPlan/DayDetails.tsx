@@ -1,6 +1,5 @@
 import React from 'react';
-import { Meal } from '../../types/mealPlan';
-import { MealType } from '../../types/recipe';
+import { Meal, MealPlanMealType } from '../../types/mealPlan';
 import { MealCard } from './MealCard';
 
 interface DayDetailsProps {
@@ -10,15 +9,15 @@ interface DayDetailsProps {
   onDeleteMeal?: (mealId: string) => void;
 }
 
-const mealTypeOrder: MealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
+const mealTypeOrder: MealPlanMealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
 
-const groupMealsByType = (meals: Meal[]): Record<MealType, Meal[]> => {
+const groupMealsByType = (meals: Meal[]): Record<MealPlanMealType, Meal[]> => {
   return {
-    breakfast: meals.filter(meal => meal.type === 'breakfast'),
-    lunch: meals.filter(meal => meal.type === 'lunch'),
-    dinner: meals.filter(meal => meal.type === 'dinner'),
-    snack: meals.filter(meal => meal.type === 'snack'),
-    dessert: meals.filter(meal => meal.type === 'dessert'),
+    breakfast: meals.filter(meal => meal.mealPlanMeal === 'breakfast'),
+    lunch: meals.filter(meal => meal.mealPlanMeal === 'lunch'),
+    dinner: meals.filter(meal => meal.mealPlanMeal === 'dinner'),
+    snack: meals.filter(meal => meal.mealPlanMeal === 'snack'),
+    dessert: meals.filter(meal => meal.mealPlanMeal === 'dessert'),
   };
 };
 
@@ -54,7 +53,7 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
                   key={meal.id}
                   name={meal.name}
                   description={meal.description}
-                  type={meal.type}
+                  type={meal.mealPlanMeal}
                   servings={meal.servings}
                   onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
                   onDelete={onDeleteMeal ? () => onDeleteMeal(meal.id) : undefined}

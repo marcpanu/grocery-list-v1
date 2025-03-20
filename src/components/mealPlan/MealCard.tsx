@@ -1,10 +1,10 @@
 import React from 'react';
-import { MealType } from '../../types/recipe';
+import { MealPlanMealType } from '../../types/mealPlan';
 
 interface MealCardProps {
   name: string;
   description?: string;
-  type: MealType;
+  type: MealPlanMealType;
   servings: number;
   onEdit?: () => void;
   onDelete?: () => void;
