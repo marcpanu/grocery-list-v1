@@ -91,7 +91,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
           <form onSubmit={handleSubmit} className="space-y-4">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Recipe Name
+                Recipe Name <span className="text-red-500">*</span>
               </label>
               <input
                 type="text"
@@ -146,7 +146,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Servings
+                Servings <span className="text-red-500">*</span>
               </label>
               <input
                 type="number"
@@ -154,12 +154,13 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                 value={servings}
                 onChange={(e) => setServings(parseInt(e.target.value))}
                 className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                required
               />
             </div>
 
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
-                Ingredients
+                Ingredients <span className="text-red-500">*</span>
               </label>
               <div className="space-y-2">
                 {ingredients.map((ingredient, index) => (

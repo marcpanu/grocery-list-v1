@@ -6,6 +6,7 @@ import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
+import { ScheduleMealModal, ScheduleMealData } from '../components/mealPlan/ScheduleMealModal';
 import { addMealPlan, getUserMealPlans, deleteMeal, getRecipe, getUserShoppingLists, updateShoppingList, addRecipeIngredientsToGroceryList } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -26,6 +27,7 @@ export const MealPlanPage: React.FC = () => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
+  const [showScheduleMealModal, setShowScheduleMealModal] = useState(false);
   const [selectedRecipe, setSelectedRecipe] = useState<Recipe | undefined>();
   const [mealPlans, setMealPlans] = useState<MealPlan[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -49,8 +51,11 @@ export const MealPlanPage: React.FC = () => {
     closeUrlImport
   } = useRecipeImport((recipe) => {
     if (recipe) {
-      handleRecipeSelect(recipe);
+      // Open the schedule meal modal with the imported recipe
+      setSelectedRecipe(recipe);
+      setShowScheduleMealModal(true);
     } else {
+      // For manual recipe creation (no recipe yet), open the AddMealModal
       setShowAddMealModal(true);
     }
   });
@@ -75,7 +80,52 @@ export const MealPlanPage: React.FC = () => {
   const handleRecipeSelect = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setShowRecipeSearch(false);
-    setShowAddMealModal(true);
+    setShowScheduleMealModal(true);
+  };
+
+  const handleScheduleMeal = async (data: ScheduleMealData) => {
+    try {
+      setError(null);
+      setSuccess(null);
+      setIsLoading(true);
+      const now = Timestamp.now();
+
+      // Create the meal plan entry with ScheduleMealData
+      const mealPlanData = {
+        userId: DEFAULT_USER_ID,
+        meals: [{
+          id: crypto.randomUUID(),
+          name: data.name,
+          description: null,
+          mealPlanMeal: data.mealPlanMeal,
+          days: data.days,
+          servings: data.servings,
+          recipeId: data.recipeId,
+          createdAt: now
+        }],
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      await addMealPlan(DEFAULT_USER_ID, mealPlanData);
+      
+      // Add a small delay to ensure Firestore has processed the update
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Refresh meal plans
+      const plans = await getUserMealPlans(DEFAULT_USER_ID);
+      setMealPlans(plans);
+      setSuccess('Meal scheduled successfully!');
+      
+      // Reset states on success
+      setSelectedRecipe(undefined);
+      setShowScheduleMealModal(false);
+    } catch (error) {
+      console.error('Failed to schedule meal:', error);
+      setError('Failed to schedule meal. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleAddMeal = async (data: Recipe | AddMealData) => {
@@ -87,7 +137,9 @@ export const MealPlanPage: React.FC = () => {
 
       // If we don't have a selectedRecipe and data is AddMealData with ingredients, create a recipe
       let recipeId = selectedRecipe?.id;
-      if (!selectedRecipe && 'mealPlanMeal' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
+      let createdRecipe: Recipe | null = null;
+      
+      if (!selectedRecipe && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
         // Creating a new recipe from the meal plan data
         const newRecipe = await addRecipe({
           name: data.name,
@@ -105,7 +157,7 @@ export const MealPlanPage: React.FC = () => {
           })),
           instructions: data.instructions?.map(instruction => ({
             order: 1,
-            instruction: instruction ?? ''
+            instruction: typeof instruction === 'string' ? instruction : instruction.instruction
           })) || [],
           imageUrl: null,
           notes: null,
@@ -116,40 +168,54 @@ export const MealPlanPage: React.FC = () => {
           isFavorite: false,
           source: null
         });
+        
         recipeId = newRecipe.id;
+        createdRecipe = newRecipe;
+        
+        // After creating the recipe, show the schedule meal modal
+        if (createdRecipe) {
+          setSelectedRecipe(createdRecipe);
+          setShowAddMealModal(false);
+          setShowScheduleMealModal(true);
+          setIsLoading(false);
+          return;
+        }
       }
 
-      // Create the meal plan entry
-      const mealPlanData = {
-        userId: DEFAULT_USER_ID,
-        meals: [{
-          id: crypto.randomUUID(),
-          name: data.name,
-          description: data.description ?? null,
-          mealPlanMeal: 'mealPlanMeal' in data ? data.mealPlanMeal : 'dinner', // Default to dinner if not specified
-          days: 'days' in data ? data.days : [],
-          servings: data.servings,
-          recipeId: recipeId ?? null,
-          createdAt: now
-        }],
-        createdAt: now,
-        updatedAt: now,
-      };
+      // For the existing "Quick Add" flow, continue as before
+      if ('mealPlanMeal' in data && !createdRecipe) {
+        // Create the meal plan entry
+        const mealPlanData = {
+          userId: DEFAULT_USER_ID,
+          meals: [{
+            id: crypto.randomUUID(),
+            name: data.name,
+            description: data.description ?? null,
+            mealPlanMeal: data.mealPlanMeal,
+            days: data.days,
+            servings: data.servings,
+            recipeId: recipeId ?? null,
+            createdAt: now
+          }],
+          createdAt: now,
+          updatedAt: now,
+        };
 
-      await addMealPlan(DEFAULT_USER_ID, mealPlanData);
-      
-      // Add a small delay to ensure Firestore has processed the update
-      await new Promise(resolve => setTimeout(resolve, 500));
-      
-      // Refresh meal plans
-      const plans = await getUserMealPlans(DEFAULT_USER_ID);
-      setMealPlans(plans);
-      setSuccess('Meal added successfully!');
-      
-      // Reset states on success
-      setSelectedRecipe(undefined);
-      setShowAddMealModal(false);
-      setShowQuickAddModal(false);
+        await addMealPlan(DEFAULT_USER_ID, mealPlanData);
+        
+        // Add a small delay to ensure Firestore has processed the update
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Refresh meal plans
+        const plans = await getUserMealPlans(DEFAULT_USER_ID);
+        setMealPlans(plans);
+        setSuccess('Meal added successfully!');
+        
+        // Reset states on success
+        setSelectedRecipe(undefined);
+        setShowAddMealModal(false);
+        setShowQuickAddModal(false);
+      }
     } catch (error) {
       console.error('Failed to add meal:', error);
       setError('Failed to add meal. Please try again.');
@@ -489,7 +555,7 @@ export const MealPlanPage: React.FC = () => {
                   className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
                   <BookOpenIcon className="h-5 w-5 text-violet-600" />
-                  <span>Add from Recipes</span>
+                  <span>Schedule from Saved Recipes</span>
                 </button>
                 <button
                   onClick={() => {
@@ -499,7 +565,7 @@ export const MealPlanPage: React.FC = () => {
                   className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
                   <PencilSquareIcon className="h-5 w-5 text-violet-600" />
-                  <span>Add New Recipe</span>
+                  <span>Create New Recipe</span>
                 </button>
                 <button
                   onClick={() => {
@@ -538,8 +604,22 @@ export const MealPlanPage: React.FC = () => {
           onAdd={handleAddMeal}
           selectedRecipe={selectedRecipe}
           isLoading={isLoading}
-          isAddingToMealPlan={true}
+          isAddingToMealPlan={false}
         />
+
+        {/* Add the new Schedule Meal Modal */}
+        {selectedRecipe && (
+          <ScheduleMealModal
+            isOpen={showScheduleMealModal}
+            onClose={() => {
+              setShowScheduleMealModal(false);
+              setSelectedRecipe(undefined);
+            }}
+            onSchedule={handleScheduleMeal}
+            recipe={selectedRecipe}
+            isLoading={isLoading}
+          />
+        )}
 
         <RecipeImportModal
           isOpen={showImportModal}
