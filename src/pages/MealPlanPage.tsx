@@ -480,37 +480,37 @@ export const MealPlanPage: React.FC = () => {
         )}
         
         {/* Week Navigation - Non-functional UI component */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
+        <div className="bg-white rounded-lg shadow p-3 mb-3">
           <div className="flex items-center justify-between">
-            <div className="flex items-center space-x-2">
-              <button className="p-2 rounded-full text-zinc-500 hover:bg-zinc-100">
-                <ArrowLeftIcon className="h-5 w-5" />
+            <div className="flex items-center space-x-1">
+              <button className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100">
+                <ArrowLeftIcon className="h-4 w-4" />
               </button>
-              <div className="flex items-center gap-2">
-                <CalendarIcon className="h-5 w-5 text-violet-600" />
-                <span className="font-medium">{currentWeekLabel}</span>
+              <div className="flex items-center gap-1.5">
+                <CalendarIcon className="h-4 w-4 text-violet-600" />
+                <span className="font-medium text-sm">{currentWeekLabel}</span>
               </div>
-              <button className="p-2 rounded-full text-zinc-500 hover:bg-zinc-100">
-                <ArrowRightIcon className="h-5 w-5" />
+              <button className="p-1.5 rounded-full text-zinc-500 hover:bg-zinc-100">
+                <ArrowRightIcon className="h-4 w-4" />
               </button>
             </div>
-            <div className="flex items-center space-x-2">
-              <button className="px-3 py-1.5 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
+            <div className="flex items-center space-x-1.5">
+              <button className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
                 Today
               </button>
-              <button className="px-3 py-1.5 text-sm bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
-                Select Date
+              <button className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700">
+                Select
               </button>
             </div>
           </div>
         </div>
         
-        {/* Week Timeline - Non-functional UI component */}
-        <div className="bg-white rounded-lg shadow p-4 mb-4">
-          <div className="flex items-center justify-between mb-2">
-            <h3 className="text-sm font-medium text-zinc-700">Timeline</h3>
+        {/* Week Timeline - Non-functional UI component (more compact) */}
+        <div className="bg-white rounded-lg shadow p-3 mb-3">
+          <div className="flex items-center justify-between mb-1">
+            <h3 className="text-xs font-medium text-zinc-700">Timeline</h3>
           </div>
-          <div className="flex items-center space-x-2 py-2 overflow-x-auto">
+          <div className="flex items-center space-x-1.5 py-1 overflow-x-auto scrollbar-hide">
             {[
               { week: 'Sep 17-23', isPast: true, hasPlans: true },
               { week: 'Sep 24-30', isPast: true, hasPlans: true },
@@ -520,7 +520,7 @@ export const MealPlanPage: React.FC = () => {
             ].map((weekData, index) => (
               <div 
                 key={index}
-                className={`flex-shrink-0 p-2 rounded-md border ${
+                className={`flex-shrink-0 p-1.5 rounded-md border ${
                   weekData.isCurrent 
                     ? 'border-violet-600 bg-violet-50' 
                     : weekData.isPast 
@@ -529,7 +529,7 @@ export const MealPlanPage: React.FC = () => {
                 }`}
               >
                 <div className="text-xs font-medium">{weekData.week}</div>
-                <div className="mt-1 flex items-center">
+                <div className="mt-0.5 flex items-center">
                   <div 
                     className={`h-1 w-full rounded-full ${
                       weekData.hasPlans 
@@ -546,11 +546,11 @@ export const MealPlanPage: React.FC = () => {
         </div>
         
         {/* Weekly Calendar */}
-        <div className="bg-white rounded-lg shadow p-4 md:p-6 mb-8">
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-semibold">Weekly Overview</h2>
+        <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4">
+          <div className="flex items-center justify-between mb-3">
+            <h2 className="text-base font-semibold">Weekly Overview</h2>
             {/* Current week indicator - Non-functional UI component */}
-            <span className="text-sm text-zinc-500">Week of Oct 1, 2023</span>
+            <span className="text-xs text-zinc-500">Week of Oct 1, 2023</span>
           </div>
           
           <WeeklyCalendarView
@@ -561,11 +561,11 @@ export const MealPlanPage: React.FC = () => {
           />
           
           {/* Add All to Grocery List button */}
-          <div className="mt-6 flex justify-center">
+          <div className="mt-4 flex justify-center">
             <button
               onClick={handleAddAllToGroceryList}
               disabled={addingToGroceryList}
-              className={`flex items-center gap-2 px-4 py-2 text-sm font-medium rounded-md text-white ${
+              className={`flex items-center gap-1.5 px-4 py-2 text-sm font-medium rounded-md text-white w-full justify-center ${
                 addingToGroceryList 
                 ? 'bg-violet-400 cursor-not-allowed' 
                 : 'bg-violet-600 hover:bg-violet-700'
@@ -573,7 +573,7 @@ export const MealPlanPage: React.FC = () => {
             >
               {addingToGroceryList ? (
                 <>
-                  <svg className="animate-spin -ml-1 mr-2 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                  <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
                     <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
                     <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
                   </svg>
@@ -581,7 +581,7 @@ export const MealPlanPage: React.FC = () => {
                 </>
               ) : (
                 <>
-                  <ShoppingCartIcon className="h-5 w-5" />
+                  <ShoppingCartIcon className="h-4 w-4" />
                   Add All to Grocery List
                 </>
               )}
@@ -590,7 +590,7 @@ export const MealPlanPage: React.FC = () => {
         </div>
         
         {/* Day Details */}
-        <div className="bg-white rounded-lg shadow p-4 md:p-6">
+        <div className="bg-white rounded-lg shadow p-3 md:p-4">
           <DayDetails
             selectedDay={selectedDay}
             meals={selectedDayMeals}
