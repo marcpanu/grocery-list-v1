@@ -74,13 +74,10 @@ export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
     const firestoreRecipe = {
       ...recipe,
       description: recipe.description ?? null,
-      prepTime: recipe.prepTime ?? null,
       cookTime: recipe.cookTime ?? null,
       totalTime: recipe.totalTime ?? null,
-      displayTotalTime: recipe.displayTotalTime ?? null,
       imageUrl: recipe.imageUrl ?? null,
       notes: recipe.notes ?? null,
-      mealTypes: recipe.mealTypes ?? [],
       cuisine: recipe.cuisine ?? null,
       rating: recipe.rating ?? null,
       dateAdded: Timestamp.fromDate(recipe.dateAdded),
@@ -121,10 +118,10 @@ export const getAllRecipes = async (): Promise<RecipePreview[]> => {
       id: doc.id,
       name: data.name,
       imageUrl: data.imageUrl,
-      displayTotalTime: data.displayTotalTime,
-      mealTypes: data.mealTypes || [],
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
       isFavorite: data.isFavorite,
-      cuisine: data.cuisine || [],
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
       rating: data.rating,
       dateAdded: data.dateAdded instanceof Timestamp ? data.dateAdded.toDate() : data.dateAdded
     } as RecipePreview;
@@ -145,10 +142,10 @@ export const getFavoriteRecipes = async (): Promise<RecipePreview[]> => {
       id: doc.id,
       name: data.name,
       imageUrl: data.imageUrl,
-      displayTotalTime: data.displayTotalTime,
-      mealTypes: data.mealTypes || [],
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
       isFavorite: data.isFavorite,
-      cuisine: data.cuisine || [],
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
       rating: data.rating,
       dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
@@ -169,10 +166,10 @@ export const getRecentRecipes = async (count: number = 5): Promise<RecipePreview
       id: doc.id,
       name: data.name,
       imageUrl: data.imageUrl,
-      displayTotalTime: data.displayTotalTime,
-      mealTypes: data.mealTypes || [],
+      prepTime: data.prepTime,
+      mealTypes: data.mealTypes,
       isFavorite: data.isFavorite,
-      cuisine: data.cuisine || [],
+      cuisine: data.cuisine?.[0], // Take first cuisine if array
       rating: data.rating,
       dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
@@ -261,21 +258,10 @@ export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
   const mealPlan: MealPlan = {
     id: mealPlanSnap.id,
     userId,
-    meals: data.meals.map((meal: any) => {
-      // If the meal uses the old 'type' field, migrate it to 'mealPlanMeal'
-      if (meal.type && !meal.mealPlanMeal) {
-        return {
-          ...meal,
-          mealPlanMeal: meal.type, // Migrate old type to new mealPlanMeal
-          createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
-        };
-      }
-      
-      return {
-        ...meal,
-        createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
-      };
-    }),
+    meals: data.meals.map((meal: any) => ({
+      ...meal,
+      createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
+    })),
     createdAt,
     updatedAt
   };
@@ -790,8 +776,8 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     }
     
     const list = userLists[0];
-    console.log('Shopping list for ingredient processing:', list.id);
-    console.log('Available categories:', list.categories);
+    console.log("Shopping list for ingredient processing:", list.id);
+    console.log("Available categories:", list.categories);
     
     // Get user preferences to check for default store and pantry items
     const preferences = await getUserPreferences();
@@ -801,7 +787,7 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     let defaultStore = undefined;
     if (defaultStoreId && list.stores) {
       defaultStore = list.stores.find((s: Store) => s.id === defaultStoreId);
-      console.log('Default store found:', defaultStoreId, defaultStore ? defaultStore.name : 'none');
+      console.log("Default store found:", defaultStoreId, defaultStore ? defaultStore.name : "none");
     }
     
     const pantryItems = preferences?.pantryItems || [];
@@ -817,19 +803,19 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
       list.categories // Pass the user's categories
     );
     
-    console.log('Processed shopping items:', shoppingItems);
+    console.log("Processed shopping items:", shoppingItems);
     
     // Add each processed item to the list
     for (const item of shoppingItems) {
       // Skip pantry items
       if (isIngredientInPantry(item.name, pantryItems)) {
-        console.log('Skipping pantry item:', item.name);
+        console.log("Skipping pantry item:", item.name);
         continue;
       }
       
       // Apply default store if not already set
       if (!item.store && defaultStore) {
-        console.log('Applying default store to item:', item.name);
+        console.log("Applying default store to item:", item.name);
         item.store = defaultStore;
       }
       
@@ -843,7 +829,7 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
         checked: false
       };
       
-      console.log('Adding item to list with category:', itemToAdd.category?.name);
+      console.log("Adding item to list with category:", itemToAdd.category);
       await addItemToList(list.id, itemToAdd);
     }
   } catch (error) {
