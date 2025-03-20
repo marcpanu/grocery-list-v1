@@ -2,7 +2,6 @@ import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon, PencilIcon } from '@heroicons/react/24/outline';
 import { Meal, MealPlanMealType } from '../../types/mealPlan';
-import { Recipe } from '../../types/recipe';
 
 interface MealDetailModalProps {
   isOpen: boolean;

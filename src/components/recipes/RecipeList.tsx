@@ -22,7 +22,8 @@ import {
   getRecipe,
   getUserShoppingLists,
   addRecipeIngredientsToGroceryList,
-  updateShoppingList
+  updateShoppingList,
+  getCurrentWeek
 } from '../../firebase/firestore';
 import { UserPreferences } from '../../types';
 import { RecipeImportModal } from './RecipeImportModal';
@@ -59,6 +60,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [pendingRecipeForGroceryList, setPendingRecipeForGroceryList] = useState<string | null>(null);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
+  const [currentWeekId, setCurrentWeekId] = useState<string>('');
 
   // Refs for click outside handling
   const sortButtonRef = useRef<HTMLDivElement>(null);
@@ -121,6 +123,16 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
     };
 
     loadInitialData();
+    // Load current week ID
+    const fetchCurrentWeek = async () => {
+      try {
+        const week = await getCurrentWeek('default');
+        setCurrentWeekId(week.id);
+      } catch (error) {
+        console.error('Error fetching current week:', error);
+      }
+    };
+    fetchCurrentWeek();
   }, []);
 
   useEffect(() => {
@@ -696,6 +708,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         onClose={() => setShowAddMealModal(false)}
         onAdd={handleAddRecipe}
         isLoading={isLoading}
+        currentWeekId={currentWeekId}
       />
 
       {/* Confirmation Dialog for Grocery List */}

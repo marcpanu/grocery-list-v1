@@ -11,6 +11,7 @@ interface AddMealModalProps {
   onAdd: (data: Recipe | AddMealData) => void;
   selectedRecipe?: Recipe;
   isLoading?: boolean;
+  currentWeekId: string;
 }
 
 interface FormData {
@@ -33,7 +34,8 @@ export const AddMealModal = ({
   onClose,
   onAdd,
   selectedRecipe,
-  isLoading = false
+  isLoading = false,
+  currentWeekId
 }: AddMealModalProps) => {
   const [formData, setFormData] = useState<FormData>({
     name: '',
@@ -182,7 +184,8 @@ export const AddMealModal = ({
       instructions: validInstructions.map(i => i.instruction),
       cuisine: formData.cuisine,
       rating: formData.rating,
-      ...(selectedRecipe && { recipeId: selectedRecipe.id })
+      ...(selectedRecipe && { recipeId: selectedRecipe.id }),
+      weekId: currentWeekId
     };
 
     onAdd(formDataToAdd);

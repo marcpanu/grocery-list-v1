@@ -13,8 +13,8 @@ interface MealCardProps {
 
 export const MealCard: React.FC<MealCardProps> = ({
   name,
-  description,
-  mealPlanMeal,
+  description: _description,
+  mealPlanMeal: _mealPlanMeal,
   servings,
   onEdit,
   onDelete,

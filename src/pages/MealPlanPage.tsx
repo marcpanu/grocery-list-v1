@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, ArrowLeftIcon, ArrowRightIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, CalendarIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType, Week } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
@@ -19,7 +19,6 @@ import {
   updateMealDetails, 
   getCurrentWeek, 
   getMealsByWeek, 
-  getMealsByCurrentWeek,
   setCurrentWeek as updateCurrentWeekDb // Rename to avoid conflict
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
@@ -659,7 +658,6 @@ export const MealPlanPage: React.FC = () => {
               // Determine if week is in past, present, or future
               const now = new Date();
               const isPast = weekEnd < now;
-              const isFuture = weekStart > now;
               
               return (
                 <div 
@@ -829,6 +827,7 @@ export const MealPlanPage: React.FC = () => {
           onAdd={handleAddMeal}
           selectedRecipe={selectedRecipe}
           isLoading={isLoading}
+          currentWeekId={currentWeek?.id || ''}
         />
 
         {/* ScheduleMealModal - only render when selectedRecipe exists */}

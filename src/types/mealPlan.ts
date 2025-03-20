@@ -1,4 +1,4 @@
-import { Ingredient } from './recipe';
+// import { Ingredient } from './recipe';
 
 // Define a type for meal times in meal planning
 export type MealPlanMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
@@ -6,11 +6,11 @@ export type MealPlanMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'des
 export interface Meal {
   id: string;
   userId: string;
+  weekId: string;
   name: string;
   description?: string;
-  mealPlanMeal: MealPlanMealType; // Changed from 'type: MealType' to separate concerns
+  mealPlanMeal: MealPlanMealType;
   days: string[];
-  weekId: string;
   servings: number;
   recipeId?: string;
   createdAt: Date;
@@ -45,16 +45,25 @@ export interface AddMealData {
   name: string;
   description?: string;
   mealTypes?: string[];
+  mealPlanMeal?: MealPlanMealType;
+  days?: string[];
   servings: number;
   prepTime?: string;
   cookTime?: string;
   totalTime?: string;
-  ingredients?: Ingredient[];
+  ingredients?: any[];
   instructions?: string[];
   cuisine?: string[];
   rating?: number;
   recipeId?: string;
-  days?: string[];
-  mealPlanMeal?: MealPlanMealType;
-  weekId?: string;
+  weekId: string;
+}
+
+export interface ScheduleMealData {
+  name: string;
+  mealPlanMeal: MealPlanMealType;
+  days: string[];
+  servings: number;
+  recipeId: string;
+  weekId: string;
 }

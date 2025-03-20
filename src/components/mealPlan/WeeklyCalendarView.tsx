@@ -30,7 +30,7 @@ const groupMealsByType = (meals: Meal[]): Record<MealPlanMealType, Meal[]> => {
 };
 
 export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
-  mealPlans,
+  mealPlans: _mealPlans,
   isLoading,
   selectedDate,
   onDateSelect,
