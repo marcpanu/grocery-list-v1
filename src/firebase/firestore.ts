@@ -36,7 +36,6 @@ import {
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
 import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
-import { prepareRecipeForFirestore, processRecipeFromFirestore } from '../utils/recipeProcessing';
 
 // Collection names
 const COLLECTIONS = {
@@ -71,11 +70,26 @@ export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
   try {
     const recipesRef = collection(db, 'recipes');
     
-    // Process recipe data for Firestore
-    const firestoreRecipe = prepareRecipeForFirestore({
+    // Convert undefined optional fields to null for Firestore
+    const firestoreRecipe = {
       ...recipe,
-      id: 'temp' // Temporary ID for type compatibility
-    });
+      description: recipe.description ?? null,
+      prepTime: recipe.prepTime ?? null,
+      cookTime: recipe.cookTime ?? null,
+      totalTime: recipe.totalTime ?? null,
+      displayTotalTime: recipe.displayTotalTime ?? null,
+      imageUrl: recipe.imageUrl ?? null,
+      notes: recipe.notes ?? null,
+      mealTypes: recipe.mealTypes ?? [],
+      cuisine: recipe.cuisine ?? null,
+      rating: recipe.rating ?? null,
+      dateAdded: Timestamp.fromDate(recipe.dateAdded),
+      ingredients: recipe.ingredients.map(ing => ({
+        ...ing,
+        unit: ing.unit ?? null,
+        notes: ing.notes ?? null
+      }))
+    };
 
     const docRef = await addDoc(recipesRef, firestoreRecipe);
 
@@ -91,50 +105,31 @@ export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
   }
 }
 
-export async function updateRecipe(id: string, recipe: Partial<Recipe>): Promise<void> {
-  try {
-    const recipeRef = doc(db, 'recipes', id);
-    
-    // Process recipe data for Firestore
-    const firestoreRecipe = prepareRecipeForFirestore(recipe as Recipe);
+export const getRecipe = async (recipeId: string): Promise<Recipe | null> => {
+  const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
+  const recipeSnap = await getDoc(recipeRef);
+  return recipeSnap.exists() ? convertDoc<Recipe>(recipeSnap) : null;
+};
 
-    await updateDoc(recipeRef, firestoreRecipe);
-  } catch (error) {
-    console.error('Error updating recipe:', error);
-    throw new Error('Failed to update recipe');
-  }
-}
-
-export async function getRecipe(id: string): Promise<Recipe | null> {
-  try {
-    const recipeRef = doc(db, 'recipes', id);
-    const recipeSnap = await getDoc(recipeRef);
-    
-    if (!recipeSnap.exists()) {
-      return null;
-    }
-
-    // Process recipe data from Firestore
-    return processRecipeFromFirestore(recipeSnap.data());
-  } catch (error) {
-    console.error('Error getting recipe:', error);
-    throw new Error('Failed to get recipe');
-  }
-}
-
-export async function getAllRecipes(): Promise<Recipe[]> {
-  try {
-    const recipesRef = collection(db, 'recipes');
-    const recipesSnap = await getDocs(recipesRef);
-    
-    return recipesSnap.docs.map(doc => 
-      processRecipeFromFirestore({ id: doc.id, ...doc.data() })
-    );
-  } catch (error) {
-    console.error('Error getting recipes:', error);
-    throw new Error('Failed to get recipes');
-  }
-}
+export const getAllRecipes = async (): Promise<RecipePreview[]> => {
+  const recipesRef = collection(db, COLLECTIONS.RECIPES);
+  const q = query(recipesRef, orderBy('dateAdded', 'desc'));
+  const querySnapshot = await getDocs(q);
+  return querySnapshot.docs.map(doc => {
+    const data = doc.data();
+    return {
+      id: doc.id,
+      name: data.name,
+      imageUrl: data.imageUrl,
+      displayTotalTime: data.displayTotalTime,
+      mealTypes: data.mealTypes || [],
+      isFavorite: data.isFavorite,
+      cuisine: data.cuisine || [],
+      rating: data.rating,
+      dateAdded: data.dateAdded instanceof Timestamp ? data.dateAdded.toDate() : data.dateAdded
+    } as RecipePreview;
+  });
+};
 
 export const getFavoriteRecipes = async (): Promise<RecipePreview[]> => {
   const recipesRef = collection(db, COLLECTIONS.RECIPES);
@@ -150,10 +145,10 @@ export const getFavoriteRecipes = async (): Promise<RecipePreview[]> => {
       id: doc.id,
       name: data.name,
       imageUrl: data.imageUrl,
-      prepTime: data.prepTime,
-      mealTypes: data.mealTypes,
+      displayTotalTime: data.displayTotalTime,
+      mealTypes: data.mealTypes || [],
       isFavorite: data.isFavorite,
-      cuisine: data.cuisine?.[0], // Take first cuisine if array
+      cuisine: data.cuisine || [],
       rating: data.rating,
       dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
@@ -174,13 +169,24 @@ export const getRecentRecipes = async (count: number = 5): Promise<RecipePreview
       id: doc.id,
       name: data.name,
       imageUrl: data.imageUrl,
-      prepTime: data.prepTime,
-      mealTypes: data.mealTypes,
+      displayTotalTime: data.displayTotalTime,
+      mealTypes: data.mealTypes || [],
       isFavorite: data.isFavorite,
-      cuisine: data.cuisine?.[0], // Take first cuisine if array
+      cuisine: data.cuisine || [],
       rating: data.rating,
       dateAdded: data.dateAdded.toDate()
     } as RecipePreview;
+  });
+};
+
+export const updateRecipe = async (
+  recipeId: string,
+  recipeData: Partial<Omit<Recipe, 'id' | 'dateAdded'>>
+): Promise<void> => {
+  const recipeRef = doc(db, COLLECTIONS.RECIPES, recipeId);
+  await updateDoc(recipeRef, {
+    ...recipeData,
+    lastModified: Timestamp.now()
   });
 };
 

@@ -226,6 +226,57 @@ function extractMicrodata(doc: Document): any | null {
   };
 }
 
+// Helper function to parse ISO duration format (PT30M, PT1H30M) into minutes
+function parseIsoDuration(duration: string): number | undefined {
+  if (!duration) return undefined;
+  
+  duration = duration.replace(/^PT/, '');
+  let minutes = 0;
+  
+  // Extract hours
+  const hoursMatch = duration.match(/(\d+)H/);
+  if (hoursMatch) {
+    minutes += parseInt(hoursMatch[1], 10) * 60;
+  }
+  
+  // Extract minutes
+  const minutesMatch = duration.match(/(\d+)M/);
+  if (minutesMatch) {
+    minutes += parseInt(minutesMatch[1], 10);
+  }
+  
+  return minutes || undefined;
+}
+
+// Convert a human-readable time string to minutes
+function timeStringToMinutes(timeStr: string | undefined): number | undefined {
+  if (!timeStr) return undefined;
+  
+  // Check if it's already an ISO duration
+  if (timeStr.startsWith('PT')) {
+    return parseIsoDuration(timeStr);
+  }
+  
+  // Handle simple numeric strings (assume they're already minutes)
+  if (/^\d+$/.test(timeStr)) {
+    return parseInt(timeStr, 10);
+  }
+  
+  // Handle "X hours Y minutes" format
+  const hoursMatch = timeStr.match(/(\d+)\s*hours?/i);
+  const minutesMatch = timeStr.match(/(\d+)\s*min(ute)?s?/i);
+  
+  let minutes = 0;
+  if (hoursMatch) {
+    minutes += parseInt(hoursMatch[1], 10) * 60;
+  }
+  if (minutesMatch) {
+    minutes += parseInt(minutesMatch[1], 10);
+  }
+  
+  return minutes || undefined;
+}
+
 /**
  * Converts Schema.org recipe data to our ParsedRecipe format
  */
@@ -241,29 +292,10 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
     return instruction.text || instruction.description || '';
   }).filter(Boolean);
 
-  // Helper function to convert time strings to minutes
-  const timeToMinutes = (time: string | undefined): number | undefined => {
-    if (!time) return undefined;
-    
-    // Remove any PT prefix (ISO duration format)
-    time = time.replace(/^PT/, '');
-    
-    let minutes = 0;
-    
-    // Handle hours
-    const hoursMatch = time.match(/(\d+)H/);
-    if (hoursMatch) {
-      minutes += parseInt(hoursMatch[1]) * 60;
-    }
-    
-    // Handle minutes
-    const minutesMatch = time.match(/(\d+)M/);
-    if (minutesMatch) {
-      minutes += parseInt(minutesMatch[1]);
-    }
-    
-    return minutes;
-  };
+  // Process time fields to minutes
+  const prepTimeMinutes = timeStringToMinutes(schema.prepTime);
+  const cookTimeMinutes = timeStringToMinutes(schema.cookTime);
+  const totalTimeMinutes = timeStringToMinutes(schema.totalTime);
 
   // Handle image URL (can be string or object)
   const imageUrl = typeof schema.image === 'string' 
@@ -275,8 +307,9 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
   return {
     name: schema.name || 'Untitled Recipe',
     description: schema.description || undefined,
-    prepTime: timeToMinutes(schema.prepTime),
-    cookTime: timeToMinutes(schema.cookTime),
+    prepTime: prepTimeMinutes,
+    cookTime: cookTimeMinutes,
+    totalTime: totalTimeMinutes,
     servings: parseServings(schema.recipeYield) || 4,
     ingredients,
     instructions,
@@ -287,7 +320,7 @@ function convertSchemaRecipe(schema: any, url: string): ParsedRecipe {
       ? schema.recipeCuisine 
       : schema.recipeCuisine 
         ? [schema.recipeCuisine] 
-        : undefined
+        : []
   };
 }
 
@@ -298,8 +331,7 @@ function parseIngredient(text: string): ParsedIngredient {
   // Basic ingredient parsing - this can be enhanced
   const ingredient: ParsedIngredient = {
     original: text,
-    name: text,
-    quantity: 1 // Default to 1 if parsing fails
+    name: text
   };
 
   // Try to extract quantity and unit

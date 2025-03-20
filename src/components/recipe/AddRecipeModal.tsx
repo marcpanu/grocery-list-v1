@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { Recipe, Ingredient, Instruction } from '../../types/recipe';
+import { Recipe, Ingredient, Instruction, getDisplayTotalTime } from '../../types/recipe';
 
 interface AddRecipeModalProps {
   isOpen: boolean;
@@ -16,7 +16,8 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
 }) => {
   const [name, setName] = useState('');
   const [description, setDescription] = useState('');
-  const [prepTime, setPrepTime] = useState('');
+  const [prepTime, setPrepTime] = useState<number | null>(null);
+  const [cookTime, setCookTime] = useState<number | null>(null);
   const [servings, setServings] = useState(4);
   const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', quantity: '', unit: null, notes: null }]);
   const [instructions, setInstructions] = useState<Instruction[]>([{ order: 1, instruction: '' }]);
@@ -26,20 +27,25 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     
+    // Calculate totalTime and displayTotalTime
+    const totalTime = (prepTime || 0) + (cookTime || 0);
+    const displayTotalTime = getDisplayTotalTime(totalTime);
+    
     const newRecipe: Recipe = {
       id: crypto.randomUUID(),
       name,
       description: description || null,
       prepTime,
+      cookTime,
+      totalTime,
+      displayTotalTime,
       servings,
       ingredients: ingredients.filter(ing => ing.name.trim() !== ''),
       instructions: instructions.filter(inst => inst.instruction.trim() !== ''),
-      mealTypes: mealTypes.filter(type => type.trim() !== ''),
+      mealTypes,
       cuisine: cuisine.filter(c => c.trim() !== ''),
       dateAdded: new Date(),
       isFavorite: false,
-      cookTime: null,
-      totalTime: null,
       imageUrl: null,
       notes: null,
       rating: null,
@@ -114,26 +120,41 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                   Prep Time (minutes)
                 </label>
                 <input
-                  type="text"
-                  value={prepTime}
-                  onChange={(e) => setPrepTime(e.target.value)}
+                  type="number"
+                  min="0"
+                  value={prepTime === null ? '' : prepTime}
+                  onChange={(e) => setPrepTime(e.target.value ? parseInt(e.target.value) : null)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
-                  placeholder="e.g. 30-60"
+                  placeholder="e.g. 15"
                 />
               </div>
 
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Servings
+                  Cook Time (minutes)
                 </label>
                 <input
                   type="number"
-                  min="1"
-                  value={servings}
-                  onChange={(e) => setServings(parseInt(e.target.value))}
+                  min="0"
+                  value={cookTime === null ? '' : cookTime}
+                  onChange={(e) => setCookTime(e.target.value ? parseInt(e.target.value) : null)}
                   className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+                  placeholder="e.g. 30"
                 />
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Servings
+              </label>
+              <input
+                type="number"
+                min="1"
+                value={servings}
+                onChange={(e) => setServings(parseInt(e.target.value))}
+                className="w-full px-4 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600"
+              />
             </div>
 
             <div>

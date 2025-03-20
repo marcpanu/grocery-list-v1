@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Recipe, Ingredient } from '../../types/recipe';
+import { Recipe, Ingredient, getDisplayTotalTime } from '../../types/recipe';
 import { updateRecipe } from '../../firebase/firestore';
 import { CUISINES } from '../../types/recipe';
 
@@ -10,18 +10,17 @@ interface RecipeEditFormProps {
 }
 
 export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps) => {
-  const [formData, setFormData] = useState<Omit<Recipe, 'id' | 'dateAdded'>>({
+  const [formData, setFormData] = useState<Omit<Recipe, 'id' | 'dateAdded' | 'totalTime' | 'displayTotalTime'>>({
     name: recipe.name,
     description: recipe.description,
     prepTime: recipe.prepTime,
     cookTime: recipe.cookTime,
-    totalTime: recipe.totalTime,
     servings: recipe.servings,
     ingredients: [...recipe.ingredients],
     instructions: [...recipe.instructions],
     imageUrl: recipe.imageUrl,
     notes: recipe.notes,
-    mealTypes: [...recipe.mealTypes],
+    mealTypes: recipe.mealTypes ?? [],
     cuisine: recipe.cuisine || [],
     rating: recipe.rating,
     isFavorite: recipe.isFavorite,
@@ -39,7 +38,21 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
         ...formData,
         cuisine: (formData.cuisine || []).map(c => c.startsWith('Other:') ? c.replace('Other:', '') : c)
       };
-      await updateRecipe(recipe.id, cleanedFormData);
+      
+      // Calculate totalTime
+      const prepTime = cleanedFormData.prepTime || 0;
+      const cookTime = cleanedFormData.cookTime || 0;
+      const totalTime = prepTime + cookTime;
+      
+      // Set displayTotalTime based on totalTime
+      const displayTotalTime = getDisplayTotalTime(totalTime);
+      
+      await updateRecipe(recipe.id, {
+        ...cleanedFormData,
+        totalTime,
+        displayTotalTime
+      });
+      
       onSave();
     } catch (error) {
       console.error('Error saving recipe:', error);
@@ -97,6 +110,17 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     }));
   };
 
+  // Helper function to convert time to minutes
+  const convertToMinutes = (timeStr: string): number => {
+    if (timeStr === '<30') return 15; // Approximate
+    if (timeStr === '30-60') return 45; // Approximate
+    if (timeStr === '60+') return 90; // Approximate
+    
+    // Try to parse a number value
+    const numericValue = parseInt(timeStr, 10);
+    return isNaN(numericValue) ? 0 : numericValue;
+  };
+
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Information */}
@@ -131,30 +155,28 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
         <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-              Prep Time
+              Prep Time (minutes)
             </label>
-            <select
+            <input
+              type="number"
               id="prepTime"
-              value={formData.prepTime}
-              onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
+              value={formData.prepTime || ''}
+              onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value ? parseInt(e.target.value) : null }))}
+              min="0"
               className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-              required
-            >
-              <option value="<30">Less than 30 minutes</option>
-              <option value="30-60">30-60 minutes</option>
-              <option value="60+">More than 60 minutes</option>
-            </select>
+            />
           </div>
 
           <div>
             <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
-              Cook Time
+              Cook Time (minutes)
             </label>
             <input
-              type="text"
+              type="number"
               id="cookTime"
               value={formData.cookTime || ''}
-              onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value || null }))}
+              onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value ? parseInt(e.target.value) : null }))}
+              min="0"
               className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
             />
           </div>
