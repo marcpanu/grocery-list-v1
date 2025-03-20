@@ -144,6 +144,31 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
               </div>
             </div>
 
+            <div className="mb-4">
+              <label className="block text-sm font-medium text-gray-700 mb-1">
+                Recipe Type <span className="text-red-500">*</span>
+              </label>
+              <div className="flex flex-wrap gap-2">
+                {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
+                  <label key={type} className="flex items-center gap-1">
+                    <input
+                      type="checkbox"
+                      checked={mealTypes.includes(type)}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setMealTypes([...mealTypes, type]);
+                        } else {
+                          setMealTypes(mealTypes.filter(t => t !== type));
+                        }
+                      }}
+                      className="rounded text-violet-600"
+                    />
+                    <span className="text-sm capitalize">{type}</span>
+                  </label>
+                ))}
+              </div>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Servings <span className="text-red-500">*</span>
@@ -224,31 +249,6 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
                 >
                   + Add Step
                 </button>
-              </div>
-            </div>
-
-            <div>
-              <label className="block text-sm font-medium text-gray-700 mb-1">
-                Meal Types
-              </label>
-              <div className="flex flex-wrap gap-2">
-                {['breakfast', 'lunch', 'dinner', 'snack'].map((type) => (
-                  <label key={type} className="flex items-center gap-1">
-                    <input
-                      type="checkbox"
-                      checked={mealTypes.includes(type)}
-                      onChange={(e) => {
-                        if (e.target.checked) {
-                          setMealTypes([...mealTypes, type]);
-                        } else {
-                          setMealTypes(mealTypes.filter(t => t !== type));
-                        }
-                      }}
-                      className="rounded text-violet-600"
-                    />
-                    <span className="text-sm capitalize">{type}</span>
-                  </label>
-                ))}
               </div>
             </div>
 

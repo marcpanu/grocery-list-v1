@@ -166,8 +166,9 @@ export const AddMealModal = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    
-    // Validate required fields
+    setError(null);
+
+    // Check required fields
     if (!formData.name.trim()) {
       setError('Recipe name is required');
       return;
@@ -175,11 +176,6 @@ export const AddMealModal = ({
 
     if (isAddingToMealPlan && !formData.mealPlanMeal) {
       setError('Please select which meal of the day this is for');
-      return;
-    }
-
-    if (!formData.prepTime) {
-      setError('Prep time is required');
       return;
     }
 
@@ -355,17 +351,34 @@ export const AddMealModal = ({
 
                   <div>
                     <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-                      Prep Time <span className="text-red-500">*</span>
+                      Prep Time
                     </label>
                     <select
                       id="prepTime"
                       value={formData.prepTime}
                       onChange={(e) => setFormData(prev => ({ ...prev, prepTime: e.target.value }))}
                       className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                      required
                       disabled={isLoading}
                     >
                       <option value="">Select prep time</option>
+                      <option value="<30">Less than 30 minutes</option>
+                      <option value="30-60">30-60 minutes</option>
+                      <option value="60+">More than 60 minutes</option>
+                    </select>
+                  </div>
+
+                  <div>
+                    <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
+                      Cook Time
+                    </label>
+                    <select
+                      id="cookTime"
+                      value={formData.cookTime || ''}
+                      onChange={(e) => setFormData(prev => ({ ...prev, cookTime: e.target.value }))}
+                      className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                      disabled={isLoading}
+                    >
+                      <option value="">Select cook time</option>
                       <option value="<30">Less than 30 minutes</option>
                       <option value="30-60">30-60 minutes</option>
                       <option value="60+">More than 60 minutes</option>
