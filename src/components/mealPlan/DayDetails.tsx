@@ -53,7 +53,7 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
                   key={meal.id}
                   name={meal.name}
                   description={meal.description}
-                  type={meal.mealPlanMeal}
+                  mealPlanMeal={meal.mealPlanMeal}
                   servings={meal.servings}
                   onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
                   onDelete={onDeleteMeal ? () => onDeleteMeal(meal.id) : undefined}

@@ -261,10 +261,21 @@ export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
   const mealPlan: MealPlan = {
     id: mealPlanSnap.id,
     userId,
-    meals: data.meals.map((meal: any) => ({
-      ...meal,
-      createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
-    })),
+    meals: data.meals.map((meal: any) => {
+      // If the meal uses the old 'type' field, migrate it to 'mealPlanMeal'
+      if (meal.type && !meal.mealPlanMeal) {
+        return {
+          ...meal,
+          mealPlanMeal: meal.type, // Migrate old type to new mealPlanMeal
+          createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
+        };
+      }
+      
+      return {
+        ...meal,
+        createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
+      };
+    }),
     createdAt,
     updatedAt
   };

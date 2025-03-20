@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { MealType, CUISINES, Ingredient } from '../../types/recipe';
+import { CUISINES, Ingredient } from '../../types/recipe';
 import { Recipe } from '../../types/recipe';
 import { MealPlanMealType } from '../../types/mealPlan';
 
@@ -17,12 +17,12 @@ interface AddMealModalProps {
 export interface AddMealData {
   name: string;
   description?: string;
-  type: MealPlanMealType;
+  mealPlanMeal: MealPlanMealType;
   days: string[];
   servings: number;
-  prepTime?: number;
-  cookTime?: number;
-  totalTime?: number;
+  prepTime?: string;
+  cookTime?: string;
+  totalTime?: string;
   ingredients?: Ingredient[];
   instructions?: string[];
   cuisine?: string[];
@@ -33,12 +33,12 @@ export interface AddMealData {
 interface FormData {
   name: string;
   description: string;
-  type: MealPlanMealType;
+  mealPlanMeal: string;
   days: string[];
   servings: number;
-  prepTime: number | null;
-  cookTime: number | null;
-  totalTime: number | null;
+  prepTime: string;
+  cookTime: string;
+  totalTime: string;
   ingredients: Ingredient[];
   instructions: { order: number; instruction: string }[];
   notes: string;
@@ -57,12 +57,12 @@ export const AddMealModal = ({
   const [formData, setFormData] = useState<FormData>({
     name: '',
     description: '',
-    type: '',
+    mealPlanMeal: '',
     days: [],
     servings: 2,
-    prepTime: null,
-    cookTime: null,
-    totalTime: null,
+    prepTime: '',
+    cookTime: '',
+    totalTime: '',
     ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
     instructions: [{ order: 1, instruction: '' }],
     notes: '',
@@ -78,12 +78,12 @@ export const AddMealModal = ({
       setFormData({
         name: selectedRecipe.name,
         description: selectedRecipe.description || '',
-        type: selectedRecipe.mealTypes[0] || '',
+        mealPlanMeal: (selectedRecipe.mealTypes && selectedRecipe.mealTypes.length > 0) ? selectedRecipe.mealTypes[0] : '',
         days: [],
         servings: selectedRecipe.servings,
-        prepTime: selectedRecipe.prepTime,
-        cookTime: selectedRecipe.cookTime || 0,
-        totalTime: selectedRecipe.totalTime || 0,
+        prepTime: selectedRecipe.prepTime?.toString() || '',
+        cookTime: selectedRecipe.cookTime?.toString() || '',
+        totalTime: selectedRecipe.totalTime?.toString() || '',
         ingredients: [...selectedRecipe.ingredients],
         instructions: [...selectedRecipe.instructions],
         notes: selectedRecipe.notes || '',
@@ -94,12 +94,12 @@ export const AddMealModal = ({
       setFormData({
         name: '',
         description: '',
-        type: '',
+        mealPlanMeal: '',
         days: [],
         servings: 2,
-        prepTime: null,
-        cookTime: null,
-        totalTime: null,
+        prepTime: '',
+        cookTime: '',
+        totalTime: '',
         ingredients: [{ name: '', quantity: '', unit: '', notes: '' }],
         instructions: [{ order: 1, instruction: '' }],
         notes: '',
@@ -168,8 +168,13 @@ export const AddMealModal = ({
       return;
     }
 
-    if (!formData.type) {
+    if (!formData.mealPlanMeal) {
       setError('Meal type is required');
+      return;
+    }
+
+    if (!formData.prepTime) {
+      setError('Prep time is required');
       return;
     }
 
@@ -205,7 +210,7 @@ export const AddMealModal = ({
     const formDataToAdd: AddMealData = {
       name: formData.name.trim(),
       description: formData.description || undefined,
-      type: formData.type as MealPlanMealType,
+      mealPlanMeal: formData.mealPlanMeal as MealPlanMealType,
       servings: Number(formData.servings),
       prepTime: formData.prepTime,
       cookTime: formData.cookTime || undefined,
@@ -290,13 +295,13 @@ export const AddMealModal = ({
 
               <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                 <div>
-                  <label htmlFor="type" className="block text-sm font-medium text-zinc-700">
+                  <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
                     Meal Type <span className="text-red-500">*</span>
                   </label>
                   <select
-                    id="type"
-                    value={formData.type}
-                    onChange={(e) => setFormData(prev => ({ ...prev, type: e.target.value }))}
+                    id="mealPlanMeal"
+                    value={formData.mealPlanMeal}
+                    onChange={(e) => setFormData(prev => ({ ...prev, mealPlanMeal: e.target.value }))}
                     className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                     required
                     disabled={isLoading}

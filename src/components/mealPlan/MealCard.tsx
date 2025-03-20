@@ -4,7 +4,7 @@ import { MealPlanMealType } from '../../types/mealPlan';
 interface MealCardProps {
   name: string;
   description?: string;
-  type: MealPlanMealType;
+  mealPlanMeal: MealPlanMealType;
   servings: number;
   onEdit?: () => void;
   onDelete?: () => void;
@@ -13,7 +13,7 @@ interface MealCardProps {
 export const MealCard: React.FC<MealCardProps> = ({
   name,
   description,
-  type,
+  mealPlanMeal,
   servings,
   onEdit,
   onDelete,
@@ -23,7 +23,7 @@ export const MealCard: React.FC<MealCardProps> = ({
       <div className="flex justify-between items-start mb-2">
         <div>
           <h4 className="font-medium text-gray-900">{name}</h4>
-          <p className="text-sm text-gray-500 capitalize">{type}</p>
+          <p className="text-sm text-gray-500 capitalize">{mealPlanMeal}</p>
         </div>
         <div className="flex gap-2">
           {onEdit && (

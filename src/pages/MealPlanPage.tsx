@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon } from '@heroicons/react/24/outline';
-import { Recipe, getDisplayTotalTime } from '../types/recipe';
-import { MealPlan, Meal } from '../types/mealPlan';
+import { Recipe } from '../types/recipe';
+import { MealPlan, Meal, MealPlanMealType } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
@@ -19,7 +19,6 @@ import { addRecipe } from '../firebase/firestore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
 import { toast, Toaster } from 'react-hot-toast';
-import { getCurrentDateString, formatDateString } from '../utils/dateUtils';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -88,20 +87,16 @@ export const MealPlanPage: React.FC = () => {
 
       // If we don't have a selectedRecipe and data is AddMealData with ingredients, create a recipe
       let recipeId = selectedRecipe?.id;
-      if (!selectedRecipe && 'type' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
-        // Convert time strings to numbers if needed
-        const prepTimeMinutes = data.prepTime ? parseInt(data.prepTime, 10) : 15; // Default to 15 mins
-        const cookTimeMinutes = data.cookTime ? parseInt(data.cookTime, 10) : null;
-        const totalTimeMinutes = prepTimeMinutes + (cookTimeMinutes || 0);
-        const displayTotalTime = getDisplayTotalTime(totalTimeMinutes);
-        
+      if (!selectedRecipe && 'mealPlanMeal' in data && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
+        // Creating a new recipe from the meal plan data
+        // Note: we save the mealPlanMeal in the recipe's mealTypes for convenience
         const newRecipe = await addRecipe({
           name: data.name,
           description: data.description ?? null,
-          prepTime: prepTimeMinutes,
-          cookTime: cookTimeMinutes,
-          totalTime: totalTimeMinutes,
-          displayTotalTime,
+          prepTime: typeof data.prepTime === 'string' ? parseInt(data.prepTime) || null : null,
+          cookTime: typeof data.cookTime === 'string' ? parseInt(data.cookTime) || null : null,
+          totalTime: null,
+          displayTotalTime: "unknown", // This will be calculated properly when saved
           servings: data.servings,
           ingredients: data.ingredients.map(ing => ({
             name: ing.name,
@@ -115,7 +110,7 @@ export const MealPlanPage: React.FC = () => {
           })) || [],
           imageUrl: null,
           notes: null,
-          mealTypes: [data.type],
+          mealTypes: [data.mealPlanMeal], // Store the meal plan meal type in recipe's mealTypes
           cuisine: data.cuisine ?? null,
           rating: data.rating ?? null,
           dateAdded: now.toDate(),
@@ -132,9 +127,8 @@ export const MealPlanPage: React.FC = () => {
           id: crypto.randomUUID(),
           name: data.name,
           description: data.description ?? null,
-          mealPlanMeal: 'type' in data 
-            ? data.type 
-            : ((data.mealTypes && data.mealTypes.length > 0) ? data.mealTypes[0] as any : 'dinner'),
+          mealPlanMeal: 'mealPlanMeal' in data ? data.mealPlanMeal : 
+                        (data.mealTypes && data.mealTypes.length > 0) ? data.mealTypes[0] as MealPlanMealType : 'dinner',
           days: 'days' in data ? data.days : [],
           servings: data.servings,
           recipeId: recipeId ?? null,
@@ -212,7 +206,7 @@ export const MealPlanPage: React.FC = () => {
     const meal: AddMealData = {
       name: formData.get('name') as string,
       description: formData.get('description') as string,
-      type: formData.get('type') as MealType,
+      mealPlanMeal: formData.get('mealPlanMeal') as MealPlanMealType,
       servings: parseInt(formData.get('servings') as string),
       prepTime: formData.get('prepTime') as string,
       ingredients: Array.from({ length: ingredientCount }, (_, i) => ({
@@ -601,12 +595,12 @@ export const MealPlanPage: React.FC = () => {
 
                     <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
                       <div>
-                        <label htmlFor="type" className="block text-sm font-medium text-zinc-700">
+                        <label htmlFor="mealPlanMeal" className="block text-sm font-medium text-zinc-700">
                           Type
                         </label>
                         <select
-                          name="type"
-                          id="type"
+                          name="mealPlanMeal"
+                          id="mealPlanMeal"
                           required
                           className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                         >

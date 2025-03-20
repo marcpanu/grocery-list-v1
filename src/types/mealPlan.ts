@@ -1,13 +1,13 @@
 import { MealType } from './recipe';
 
-// Define a reused type for meal plan meal slots
+// Define a type for meal times in meal planning
 export type MealPlanMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'dessert';
 
 export interface Meal {
   id: string;
   name: string;
   description?: string;
-  mealPlanMeal: MealPlanMealType; // Renamed from 'type' to clarify purpose
+  mealPlanMeal: MealPlanMealType; // Changed from 'type: MealType' to separate concerns
   days: string[];
   servings: number;
   recipeId?: string;
