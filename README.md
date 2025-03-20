@@ -38,6 +38,12 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Hide/show completed items
 - Move items between stores
 - Categorize items (produce, meat, etc.)
+- Automatic item categorization based on ingredient names
+- Smart quantity standardization
+  - Converts recipe measurements to shopping quantities
+  - Combines duplicate ingredients
+  - Converts volume measurements to whole items for produce
+  - Standardizes units for better shopping experience
 
 ### Meal Planning
 - Improved two-step workflow:
@@ -82,6 +88,11 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - Enhanced store filtering
   - Filter state persistence
   - Clear UI feedback
+- Intelligent grocery list generation
+  - Automatic ingredient categorization
+  - Smart quantity standardization (volume to count)
+  - Combining duplicate ingredients
+  - Pantry item exclusion
 
 ### In Progress
 - Enhanced meal planning interface

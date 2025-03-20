@@ -160,6 +160,54 @@ interface PantryItem {
    - Applies store preferences
    - Generates optimized list
 
+## Ingredient Processing
+
+### Quantity Standardization
+```typescript
+interface IngredientConversion {
+  name: string;                 // Standardized name for shopping
+  density: number;              // Grams per cup
+  countEquivalent?: number;     // Grams per whole item (if applicable)
+  defaultUnit: string;          // Standard unit for shopping
+  variants: string[];           // Alternative names to match
+  category: string;             // Category for organization
+}
+```
+
+The quantity standardization system converts recipe measurements to shopping-friendly units using a three-step process:
+
+1. **Volume Standardization**: Converts various volume measurements (tsp, tbsp, cups) to a standard unit (cups)
+2. **Weight Conversion**: Converts volume measurements to weight using density values (cups → grams)
+3. **Count Conversion**: For countable items (produce, etc.), converts weight to count using per-item weights
+
+This allows the app to:
+- Convert "1/2 cup chopped bell pepper" → "1 bell pepper"
+- Convert "2 tbsp minced garlic" → "6 garlic cloves"
+- Convert "3 cups flour" → "360g flour"
+
+### Automatic Categorization
+
+The categorization system uses pattern matching to assign appropriate categories to grocery items:
+
+1. **Category Matching**: Ingredients are matched against common keywords for each category
+2. **Fallback Processing**: If no direct match, tries partial and substring matching
+3. **Default Category**: Uses an "Other" category as fallback when no match is found
+
+This enables automatic organization of shopping lists without requiring manual categorization by users.
+
+### Shopping List Generation Process
+
+The complete ingredient processing flow:
+
+1. Recipe ingredients are extracted from selected recipes
+2. Quantities are adjusted based on serving sizes
+3. Duplicate ingredients are identified and combined
+4. Pantry items are filtered out
+5. Ingredients are standardized to shopping-friendly quantities
+6. Automatic categorization is applied
+7. Default store assignments are applied based on user preferences
+8. Final shopping items are added to the list
+
 ## Component Hierarchy
 
 ```

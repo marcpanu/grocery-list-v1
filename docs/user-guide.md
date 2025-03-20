@@ -42,6 +42,13 @@ The smart shopping list automatically:
 - Calculates total quantities needed
 - Organizes items by category
 - Adjusts quantities based on serving sizes
+- Smart quantity conversion features:
+  - Converts recipe measurements to shopping-friendly quantities (e.g., "1/2 cup chopped bell pepper" becomes "1 bell pepper")
+  - Standardizes units for more intuitive shopping (e.g., produce in whole units, dry goods in grams)
+  - Combines duplicate ingredients across recipes automatically
+- Intelligent categorization:
+  - Automatically assigns categories to ingredients based on their names
+  - Organizes your shopping list by department for efficient shopping
 
 ### 4. Configuration Screen
 
@@ -71,6 +78,8 @@ Customize your shopping experience:
 - **Flexible Servings**: Adjust serving sizes individually for each meal occurrence
 - **Smart Organization**: Utilize store-specific organization to optimize your shopping route
 - **Pantry Exclusions**: Maintain your pantry list to avoid purchasing items you already have
+- **Automatic Conversions**: Let the app handle converting recipe quantities to shopping quantities - review for accuracy but enjoy the convenience
+- **Category Management**: The app automatically categorizes items, but you can always adjust categories in the settings to match your shopping preferences
 
 ## Keyboard Shortcuts
 
