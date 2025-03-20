@@ -63,8 +63,10 @@ export default function RecipeSearchModal({ isOpen, onClose, onSelect }: RecipeS
     const searchLower = searchQuery.toLowerCase();
     return (
       recipe.name.toLowerCase().includes(searchLower) ||
-      recipe.mealTypes.some(type => type.toLowerCase().includes(searchLower)) ||
-      (recipe.cuisine?.toLowerCase().includes(searchLower) ?? false)
+      recipe.mealTypes?.some(type => type.toLowerCase().includes(searchLower)) || 
+      (recipe.cuisine && Array.isArray(recipe.cuisine) 
+        ? recipe.cuisine.some(c => c.toLowerCase().includes(searchLower))
+        : false)
     );
   });
 
@@ -123,14 +125,16 @@ export default function RecipeSearchModal({ isOpen, onClose, onSelect }: RecipeS
               >
                 <h3 className="font-semibold">{recipe.name}</h3>
                 <div className="mt-2 flex flex-wrap gap-2">
-                  {recipe.mealTypes.map(type => (
+                  {recipe.mealTypes?.map(type => (
                     <span key={type} className="text-xs bg-blue-100 text-blue-800 px-2 py-1 rounded">
                       {type}
                     </span>
                   ))}
                   {recipe.cuisine && (
                     <span className="text-xs bg-green-100 text-green-800 px-2 py-1 rounded">
-                      {recipe.cuisine}
+                      {Array.isArray(recipe.cuisine) && recipe.cuisine.length > 0
+                        ? recipe.cuisine[0]
+                        : recipe.cuisine}
                     </span>
                   )}
                 </div>

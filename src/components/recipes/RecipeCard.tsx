@@ -66,9 +66,9 @@ export const RecipeCard = ({
           <div className="flex items-center gap-3 mt-1">
             <div className="flex items-center text-xs text-zinc-500">
               <ClockIcon className="w-3 h-3 mr-1" />
-              <span>{recipe.prepTime}</span>
+              <span>{recipe.displayTotalTime || 'unknown'}</span>
             </div>
-            {recipe.mealTypes?.length > 0 && (
+            {recipe.mealTypes && recipe.mealTypes.length > 0 && (
               <div className="flex gap-1">
                 {recipe.mealTypes.slice(0, 1).map((type) => (
                   <span
@@ -173,11 +173,11 @@ export const RecipeCard = ({
           {/* Prep Time */}
           <div className="flex items-center text-sm text-zinc-600">
             <ClockIcon className="w-4 h-4 mr-1" />
-            <span>{recipe.prepTime}</span>
+            <span>{recipe.displayTotalTime || 'unknown'}</span>
           </div>
           
           {/* Meal Types */}
-          {recipe.mealTypes?.length > 0 && (
+          {recipe.mealTypes && recipe.mealTypes.length > 0 && (
             <div className="flex gap-1">
               {recipe.mealTypes.map((type) => (
                 <span

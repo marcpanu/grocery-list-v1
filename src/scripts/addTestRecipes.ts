@@ -1,5 +1,5 @@
 import { addRecipe } from '../firebase/firestore';
-import { Recipe, PrepTime } from '../types/recipe';
+import { Recipe } from '../types/recipe';
 
 const testRecipes: Omit<Recipe, 'id'>[] = [
   {
@@ -7,9 +7,10 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     description: 'A traditional Roman pasta dish with eggs, cheese, pancetta, and black pepper.',
     imageUrl: 'https://images.unsplash.com/photo-1612874742237-6526221588e3?auto=format&fit=crop&q=80&w=800',
     servings: 4,
-    prepTime: '<30' as PrepTime,
-    cookTime: '20',
-    totalTime: '50',
+    prepTime: 30,
+    cookTime: 20,
+    totalTime: 50,
+    displayTotalTime: '50 minutes',
     ingredients: [
       { name: 'spaghetti', quantity: 1, unit: 'pound', notes: null },
       { name: 'pancetta or guanciale', quantity: 0.5, unit: 'pound', notes: 'diced' },
@@ -38,9 +39,10 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     description: 'Easy and healthy breakfast prepared the night before.',
     imageUrl: 'https://images.unsplash.com/photo-1517673132405-a56a62b18caf?auto=format&fit=crop&q=80&w=800',
     servings: 1,
-    prepTime: '<30' as PrepTime,
+    prepTime: 30,
     cookTime: null,
-    totalTime: '8 hours',
+    totalTime: 480,
+    displayTotalTime: '480 minutes',
     ingredients: [
       { name: 'rolled oats', quantity: 0.5, unit: 'cup', notes: null },
       { name: 'milk', quantity: 0.5, unit: 'cup', notes: 'any kind' },
@@ -68,9 +70,10 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     description: 'Fragrant and creamy coconut curry with vegetables.',
     imageUrl: 'https://images.unsplash.com/photo-1455619452474-d2be8b1e70cd?auto=format&fit=crop&q=80&w=800',
     servings: 4,
-    prepTime: '<30' as PrepTime,
-    cookTime: '45',
-    totalTime: '75',
+    prepTime: 30,
+    cookTime: 45,
+    totalTime: 75,
+    displayTotalTime: '75 minutes',
     ingredients: [
       { name: 'green curry paste', quantity: 4, unit: 'tablespoons', notes: null },
       { name: 'coconut milk', quantity: 2, unit: 'cans', notes: '14 oz each' },

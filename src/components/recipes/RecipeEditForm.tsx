@@ -110,17 +110,6 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     }));
   };
 
-  // Helper function to convert time to minutes
-  const convertToMinutes = (timeStr: string): number => {
-    if (timeStr === '<30') return 15; // Approximate
-    if (timeStr === '30-60') return 45; // Approximate
-    if (timeStr === '60+') return 90; // Approximate
-    
-    // Try to parse a number value
-    const numericValue = parseInt(timeStr, 10);
-    return isNaN(numericValue) ? 0 : numericValue;
-  };
-
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
       {/* Basic Information */}
@@ -337,11 +326,11 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
               <label key={type} className="inline-flex items-center">
                 <input
                   type="checkbox"
-                  checked={formData.mealTypes.includes(type)}
+                  checked={formData.mealTypes?.includes(type) || false}
                   onChange={(e) => {
                     const newTypes = e.target.checked
-                      ? [...formData.mealTypes, type]
-                      : formData.mealTypes.filter(t => t !== type);
+                      ? [...(formData.mealTypes || []), type]
+                      : (formData.mealTypes || []).filter(t => t !== type);
                     setFormData(prev => ({ ...prev, mealTypes: newTypes }));
                   }}
                   className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"

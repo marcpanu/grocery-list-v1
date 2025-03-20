@@ -3,7 +3,7 @@ import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { CUISINES, Ingredient } from '../../types/recipe';
 import { Recipe } from '../../types/recipe';
-import { MealPlanMealType } from '../../types/mealPlan';
+import { AddMealData } from '../../types/mealPlan';
 
 interface AddMealModalProps {
   isOpen: boolean;
@@ -11,21 +11,6 @@ interface AddMealModalProps {
   onAdd: (data: Recipe | AddMealData) => void;
   selectedRecipe?: Recipe;
   isLoading?: boolean;
-}
-
-export interface AddMealData {
-  name: string;
-  description?: string;
-  mealTypes: string[];
-  servings: number;
-  prepTime?: string;
-  cookTime?: string;
-  totalTime?: string;
-  ingredients?: Ingredient[];
-  instructions?: string[];
-  cuisine?: string[];
-  rating?: number;
-  recipeId?: string;
 }
 
 interface FormData {

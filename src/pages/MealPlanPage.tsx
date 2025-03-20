@@ -3,14 +3,14 @@ import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDup
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
-import { AddMealModal, AddMealData } from '../components/mealPlan/AddMealModal';
+import { AddMealModal } from '../components/mealPlan/AddMealModal';
+import { AddMealData } from '../types/mealPlan';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
 import { ScheduleMealModal, ScheduleMealData } from '../components/mealPlan/ScheduleMealModal';
 import { addMealPlan, getUserMealPlans, deleteMeal, getRecipe, getUserShoppingLists, updateShoppingList, addRecipeIngredientsToGroceryList } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
-import { MealType } from '../types/recipe';
 import { Timestamp } from 'firebase/firestore';
 import { useRecipeImport } from '../hooks/useRecipeImport';
 import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
@@ -149,13 +149,13 @@ export const MealPlanPage: React.FC = () => {
           totalTime: null,
           displayTotalTime: "unknown", // This will be calculated properly when saved
           servings: data.servings,
-          ingredients: data.ingredients.map(ing => ({
+          ingredients: data.ingredients.map((ing: any) => ({
             name: ing.name,
             quantity: ing.quantity,
             unit: ing.unit ?? null,
             notes: ing.notes ?? null
           })),
-          instructions: data.instructions?.map(instruction => ({
+          instructions: data.instructions?.map((instruction: any) => ({
             order: 1,
             instruction: typeof instruction === 'string' ? instruction : instruction.instruction
           })) || [],
@@ -604,7 +604,6 @@ export const MealPlanPage: React.FC = () => {
           onAdd={handleAddMeal}
           selectedRecipe={selectedRecipe}
           isLoading={isLoading}
-          isAddingToMealPlan={false}
         />
 
         {/* Add the new Schedule Meal Modal */}

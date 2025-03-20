@@ -30,7 +30,7 @@ import { RecipeUrlImport } from './RecipeUrlImport';
 import ConfirmDialog from '../common/ConfirmDialog';
 import { useRecipeImport } from '../../hooks/useRecipeImport';
 import { AddMealModal } from '../mealPlan/AddMealModal';
-import { AddMealData } from '../mealPlan/AddMealModal';
+import { AddMealData } from '../../types/mealPlan';
 import { toast, Toaster } from 'react-hot-toast';
 import { ConfirmGroceryListDialog } from '../common/ConfirmGroceryListDialog';
 
@@ -66,7 +66,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
 
   // Get unique meal types and cuisines from recipes
   const availableMealTypes = [...new Set(recipes.flatMap(r => r.mealTypes || []))].sort();
-  const availableCuisines = [...new Set(recipes.map(r => r.cuisine).filter((c): c is string => !!c))].sort();
+  const availableCuisines = [...new Set(recipes.flatMap(r => r.cuisine || []))].sort();
 
   // Use the recipe import hook
   const {
@@ -85,7 +85,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         imageUrl: recipe.imageUrl,
         prepTime: recipe.prepTime,
         mealTypes: recipe.mealTypes,
-        cuisine: recipe.cuisine?.[0] || null,
+        cuisine: recipe.cuisine || null,
         rating: recipe.rating,
         dateAdded: recipe.dateAdded,
         isFavorite: recipe.isFavorite
@@ -255,7 +255,7 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         imageUrl: newRecipe.imageUrl,
         prepTime: newRecipe.prepTime,
         mealTypes: newRecipe.mealTypes,
-        cuisine: newRecipe.cuisine?.[0] || null,
+        cuisine: newRecipe.cuisine || null,
         rating: newRecipe.rating,
         dateAdded: newRecipe.dateAdded,
         isFavorite: newRecipe.isFavorite
@@ -383,7 +383,9 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       const matchesMealType = selectedMealTypes.length === 0 || 
         recipe.mealTypes?.some(type => selectedMealTypes.includes(type));
       const matchesCuisine = selectedCuisines.length === 0 || 
-        selectedCuisines.includes(recipe.cuisine || '');
+        (recipe.cuisine && (Array.isArray(recipe.cuisine) 
+          ? recipe.cuisine.some(c => selectedCuisines.includes(c))
+          : selectedCuisines.includes(recipe.cuisine)));
       const matchesFavorites = !showFavorites || recipe.isFavorite;
       return matchesSearch && matchesMealType && matchesCuisine && matchesFavorites;
     })
@@ -694,7 +696,6 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
         onClose={() => setShowAddMealModal(false)}
         onAdd={handleAddRecipe}
         isLoading={isLoading}
-        isAddingToMealPlan={false}
       />
 
       {/* Confirmation Dialog for Grocery List */}
