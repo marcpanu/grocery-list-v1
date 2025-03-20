@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../../types/recipe';
-import { MealPlanMealType } from '../../types/mealPlan';
+import { MealPlanMealType, Week } from '../../types/mealPlan';
 
 interface ScheduleMealModalProps {
   isOpen: boolean;
@@ -10,6 +10,8 @@ interface ScheduleMealModalProps {
   onSchedule: (data: ScheduleMealData) => void;
   recipe: Recipe;
   isLoading?: boolean;
+  weeks: Week[];
+  currentWeekId: string;
 }
 
 export interface ScheduleMealData {
@@ -18,6 +20,7 @@ export interface ScheduleMealData {
   mealPlanMeal: MealPlanMealType;
   days: string[];
   servings: number;
+  weekId: string;
 }
 
 export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
@@ -26,6 +29,8 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
   onSchedule,
   recipe,
   isLoading = false,
+  weeks,
+  currentWeekId,
 }) => {
   const [formData, setFormData] = useState<ScheduleMealData>({
     recipeId: recipe?.id || '',
@@ -33,11 +38,13 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
     mealPlanMeal: 'dinner',
     days: [],
     servings: recipe?.servings || 2,
+    weekId: currentWeekId,
   });
   
   const [errors, setErrors] = useState<{
     mealPlanMeal?: string;
     days?: string;
+    weekId?: string;
   }>({});
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -71,6 +78,7 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
     const newErrors: {
       mealPlanMeal?: string;
       days?: string;
+      weekId?: string;
     } = {};
     
     if (!formData.mealPlanMeal) {
@@ -81,12 +89,24 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
       newErrors.days = 'Please select at least one day';
     }
     
+    if (!formData.weekId) {
+      newErrors.weekId = 'Please select a week';
+    }
+    
     if (Object.keys(newErrors).length > 0) {
       setErrors(newErrors);
       return;
     }
     
     onSchedule(formData);
+  };
+
+  // Helper to format week label for display
+  const formatWeekLabel = (week: Week) => {
+    const startDate = new Date(week.startDate);
+    const endDate = new Date(week.endDate);
+    const formatDate = (date: Date) => `${date.getMonth() + 1}/${date.getDate()}`;
+    return `${formatDate(startDate)}-${formatDate(endDate)}`;
   };
 
   return (
@@ -110,6 +130,30 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
               <div className="px-4 py-2 border bg-gray-50 border-gray-300 rounded-lg">
                 {recipe.name}
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="weekId" className="block text-sm font-medium text-gray-700 mb-1">
+                Week <span className="text-red-500">*</span>
+              </label>
+              <select
+                id="weekId"
+                name="weekId"
+                value={formData.weekId}
+                onChange={handleInputChange}
+                className={`w-full px-4 py-2 border ${
+                  errors.weekId ? 'border-red-500' : 'border-gray-300'
+                } rounded-lg focus:outline-none focus:ring-2 focus:ring-violet-600`}
+              >
+                {weeks.map(week => (
+                  <option key={week.id} value={week.id}>
+                    {formatWeekLabel(week)}
+                  </option>
+                ))}
+              </select>
+              {errors.weekId && (
+                <p className="mt-1 text-sm text-red-500">{errors.weekId}</p>
+              )}
             </div>
 
             <div>

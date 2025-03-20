@@ -6,6 +6,7 @@ interface WeeklyCalendarViewProps {
   isLoading: boolean;
   selectedDate: string;
   onDateSelect: (date: string) => void;
+  meals: Meal[];
 }
 
 interface DayMeals {
@@ -33,15 +34,14 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
   isLoading,
   selectedDate,
   onDateSelect,
+  meals,
 }) => {
   const daysOfWeek = ['S', 'M', 'T', 'W', 'T', 'F', 'S'];
   const fullDays = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
 
   // Group meals by day and type
   const mealsByDay = fullDays.reduce<DayMeals>((acc, day) => {
-    const dayMeals = mealPlans
-      .flatMap(plan => plan.meals)
-      .filter(meal => meal.days.includes(day));
+    const dayMeals = meals.filter(meal => meal.days.includes(day));
     
     acc[day] = groupMealsByType(dayMeals);
     return acc;

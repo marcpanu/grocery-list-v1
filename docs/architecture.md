@@ -64,16 +64,26 @@ export type MealPlanMealType = 'breakfast' | 'lunch' | 'dinner' | 'snack' | 'des
 interface MealPlan {
   id: string;
   userId: string;
-  meals: Meal[];
+  weeks: Week[];          // New structure for multi-week support
+  currentWeekId: string;  // Reference to the current active week
   createdAt: Date;
   updatedAt: Date;
 }
 
+interface Week {
+  id: string;
+  startDate: string;      // ISO date string for week start
+  endDate: string;        // ISO date string for week end
+  order: number;          // For ordering weeks in the UI
+}
+
 interface Meal {
   id: string;
+  userId: string;         // Owner of the meal
+  weekId: string;         // Reference to parent week
   name: string;
   description?: string;
-  mealPlanMeal: MealPlanMealType;  // Changed from 'type: MealType' to separate concerns
+  mealPlanMeal: MealPlanMealType;
   days: string[];
   servings: number;
   recipeId?: string;
@@ -93,6 +103,16 @@ interface AddMealData {
   cuisine?: string[];     // optional
   rating?: number;        // optional
   recipeId?: string;      // optional
+  weekId: string;         // required - the week to add the meal to
+}
+
+interface ScheduleMealData {
+  name: string;
+  mealPlanMeal: MealPlanMealType;
+  days: string[];
+  servings: number;
+  recipeId: string;
+  weekId: string;         // The week to schedule the meal in
 }
 ```
 
@@ -151,11 +171,15 @@ interface PantryItem {
 
 2. **Meal Planning**
    - Updates meal plan context
+   - Week selection and navigation
+   - Meals organized by week and day
+   - Week data persistence and retrieval
+   - Calculation of current week
    - Calculates ingredient quantities
    - Triggers shopping list generation
 
 3. **Shopping List Generation**
-   - Aggregates ingredients
+   - Aggregates ingredients from selected week
    - Filters out pantry items
    - Applies store preferences
    - Generates optimized list
@@ -218,7 +242,10 @@ App
 │   ├── RecipeCard
 │   └── RecipeImport
 ├── MealPlanner
+│   ├── WeekTimeline            # New component for week navigation
+│   │   └── WeekIndicator       # Individual week display in timeline
 │   ├── WeeklyCalendar
+│   ├── DayDetails              # Detailed view of a selected day
 │   ├── MealSlot
 │   └── ServingAdjuster
 ├── ShoppingList
@@ -231,6 +258,31 @@ App
     ├── PantryManager
     └── DataManagement
 ```
+
+## Multi-Week Implementation
+
+The multi-week feature introduces a hierarchical data structure that separates meals by week:
+
+1. **Week Management**:
+   - `createOrGetWeek`: Creates a new week or retrieves an existing one
+   - `getCurrentWeek`: Gets the current active week
+   - `getWeeks`: Retrieves all weeks for a user
+   - `setCurrentWeek`: Updates the current active week
+
+2. **Meal Organization**:
+   - Meals are now associated with a specific week via `weekId`
+   - `getMealsByWeek`: Retrieves all meals for a specific week
+   - `getMealsByCurrentWeek`: Gets meals for the current week
+   - `addMealToWeek`: Adds a meal to a specific week
+
+3. **Migration Logic**:
+   - `migrateMealsToWeeks`: Migrates legacy data to the new structure
+   - Automatically runs when needed to ensure backward compatibility
+
+4. **Date Utilities**:
+   - Functions for calculating week start/end dates
+   - Week boundary determination (Sunday to Saturday)
+   - Date formatting for UI display
 
 ## Performance Considerations
 

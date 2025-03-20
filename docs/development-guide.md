@@ -139,6 +139,10 @@ npm run test:e2e
   - Import new recipes integrated
   - Manual recipe creation integrated
   - Single-document-per-user model implemented
+  - Multi-week planning support
+  - Timeline navigation for weeks
+  - Current week management
+  - Historical and future meal planning
 
 ### Recent Changes
 1. Recipe Import and Creation System
@@ -181,6 +185,17 @@ npm run test:e2e
    - Prepared for multi-user support
    - Optimized state management
    - Added proper validation for required fields
+   
+5. Multi-Week Meal Planning
+   - Redesigned data model to support multiple weeks
+   - Added week-based organization of meals
+   - Implemented week timeline UI for navigation
+   - Added current week indicator and selection
+   - Created "Today" button for quick navigation
+   - Added date formatting utilities
+   - Implemented migration logic for legacy data
+   - Updated meal creation to include week selection
+   - Enhanced meal retrieval to filter by week
 
 ### Known Issues
 1. Meal Plan Page
@@ -199,6 +214,9 @@ npm run test:e2e
    - Add drag-and-drop functionality
    - Enhance form validation
    - Add meal plan templates
+   - Expand week navigation with more options
+   - Add week duplication capability
+   - Implement meal copying between weeks
 
 2. Recipe Import Enhancement
    - Improve error messages
@@ -218,53 +236,48 @@ npm run test:e2e
 
 ### Data Model
 ```typescript
-// Meal Plan Structure
+// Updated Meal Plan Structure with Multi-Week Support
 interface MealPlan {
   userId: string;
-  meals: Array<{
-    id: string;
-    name: string;
-    description?: string;
-    type: MealType;
-    servings: number;
-    days: string[];
-    recipeId?: string;
-    ingredients?: Ingredient[];
-    instructions?: string[];
-    cuisine?: string[];
-    rating?: number;
-    createdAt: Timestamp;
-  }>;
+  weeks: Week[];          // Collection of weeks
+  currentWeekId: string;  // Reference to current active week
   createdAt: Timestamp;
   updatedAt: Timestamp;
 }
 
-// Recipe Import Hook
-interface RecipeImportHook {
-  showImportModal: boolean;
-  setShowImportModal: (show: boolean) => void;
-  showUrlImportModal: boolean;
-  closeUrlImport: () => void;
-  handleImportOptionSelect: (optionId: string) => void;
-  handleUrlImport: (data: { url: string }) => Promise<void>;
+// Week Structure
+interface Week {
+  id: string;
+  startDate: string;      // ISO date string for week start
+  endDate: string;        // ISO date string for week end
+  order: number;          // For ordering weeks in the UI
 }
 
-// Add Meal Data
-interface AddMealData {
+// Updated Meal Structure
+interface Meal {
+  id: string;
+  userId: string;         // Owner of the meal
+  weekId: string;         // Reference to parent week
   name: string;
   description?: string;
-  type: MealType;
+  mealPlanMeal: MealPlanMealType;
   days: string[];
   servings: number;
-  prepTime?: string;
-  cookTime?: string;
-  totalTime?: string;
-  ingredients?: Ingredient[];
-  instructions?: string[];
-  cuisine?: string[];
-  rating?: number;
   recipeId?: string;
+  createdAt: Timestamp;
 }
+
+// Updated Meal Plan APIs
+// Week Management
+const createOrGetWeek = async (userId: string, date?: Date): Promise<Week>;
+const getCurrentWeek = async (userId: string): Promise<Week>;
+const getWeeks = async (userId: string): Promise<Week[]>;
+const setCurrentWeek = async (userId: string, weekId: string): Promise<void>;
+
+// Meal Management
+const getMealsByWeek = async (userId: string, weekId: string): Promise<Meal[]>;
+const getMealsByCurrentWeek = async (userId: string): Promise<Meal[]>;
+const addMealToWeek = async (userId: string, weekId: string, meal: Partial<Meal>): Promise<Meal>;
 ```
 
 ### Implementation Guidelines

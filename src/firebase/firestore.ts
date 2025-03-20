@@ -32,7 +32,10 @@ import {
   UserData,
   StoredCredential,
   MealPlan,
-  PantryItem
+  MealPlanMealType,
+  PantryItem,
+  Week,
+  Meal
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
 import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
@@ -41,6 +44,8 @@ import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
 const COLLECTIONS = {
   RECIPES: 'recipes',
   MEAL_PLANS: 'mealPlans',
+  WEEKS: 'weeks',
+  MEALS: 'meals',
   SHOPPING_LISTS: 'shoppingLists',
   STORES: 'stores',
   CATEGORIES: 'categories',
@@ -205,35 +210,31 @@ export const deleteRecipe = async (recipeId: string): Promise<void> => {
 
 // Meal Plan Operations
 export const addMealPlan = async (userId: string, mealPlanData: DocumentData) => {
-  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  // Find or create the week for the meal
+  const weekId = mealPlanData.weekId || (await getCurrentWeek(userId)).id;
   const now = Timestamp.now();
   
-  // Convert dates to Timestamps, handling both Date and Timestamp inputs
+  // Convert the meal data
   const mealWithTimestamp = {
-    ...mealPlanData.meals[0],
+    userId,
+    weekId,
+    id: mealPlanData.meals[0].id,
+    name: mealPlanData.meals[0].name,
+    description: mealPlanData.meals[0].description,
+    mealPlanMeal: mealPlanData.meals[0].mealPlanMeal,
+    days: mealPlanData.meals[0].days,
+    servings: mealPlanData.meals[0].servings,
+    recipeId: mealPlanData.meals[0].recipeId,
     createdAt: mealPlanData.meals[0].createdAt instanceof Timestamp 
       ? mealPlanData.meals[0].createdAt 
       : Timestamp.fromDate(mealPlanData.meals[0].createdAt)
   };
 
-  // Try to get existing meal plan
-  const mealPlanSnap = await getDoc(mealPlanRef);
+  // Add the meal to the specified week
+  await addMealToWeek(userId, weekId, mealWithTimestamp);
   
-  if (mealPlanSnap.exists()) {
-    // Update existing meal plan
-    await updateDoc(mealPlanRef, {
-      meals: arrayUnion(mealWithTimestamp),
-      updatedAt: now
-    });
-  } else {
-    // Create new meal plan
-    await setDoc(mealPlanRef, {
-      userId,
-      meals: [mealWithTimestamp],
-      createdAt: now,
-      updatedAt: now
-    });
-  }
+  // Ensure the meal plan exists
+  await getMealPlanWithWeeks(userId);
 };
 
 export const getMealPlan = async (userId: string) => {
@@ -244,44 +245,17 @@ export const getMealPlan = async (userId: string) => {
 
 export const getUserMealPlans = async (userId: string): Promise<MealPlan[]> => {
   console.log('Getting meal plans for user:', userId);
-  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
-  const mealPlanSnap = await getDoc(mealPlanRef);
   
-  if (!mealPlanSnap.exists()) {
-    console.log('No meal plan found for user');
+  try {
+    // Get the meal plan with weeks
+    const mealPlan = await getMealPlanWithWeeks(userId);
+    console.log('Retrieved meal plan with weeks:', mealPlan);
+    
+    return [mealPlan];
+  } catch (error) {
+    console.error('Error getting meal plans:', error);
     return [];
   }
-
-  const data = mealPlanSnap.data();
-  console.log('Raw meal plan data:', data);
-  
-  const createdAt = data.createdAt instanceof Timestamp ? data.createdAt.toDate() : new Date();
-  const updatedAt = data.updatedAt instanceof Timestamp ? data.updatedAt.toDate() : new Date();
-  
-  const mealPlan: MealPlan = {
-    id: mealPlanSnap.id,
-    userId,
-    meals: data.meals.map((meal: any) => {
-      // If the meal uses the old 'type' field, migrate it to 'mealPlanMeal'
-      if (meal.type && !meal.mealPlanMeal) {
-        return {
-          ...meal,
-          mealPlanMeal: meal.type, // Migrate old type to new mealPlanMeal
-          createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
-        };
-      }
-      
-      return {
-        ...meal,
-        createdAt: meal.createdAt instanceof Timestamp ? meal.createdAt.toDate() : new Date(meal.createdAt)
-      };
-    }),
-    createdAt,
-    updatedAt
-  };
-  
-  console.log('Processed meal plan:', mealPlan);
-  return [mealPlan];
 };
 
 export const deleteMeal = async (userId: string, mealId: string): Promise<void> => {
@@ -939,4 +913,291 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     console.error('Error adding recipe ingredients to grocery list:', error);
     throw new Error('Failed to add recipe ingredients to grocery list');
   }
+};
+
+// Helper function to get the ISO date string for a given date
+const getISODate = (date: Date): string => {
+  return date.toISOString().split('T')[0];
+};
+
+// Helper function to get the start and end dates of a week given a date
+const getWeekDates = (date: Date): { startDate: string; endDate: string } => {
+  const day = date.getDay(); // 0 for Sunday, 1 for Monday, etc.
+  
+  // Calculate the date of Sunday (start of week)
+  const startDate = new Date(date);
+  startDate.setDate(date.getDate() - day); // Move back to Sunday
+  
+  // Calculate the date of Saturday (end of week)
+  const endDate = new Date(startDate);
+  endDate.setDate(startDate.getDate() + 6); // Move forward to Saturday
+  
+  return {
+    startDate: getISODate(startDate),
+    endDate: getISODate(endDate)
+  };
+};
+
+// Create a new week or get existing week for the given date
+export const createOrGetWeek = async (userId: string, date: Date): Promise<Week> => {
+  const { startDate, endDate } = getWeekDates(date);
+  
+  // Check if a week already exists for this date range
+  const weeksRef = collection(db, COLLECTIONS.WEEKS);
+  const q = query(
+    weeksRef,
+    where('userId', '==', userId),
+    where('startDate', '==', startDate),
+    where('endDate', '==', endDate)
+  );
+  
+  const snapshot = await getDocs(q);
+  
+  // If week exists, return it
+  if (!snapshot.empty) {
+    const weekDoc = snapshot.docs[0];
+    return {
+      id: weekDoc.id,
+      ...weekDoc.data()
+    } as Week;
+  }
+  
+  // Create a new week if it doesn't exist
+  const now = Timestamp.now();
+  const newWeek: Omit<Week, 'id'> = {
+    userId,
+    startDate,
+    endDate,
+    label: `${startDate} to ${endDate}`,
+    createdAt: now.toDate(),
+    updatedAt: now.toDate()
+  };
+  
+  const weekRef = await addDoc(weeksRef, newWeek);
+  
+  return {
+    id: weekRef.id,
+    ...newWeek
+  };
+};
+
+// Get all weeks for a user
+export const getWeeks = async (userId: string): Promise<Week[]> => {
+  const weeksRef = collection(db, COLLECTIONS.WEEKS);
+  const q = query(
+    weeksRef,
+    where('userId', '==', userId),
+    orderBy('startDate', 'asc')
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Week));
+};
+
+// Get or create the current week
+export const getCurrentWeek = async (userId: string): Promise<Week> => {
+  return createOrGetWeek(userId, new Date());
+};
+
+// Get or create a week for the specified date
+export const getWeekForDate = async (userId: string, date: Date): Promise<Week> => {
+  return createOrGetWeek(userId, date);
+};
+
+// Get a meal plan for a user, creating it if it doesn't exist
+export const getMealPlanWithWeeks = async (userId: string): Promise<MealPlan> => {
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  const mealPlanSnap = await getDoc(mealPlanRef);
+  
+  // Get or create the current week
+  const currentWeek = await getCurrentWeek(userId);
+  
+  if (mealPlanSnap.exists()) {
+    const data = mealPlanSnap.data();
+    
+    // Check if the meal plan has the new weeks structure
+    if (!data.weeks) {
+      // Run migration to move old meals to new structure
+      await migrateMealsToWeeks(userId);
+      
+      // Get the updated meal plan after migration
+      const updatedMealPlanSnap = await getDoc(mealPlanRef);
+      const updatedData = updatedMealPlanSnap.data();
+      
+      return {
+        id: updatedMealPlanSnap.id,
+        userId,
+        weeks: updatedData.weeks || [currentWeek],
+        currentWeekId: updatedData.currentWeekId || currentWeek.id,
+        createdAt: updatedData.createdAt.toDate(),
+        updatedAt: updatedData.updatedAt.toDate()
+      };
+    }
+    
+    // Return existing meal plan with weeks
+    return {
+      id: mealPlanSnap.id,
+      userId,
+      weeks: data.weeks,
+      currentWeekId: data.currentWeekId || currentWeek.id,
+      createdAt: data.createdAt.toDate(),
+      updatedAt: data.updatedAt.toDate()
+    };
+  }
+  
+  // Create new meal plan with current week
+  const now = Timestamp.now();
+  const newMealPlan: Omit<MealPlan, 'id'> = {
+    userId,
+    weeks: [currentWeek],
+    currentWeekId: currentWeek.id,
+    createdAt: now.toDate(),
+    updatedAt: now.toDate()
+  };
+  
+  await setDoc(mealPlanRef, newMealPlan);
+  
+  return {
+    id: userId,
+    ...newMealPlan
+  };
+};
+
+// Set the current active week for a meal plan
+export const setCurrentWeek = async (userId: string, weekId: string): Promise<void> => {
+  const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+  await updateDoc(mealPlanRef, {
+    currentWeekId: weekId,
+    updatedAt: Timestamp.now()
+  });
+};
+
+// Add a meal to a specific week
+export const addMealToWeek = async (userId: string, weekId: string, mealData: Omit<Meal, 'id' | 'userId' | 'weekId' | 'createdAt'>): Promise<Meal> => {
+  const mealsRef = collection(db, COLLECTIONS.MEALS);
+  const now = Timestamp.now();
+  
+  const newMeal: Omit<Meal, 'id'> = {
+    userId,
+    weekId,
+    ...mealData,
+    createdAt: now.toDate()
+  };
+  
+  const mealRef = await addDoc(mealsRef, newMeal);
+  
+  return {
+    id: mealRef.id,
+    ...newMeal
+  };
+};
+
+// Get all meals for a specific week
+export const getMealsByWeek = async (userId: string, weekId: string): Promise<Meal[]> => {
+  const mealsRef = collection(db, COLLECTIONS.MEALS);
+  const q = query(
+    mealsRef,
+    where('userId', '==', userId),
+    where('weekId', '==', weekId)
+  );
+  
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Meal));
+};
+
+// Update a meal
+export const updateMealDetails = async (mealId: string, updates: Partial<Omit<Meal, 'id' | 'userId' | 'createdAt'>>): Promise<void> => {
+  const mealRef = doc(db, COLLECTIONS.MEALS, mealId);
+  await updateDoc(mealRef, updates);
+};
+
+// Delete a meal
+export const deleteMealById = async (mealId: string): Promise<void> => {
+  const mealRef = doc(db, COLLECTIONS.MEALS, mealId);
+  await deleteDoc(mealRef);
+};
+
+// Migration function to move existing meals to the new model
+export const migrateMealsToWeeks = async (userId: string): Promise<void> => {
+  console.log('Starting migration of meals to weeks-based model');
+  
+  try {
+    // Get the old meal plan
+    const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+    const mealPlanSnap = await getDoc(mealPlanRef);
+    
+    if (!mealPlanSnap.exists()) {
+      console.log('No meal plan to migrate');
+      return;
+    }
+    
+    const data = mealPlanSnap.data();
+    
+    // If we already have weeks, don't migrate again
+    if (data.weeks) {
+      console.log('Meal plan already has weeks, skipping migration');
+      return;
+    }
+    
+    // Create a current week
+    const currentWeek = await getCurrentWeek(userId);
+    console.log('Created current week for migration:', currentWeek);
+    
+    // Check if we have old meals to migrate
+    if (data.meals && Array.isArray(data.meals) && data.meals.length > 0) {
+      console.log(`Found ${data.meals.length} meals to migrate`);
+      
+      // Migrate each meal to the new system
+      for (const oldMeal of data.meals) {
+        // Convert the meal
+        const newMeal = {
+          userId,
+          name: oldMeal.name,
+          description: oldMeal.description,
+          mealPlanMeal: oldMeal.mealPlanMeal || oldMeal.type, // Handle old type field
+          days: oldMeal.days,
+          weekId: currentWeek.id,
+          servings: oldMeal.servings,
+          recipeId: oldMeal.recipeId,
+          createdAt: oldMeal.createdAt instanceof Timestamp 
+            ? oldMeal.createdAt.toDate() 
+            : new Date(oldMeal.createdAt)
+        };
+        
+        // Add to the new collection
+        console.log('Migrating meal:', newMeal);
+        await addMealToWeek(userId, currentWeek.id, newMeal);
+      }
+      
+      console.log('Migration of meals completed');
+    } else {
+      console.log('No meals to migrate');
+    }
+    
+    // Update the meal plan to use the new model
+    await updateDoc(mealPlanRef, {
+      weeks: [currentWeek],
+      currentWeekId: currentWeek.id,
+      updatedAt: Timestamp.now()
+    });
+    
+    console.log('Updated meal plan to use weeks-based model');
+  } catch (error) {
+    console.error('Error during migration:', error);
+    throw error;
+  }
+};
+
+// Get all meals for the currently selected week
+export const getMealsByCurrentWeek = async (userId: string): Promise<Meal[]> => {
+  // Get the meal plan to identify the current week
+  const mealPlan = await getMealPlanWithWeeks(userId);
+  
+  if (!mealPlan.currentWeekId) {
+    console.error('No current week set for meal plan');
+    return [];
+  }
+  
+  // Get all meals for the current week
+  return getMealsByWeek(userId, mealPlan.currentWeekId);
 }; 
