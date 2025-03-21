@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, CalendarIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, CalendarIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType, Week } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
@@ -19,7 +19,8 @@ import {
   updateMealDetails, 
   getCurrentWeek, 
   getMealsByWeek, 
-  setCurrentWeek as updateCurrentWeekDb // Rename to avoid conflict
+  setCurrentWeek as updateCurrentWeekDb, // Rename to avoid conflict
+  getMealPlanWithWeeks
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -32,6 +33,7 @@ import { addRecipe } from '../firebase/firestore';
 import ConfirmDialog from '../components/common/ConfirmDialog';
 import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
 import { toast, Toaster } from 'react-hot-toast';
+import { AddWeekModal } from '../components/mealPlan/AddWeekModal';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -56,6 +58,7 @@ export const MealPlanPage: React.FC = () => {
   const [currentWeek, setCurrentWeek] = useState<Week | null>(null);
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
+  const [showAddWeekModal, setShowAddWeekModal] = useState(false);
 
   // Use the recipe import hook
   const {
@@ -87,11 +90,23 @@ export const MealPlanPage: React.FC = () => {
         // Get the current week from the meal plan
         if (plans.length > 0) {
           const activePlan = plans[0];
-          setWeeks(activePlan.weeks || []);
+          
+          // Sort weeks by start date
+          const sortedWeeks = [...(activePlan.weeks || [])].sort((a, b) => {
+            const aStartParts = a.startDate.split('-').map(Number);
+            const bStartParts = b.startDate.split('-').map(Number);
+            
+            const dateA = new Date(aStartParts[0], aStartParts[1] - 1, aStartParts[2]);
+            const dateB = new Date(bStartParts[0], bStartParts[1] - 1, bStartParts[2]);
+            
+            return dateA.getTime() - dateB.getTime();
+          });
+          
+          setWeeks(sortedWeeks);
           
           // Find the current week
           const currentWeekId = activePlan.currentWeekId;
-          const activeWeek = activePlan.weeks.find(week => week.id === currentWeekId) || null;
+          const activeWeek = sortedWeeks.find(week => week.id === currentWeekId) || null;
           setCurrentWeek(activeWeek);
           
           if (activeWeek) {
@@ -606,6 +621,45 @@ export const MealPlanPage: React.FC = () => {
     }
   };
 
+  // Handler for refreshing weeks after a new week is added
+  const handleWeekAdded = async () => {
+    try {
+      setIsLoading(true);
+      // Refresh the meal plan to get the new weeks
+      const updatedMealPlan = await getMealPlanWithWeeks(DEFAULT_USER_ID);
+      setMealPlans([updatedMealPlan]);
+      
+      // Get the weeks from the updated meal plan and sort them by startDate
+      let updatedWeeks = updatedMealPlan.weeks || [];
+      
+      // Sort weeks by start date
+      updatedWeeks = updatedWeeks.sort((a, b) => {
+        const aStartParts = a.startDate.split('-').map(Number);
+        const bStartParts = b.startDate.split('-').map(Number);
+        
+        const dateA = new Date(aStartParts[0], aStartParts[1] - 1, aStartParts[2]);
+        const dateB = new Date(bStartParts[0], bStartParts[1] - 1, bStartParts[2]);
+        
+        return dateA.getTime() - dateB.getTime();
+      });
+      
+      setWeeks(updatedWeeks);
+      
+      // Re-fetch the meals for the current week
+      if (currentWeek) {
+        const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, currentWeek.id);
+        setMeals(weekMeals);
+      }
+      
+      toast.success('New week added successfully');
+    } catch (error) {
+      console.error('Failed to refresh weeks:', error);
+      setError('Failed to refresh weeks. Please try again.');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   return (
     <div className="min-h-full bg-zinc-50">
       <PageHeader 
@@ -635,18 +689,33 @@ export const MealPlanPage: React.FC = () => {
                 <span className="font-medium text-sm">{currentWeekLabel}</span>
               </div>
             </div>
-            <button 
-              onClick={handleTodayButtonClick}
-              className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700"
-            >
-              Today
-            </button>
+            <div className="flex items-center gap-2">
+              <button 
+                onClick={() => setShowAddWeekModal(true)}
+                className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700 flex items-center gap-1"
+              >
+                <PlusCircleIcon className="h-3 w-3" />
+                Add Week
+              </button>
+              <button 
+                onClick={handleTodayButtonClick}
+                className="px-2 py-1 text-xs bg-zinc-100 hover:bg-zinc-200 rounded-md font-medium text-zinc-700"
+              >
+                Today
+              </button>
+            </div>
           </div>
           <div className="flex items-center space-x-1.5 py-1 overflow-x-auto scrollbar-hide">
             {weeks.map((week) => {
               const isCurrentWeek = currentWeek?.id === week.id;
-              const weekStart = new Date(week.startDate);
-              const weekEnd = new Date(week.endDate);
+              
+              // Parse dates using YYYY-MM-DD format to avoid timezone issues
+              const startParts = week.startDate.split('-').map(Number);
+              const endParts = week.endDate.split('-').map(Number);
+              
+              // Create date objects with local timezone (months are 0-indexed in JS Date)
+              const weekStart = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+              const weekEnd = new Date(endParts[0], endParts[1] - 1, endParts[2]);
               
               // Format the dates for display
               const formatDate = (date: Date) => {
@@ -658,20 +727,23 @@ export const MealPlanPage: React.FC = () => {
               // Determine if week is in past, present, or future
               const now = new Date();
               const isPast = weekEnd < now;
+              const isFuture = weekStart > now;
               
               return (
                 <div 
                   key={week.id}
                   onClick={() => handleWeekClick(week.id)}
-                  className={`flex-shrink-0 p-1.5 rounded-md border cursor-pointer ${
+                  className={`flex-shrink-0 p-1.5 rounded-md border cursor-pointer transition-colors duration-150 hover:bg-zinc-100 ${
                     isCurrentWeek
-                      ? 'border-violet-600 bg-violet-50' 
+                      ? 'border-violet-600 bg-violet-50 hover:bg-violet-100' 
                       : isPast
                         ? 'border-zinc-200 bg-zinc-50' 
-                        : 'border-zinc-200'
+                        : isFuture
+                          ? 'border-zinc-200 bg-white'
+                          : 'border-zinc-200'
                   }`}
                 >
-                  <div className="text-xs font-medium">{weekLabel}</div>
+                  <div className="text-xs font-medium min-w-[60px] text-center">{weekLabel}</div>
                   <div className="mt-0.5 flex items-center">
                     <div 
                       className={`h-1 w-full rounded-full ${
@@ -679,7 +751,9 @@ export const MealPlanPage: React.FC = () => {
                           ? 'bg-violet-600' 
                           : isPast
                             ? 'bg-zinc-400' 
-                            : 'bg-zinc-200'
+                            : isFuture
+                              ? 'bg-emerald-200'
+                              : 'bg-zinc-200'
                       }`}
                     ></div>
                   </div>
@@ -693,9 +767,20 @@ export const MealPlanPage: React.FC = () => {
         <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4">
           <div className="flex items-center justify-between mb-3">
             <h2 className="text-base font-semibold">Weekly Overview</h2>
-            {/* Current week indicator - now shows the actual current week */}
+            {/* Current week indicator - using safe date parsing */}
             <span className="text-xs text-zinc-500">
-              Week of {new Date(currentWeek?.startDate || '').toLocaleDateString(undefined, { month: 'short', day: 'numeric', year: 'numeric' })}
+              {currentWeek?.startDate ? (
+                (() => {
+                  // Parse date safely to avoid timezone issues
+                  const parts = currentWeek.startDate.split('-').map(Number);
+                  const weekStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
+                  return `Week of ${weekStartDate.toLocaleDateString(undefined, { 
+                    month: 'short', 
+                    day: 'numeric', 
+                    year: 'numeric' 
+                  })}`;
+                })()
+              ) : 'No week selected'}
             </span>
           </div>
           
@@ -1177,6 +1262,15 @@ export const MealPlanPage: React.FC = () => {
               maxWidth: '500px',
             },
           }}
+        />
+
+        {/* Add Week Modal */}
+        <AddWeekModal
+          isOpen={showAddWeekModal}
+          onClose={() => setShowAddWeekModal(false)}
+          onWeekAdded={handleWeekAdded}
+          userId={DEFAULT_USER_ID}
+          existingWeeks={weeks}
         />
       </div>
     </div>

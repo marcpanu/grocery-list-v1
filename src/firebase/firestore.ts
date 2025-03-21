@@ -851,7 +851,8 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
 
 // Helper function to get the ISO date string for a given date
 const getISODate = (date: Date): string => {
-  return date.toISOString().split('T')[0];
+  // Format as YYYY-MM-DD in local timezone to avoid UTC conversion issues
+  return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, '0')}-${String(date.getDate()).padStart(2, '0')}`;
 };
 
 // Helper function to get the start and end dates of a week given a date
