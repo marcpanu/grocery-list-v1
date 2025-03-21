@@ -11,13 +11,13 @@ const USER_ID = 'default';
 interface ShoppingListProps {
   viewMode: ViewMode;
   showCompleted: boolean;
-  currentStore: string;
+  currentStoreId: string;
 }
 
 export const ShoppingList: React.FC<ShoppingListProps> = ({
   viewMode,
   showCompleted,
-  currentStore,
+  currentStoreId,
 }) => {
   const [list, setList] = useState<ShoppingListType | null>(null);
   const [loading, setLoading] = useState(true);
@@ -85,7 +85,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     }
   };
 
-  // Filter and sort items
+  // Simplified filter and sort items function
   const getFilteredAndSortedItems = () => {
     if (!list) return [];
 
@@ -94,21 +94,10 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
       ? list.items 
       : list.items.filter(item => !item.checked);
 
-    console.log('Current store:', currentStore);
-    console.log('Items before store filter:', items.map(item => ({ 
-      name: item.name, 
-      store: item.store?.id 
-    })));
-
-    // Then filter by current store if not in "all" view
-    if (currentStore !== 'all') {
-      items = items.filter(item => item.store?.id === currentStore);
+    // Simple store filter - only filter if not "all"
+    if (currentStoreId !== 'all') {
+      items = items.filter(item => item.store?.id === currentStoreId);
     }
-
-    console.log('Items after store filter:', items.map(item => ({ 
-      name: item.name, 
-      store: item.store?.id 
-    })));
 
     // Sort by category order
     return items.sort((a, b) => {

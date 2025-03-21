@@ -44,8 +44,8 @@ export const AppLayout: React.FC = () => {
   // Shopping list view state
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
   const [showCompleted, setShowCompleted] = useState(true);
-  const [currentStore, setCurrentStore] = useState<string>('all');
-  const [selectedStoreObj, setSelectedStoreObj] = useState<Store | undefined>();
+  const [currentStoreId, setCurrentStoreId] = useState<string>('all');
+  const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [showStoreFilter, setShowStoreFilter] = useState(false);
 
   // Reference to MealPlanPage component to reset detail views
@@ -70,20 +70,21 @@ export const AppLayout: React.FC = () => {
         if (userPrefs) {
           setViewMode(userPrefs.shoppingListViewMode);
           setShowCompleted(userPrefs.shoppingListShowCompleted);
-          setCurrentStore(userPrefs.shoppingListCurrentStore);
           
-          // Get shopping list to find store object
-          const userLists = await getUserShoppingLists(USER_ID);
-          if (userLists.length > 0) {
-            const list = userLists[0];
-            setListId(list.id);
-            
-            // Set selected store object based on current store
-            if (list.stores && userPrefs.shoppingListCurrentStore !== 'all') {
-              setSelectedStoreObj(list.stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
-            } else {
-              setSelectedStoreObj(undefined);
+          // Set current store and selected store object
+          setCurrentStoreId(userPrefs.shoppingListCurrentStore || 'all');
+          
+          // Get shopping list to find store object if needed
+          if (userPrefs.shoppingListCurrentStore && userPrefs.shoppingListCurrentStore !== 'all') {
+            const userLists = await getUserShoppingLists(USER_ID);
+            if (userLists.length > 0) {
+              const list = userLists[0];
+              setListId(list.id);
+              // Find the store object that matches the current store ID
+              setSelectedStore(list.stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
             }
+          } else {
+            setSelectedStore(undefined);
           }
         }
       } catch (err) {
@@ -126,21 +127,14 @@ export const AppLayout: React.FC = () => {
     }
   };
 
-  const handleStoreChange = async (storeId: string) => {
-    setCurrentStore(storeId);
+  // Simplified store change handler
+  const handleStoreChange = async (storeId: string, store?: Store) => {
+    // Update both the ID and object at the same time
+    setCurrentStoreId(storeId);
+    setSelectedStore(store);
+    
     try {
       await updateUserPreferences({ shoppingListCurrentStore: storeId });
-      
-      // Update selected store object
-      if (storeId === 'all') {
-        setSelectedStoreObj(undefined);
-      } else {
-        const userLists = await getUserShoppingLists(USER_ID);
-        const list = userLists[0];
-        if (list?.stores) {
-          setSelectedStoreObj(list.stores.find(s => s.id === storeId));
-        }
-      }
     } catch (err) {
       console.error('Failed to update current store:', err);
     }
@@ -203,7 +197,7 @@ export const AppLayout: React.FC = () => {
                     <button
                       onClick={() => setShowStoreFilter(!showStoreFilter)}
                       className={`p-1.5 rounded-md transition-colors duration-200 ${
-                        showStoreFilter || currentStore !== 'all'
+                        showStoreFilter || currentStoreId !== 'all'
                           ? 'text-violet-600 bg-violet-50'
                           : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
                       }`}
@@ -218,9 +212,9 @@ export const AppLayout: React.FC = () => {
                             Store Filter
                           </label>
                           <StoreSelector
-                            selectedStore={selectedStoreObj}
+                            selectedStore={selectedStore}
                             onStoreSelect={(store) => {
-                              handleStoreChange(store?.id || 'all');
+                              handleStoreChange(store?.id || 'all', store);
                               setShowStoreFilter(false);
                             }}
                             allowAllStores
@@ -275,7 +269,8 @@ export const AppLayout: React.FC = () => {
             <ShoppingList 
               viewMode={viewMode}
               showCompleted={showCompleted}
-              currentStore={currentStore}
+              currentStoreId={currentStoreId}
+              key={`list-${currentStoreId}`} // Force re-render when store changes
             />
           </>
         );

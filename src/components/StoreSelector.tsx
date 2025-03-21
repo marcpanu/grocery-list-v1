@@ -41,19 +41,17 @@ export const StoreSelector: React.FC<StoreSelectorProps> = ({
   return (
     <select
       className={`block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 text-sm ${className}`}
-      value={selectedStore?.id || (allowAllStores ? 'all' : '')}
+      value={selectedStore?.id || 'all'}
       onChange={(e) => {
-        if (e.target.value === 'all') {
+        const value = e.target.value;
+        if (value === 'all') {
           onStoreSelect(undefined);
-          return;
+        } else {
+          const store = stores.find(s => s.id === value);
+          onStoreSelect(store);
         }
-        const store = stores.find(s => s.id === e.target.value);
-        onStoreSelect(store);
       }}
     >
-      {!allowAllStores && !selectedStore && (
-        <option value="">Select a store...</option>
-      )}
       {allowAllStores && (
         <option value="all">All Stores</option>
       )}
