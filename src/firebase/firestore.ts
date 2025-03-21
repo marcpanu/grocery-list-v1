@@ -590,6 +590,10 @@ export const getUserPreferences = async (): Promise<UserPreferences | null> => {
       },
       defaultStore: null,
       pantryItems: DEFAULT_PANTRY_ITEMS,
+      // Shopping list defaults
+      shoppingListViewMode: 'combined',
+      shoppingListShowCompleted: true,
+      shoppingListCurrentStore: 'all',
       lastUpdated: Timestamp.now()
     };
     
@@ -606,6 +610,32 @@ export const getUserPreferences = async (): Promise<UserPreferences | null> => {
     if (!data.pantryItems) {
       data.pantryItems = DEFAULT_PANTRY_ITEMS;
       await updateDoc(userPrefsDoc, { pantryItems: DEFAULT_PANTRY_ITEMS });
+    }
+    
+    // Check for missing shopping list settings and add defaults if needed
+    const updates: Record<string, any> = {};
+    let needsUpdate = false;
+    
+    if (data.shoppingListViewMode === undefined) {
+      updates.shoppingListViewMode = 'combined';
+      data.shoppingListViewMode = 'combined';
+      needsUpdate = true;
+    }
+    
+    if (data.shoppingListShowCompleted === undefined) {
+      updates.shoppingListShowCompleted = true;
+      data.shoppingListShowCompleted = true;
+      needsUpdate = true;
+    }
+    
+    if (data.shoppingListCurrentStore === undefined) {
+      updates.shoppingListCurrentStore = 'all';
+      data.shoppingListCurrentStore = 'all';
+      needsUpdate = true;
+    }
+    
+    if (needsUpdate) {
+      await updateDoc(userPrefsDoc, updates);
     }
     
     return data;
@@ -1162,4 +1192,47 @@ export const getMealsByCurrentWeek = async (userId: string): Promise<Meal[]> => 
   
   // Get all meals for the current week
   return getMealsByWeek(userId, mealPlan.currentWeekId);
+};
+
+// Migration function to move shopping list view settings to UserPreferences
+export const migrateShoppingListSettings = async (): Promise<void> => {
+  try {
+    // Get the current shopping list
+    const userLists = await getUserShoppingLists('default-user');
+    if (userLists.length === 0) return;
+    
+    const list = userLists[0];
+    
+    // Get current user preferences
+    const userPrefs = await getUserPreferences();
+    if (!userPrefs) return;
+    
+    // Check if shopping list has view settings that should be migrated
+    const updates: Record<string, any> = {};
+    let needsUpdate = false;
+    
+    // Only update preferences if shopping list has the settings
+    if (list.viewMode !== undefined) {
+      updates.shoppingListViewMode = list.viewMode;
+      needsUpdate = true;
+    }
+    
+    if (list.showCompleted !== undefined) {
+      updates.shoppingListShowCompleted = list.showCompleted;
+      needsUpdate = true;
+    }
+    
+    if (list.currentStore !== undefined) {
+      updates.shoppingListCurrentStore = list.currentStore;
+      needsUpdate = true;
+    }
+    
+    // Update user preferences if needed
+    if (needsUpdate) {
+      console.log('Migrating shopping list settings to user preferences:', updates);
+      await updateUserPreferences(updates);
+    }
+  } catch (error) {
+    console.error('Error migrating shopping list settings:', error);
+  }
 }; 

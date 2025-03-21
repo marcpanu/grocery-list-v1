@@ -6,7 +6,7 @@ import { RecipeList, RecipeListRefType } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
 import { ViewMode, Store } from '../types';
-import { getUserShoppingLists, updateShoppingList } from '../firebase/firestore';
+import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrateShoppingListSettings } from '../firebase/firestore';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
@@ -58,22 +58,32 @@ export const AppLayout: React.FC = () => {
     localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
   }, [activeTab]);
 
-  // Load view settings from Firestore
+  // Load view settings from UserPreferences
   useEffect(() => {
     const loadViewSettings = async () => {
       try {
-        const userLists = await getUserShoppingLists(USER_ID);
-        if (userLists.length > 0) {
-          const list = userLists[0];
-          setListId(list.id);
-          setViewMode(list.viewMode || 'combined');
-          setShowCompleted(list.showCompleted ?? true);
-          setCurrentStore(list.currentStore || 'all');
-          // Set selected store object based on current store
-          if (list.stores && list.currentStore !== 'all') {
-            setSelectedStoreObj(list.stores.find(s => s.id === list.currentStore));
-          } else {
-            setSelectedStoreObj(undefined);
+        // Migrate any existing settings from shopping list to user preferences
+        await migrateShoppingListSettings();
+        
+        // Load user preferences for view settings
+        const userPrefs = await getUserPreferences();
+        if (userPrefs) {
+          setViewMode(userPrefs.shoppingListViewMode);
+          setShowCompleted(userPrefs.shoppingListShowCompleted);
+          setCurrentStore(userPrefs.shoppingListCurrentStore);
+          
+          // Get shopping list to find store object
+          const userLists = await getUserShoppingLists(USER_ID);
+          if (userLists.length > 0) {
+            const list = userLists[0];
+            setListId(list.id);
+            
+            // Set selected store object based on current store
+            if (list.stores && userPrefs.shoppingListCurrentStore !== 'all') {
+              setSelectedStoreObj(list.stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
+            } else {
+              setSelectedStoreObj(undefined);
+            }
           }
         }
       } catch (err) {
@@ -97,32 +107,30 @@ export const AppLayout: React.FC = () => {
     };
   }, []);
 
-  // Update Firestore when view settings change
+  // Update UserPreferences when view settings change
   const handleViewModeChange = async (newMode: ViewMode) => {
-    if (!listId) return;
     setViewMode(newMode);
     try {
-      await updateShoppingList(listId, { viewMode: newMode });
+      await updateUserPreferences({ shoppingListViewMode: newMode });
     } catch (err) {
       console.error('Failed to update view mode:', err);
     }
   };
 
   const handleShowCompletedChange = async (show: boolean) => {
-    if (!listId) return;
     setShowCompleted(show);
     try {
-      await updateShoppingList(listId, { showCompleted: show });
+      await updateUserPreferences({ shoppingListShowCompleted: show });
     } catch (err) {
       console.error('Failed to update show completed setting:', err);
     }
   };
 
   const handleStoreChange = async (storeId: string) => {
-    if (!listId) return;
     setCurrentStore(storeId);
     try {
-      await updateShoppingList(listId, { currentStore: storeId });
+      await updateUserPreferences({ shoppingListCurrentStore: storeId });
+      
       // Update selected store object
       if (storeId === 'all') {
         setSelectedStoreObj(undefined);

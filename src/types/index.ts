@@ -75,6 +75,10 @@ export interface UserPreferences {
   };
   defaultStore: string | null;  // ID of the default store
   pantryItems: PantryItem[];    // List of pantry items to exclude from grocery list
+  // Shopping list preferences
+  shoppingListViewMode: ViewMode;
+  shoppingListShowCompleted: boolean;
+  shoppingListCurrentStore: string;
   // We can add more preferences here later
   lastUpdated: Timestamp;
 }
