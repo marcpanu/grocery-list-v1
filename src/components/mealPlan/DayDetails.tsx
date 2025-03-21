@@ -1,7 +1,6 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { Meal, MealPlanMealType } from '../../types/mealPlan';
 import { MealCard } from './MealCard';
-import { MealDetailModal } from './MealDetailModal';
 
 interface DayDetailsProps {
   selectedDay: string;
@@ -42,17 +41,11 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
   onUpdateMeal,
 }) => {
   const mealsByType = groupMealsByType(meals);
-  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
-  const [showMealDetailModal, setShowMealDetailModal] = useState(false);
 
+  // Handle meal click by passing to parent component
   const handleMealClick = (meal: Meal) => {
-    setSelectedMeal(meal);
-    setShowMealDetailModal(true);
-  };
-
-  const handleUpdateMeal = (mealId: string, updates: Partial<Meal>) => {
-    if (onUpdateMeal) {
-      onUpdateMeal(mealId, updates);
+    if (onEditMeal) {
+      onEditMeal(meal);
     }
   };
 
@@ -86,7 +79,6 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
                   mealPlanMeal={meal.mealPlanMeal}
                   servings={meal.servings}
                   onClick={() => handleMealClick(meal)}
-                  onEdit={onEditMeal ? () => onEditMeal(meal) : undefined}
                   onDelete={onDeleteMeal ? () => onDeleteMeal(meal.id) : undefined}
                 />
               ))}
@@ -101,20 +93,6 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
           <p className="text-sm mt-1">Click "Add from Recipes" or "Quick Add" to plan a meal</p>
         </div>
       )}
-
-      {/* Meal Detail Modal */}
-      <MealDetailModal 
-        isOpen={showMealDetailModal}
-        onClose={() => setShowMealDetailModal(false)}
-        meal={selectedMeal}
-        onEdit={handleUpdateMeal}
-        onReplaceMeal={(meal) => {
-          if (onEditMeal) {
-            onEditMeal(meal);
-            setShowMealDetailModal(false);
-          }
-        }}
-      />
     </div>
   );
 }; 

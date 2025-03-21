@@ -34,6 +34,7 @@ import ConfirmDialog from '../components/common/ConfirmDialog';
 import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
 import { toast, Toaster } from 'react-hot-toast';
 import { AddWeekModal } from '../components/mealPlan/AddWeekModal';
+import { MealDetailModal } from '../components/mealPlan/MealDetailModal';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -59,6 +60,8 @@ export const MealPlanPage: React.FC = () => {
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
   const [showAddWeekModal, setShowAddWeekModal] = useState(false);
+  const [showMealDetailModal, setShowMealDetailModal] = useState(false);
+  const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
 
   // Use the recipe import hook
   const {
@@ -558,9 +561,46 @@ export const MealPlanPage: React.FC = () => {
         )
       );
       
+      // Update the selected meal if it's the one being edited
+      if (selectedMeal && selectedMeal.id === mealId) {
+        setSelectedMeal(prev => prev ? { ...prev, ...mealData } : null);
+      }
+      
       setSuccess('Meal updated successfully');
     } catch (error) {
       console.error('Error updating meal:', error);
+      setError('Failed to update meal');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  // New function to replace a meal with a updated version
+  const handleReplaceMeal = async (updatedMeal: Meal) => {
+    try {
+      setIsLoading(true);
+      await updateMealDetails(updatedMeal.id, {
+        name: updatedMeal.name,
+        description: updatedMeal.description,
+        recipeId: updatedMeal.recipeId,
+        // We don't update mealPlanMeal, days, or servings as they're preserved
+      });
+      
+      // Update meals state directly
+      setMeals(prevMeals => 
+        prevMeals.map(meal => 
+          meal.id === updatedMeal.id ? {...meal, ...updatedMeal} : meal
+        )
+      );
+      
+      // Update the selected meal if it's the one being replaced
+      if (selectedMeal && selectedMeal.id === updatedMeal.id) {
+        setSelectedMeal(updatedMeal);
+      }
+      
+      setSuccess('Meal updated successfully');
+    } catch (error) {
+      console.error('Error replacing meal:', error);
       setError('Failed to update meal');
     } finally {
       setIsLoading(false);
@@ -850,7 +890,11 @@ export const MealPlanPage: React.FC = () => {
           <DayDetails
             selectedDay={selectedDay}
             meals={selectedDayMeals}
-            onEditMeal={handleEditMeal}
+            onEditMeal={(meal) => {
+              // When a meal is clicked in DayDetails
+              setSelectedMeal(meal);
+              setShowMealDetailModal(true);
+            }}
             onDeleteMeal={handleDeleteMeal}
             onUpdateMeal={handleUpdateMeal}
           />
@@ -1296,6 +1340,16 @@ export const MealPlanPage: React.FC = () => {
           userId={DEFAULT_USER_ID}
           existingWeeks={weeks}
         />
+
+        {selectedMeal && (
+          <MealDetailModal
+            isOpen={showMealDetailModal}
+            onClose={() => setShowMealDetailModal(false)}
+            meal={selectedMeal}
+            onEdit={handleUpdateMeal}
+            onReplaceMeal={handleReplaceMeal}
+          />
+        )}
       </div>
     </div>
   );
