@@ -89,8 +89,19 @@ The meal planning screen features an enhanced interface with multi-week planning
 
 #### Day Detail Panel
 - View and manage meals for a selected day
-- Add, edit, or delete meals by day
-- Adjust serving sizes as needed
+- Meal interactions:
+  - Click on a meal card to view full recipe details (for meals linked to recipes)
+  - Use the edit button (square pencil icon) to modify meal settings like type, servings, and days
+  - Delete meals with the trash icon
+- Recipe detail view shows:
+  - Full recipe ingredients and instructions
+  - Cooking times and servings
+  - Option to add to grocery list directly
+- Meal edit modal allows:
+  - Changing the meal type
+  - Adjusting serving size
+  - Modifying which days the meal appears on
+  - Changing the associated recipe while keeping other settings
 
 #### Add All to Grocery List
 - Quickly add all ingredients from the current week's meal plan to your grocery list
@@ -132,6 +143,7 @@ Customize your shopping experience:
 - **Week-Specific Grocery Lists**: Generate grocery lists for specific weeks to prepare in advance
 - **Today Button**: Instantly return to the current week with the Today button
 - **Weekly Meal Patterns**: Create consistent meal patterns across weeks by planning a full week, then adding a new week for variations
+- **Improved Meal Editing**: Click directly on meal cards to view recipe details, or use the edit button to modify meal settings without changing the recipe details
 
 ## Keyboard Shortcuts
 
