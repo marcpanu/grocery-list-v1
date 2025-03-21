@@ -44,7 +44,7 @@ export interface MealPlanRefType {
   resetDetailViews: () => void;
 }
 
-const MealPlanPage = forwardRef<MealPlanRefType, {}>((props, ref) => {
+const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -311,6 +311,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((props, ref) => {
     }
   };
 
+  // @ts-ignore - This function is maintained for future use
   const handleEditMeal = (meal: Meal) => {
     // Open the ScheduleMealModal to replace with a different recipe
     if (meal.recipeId) {

@@ -39,7 +39,6 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
   meals,
   onEditMeal,
   onDeleteMeal,
-  onUpdateMeal,
   onViewRecipe,
 }) => {
   const mealsByType = groupMealsByType(meals);
