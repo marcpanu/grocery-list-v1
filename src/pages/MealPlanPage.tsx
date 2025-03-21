@@ -20,7 +20,6 @@ import {
   getCurrentWeek, 
   getMealsByWeek, 
   setCurrentWeek as updateCurrentWeekDb, // Rename to avoid conflict
-  getMealPlanWithWeeks,
   getWeeks
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
