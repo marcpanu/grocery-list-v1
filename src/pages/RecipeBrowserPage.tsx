@@ -3,7 +3,7 @@ import { PageHeader } from '../components/PageHeader';
 import { extractRecipeFromHtml } from '../services/gemini';
 import toast from 'react-hot-toast';
 import { addRecipe } from '../firebase/firestore';
-import { Recipe, Instruction, getDisplayTotalTime } from '../types/recipe';
+import { getDisplayTotalTime } from '../types/recipe';
 import { ArrowLeftIcon, ArrowRightIcon, ArrowPathIcon } from '@heroicons/react/24/outline';
 
 // Local storage key for browser URL
