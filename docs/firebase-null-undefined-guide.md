@@ -108,6 +108,49 @@ export async function addRecipe(recipe: Omit<Recipe, 'id'>): Promise<Recipe> {
 }
 ```
 
+### 4. Converting Undefined to Null in Form Submission
+
+```typescript
+// Example from RecipeEditForm.tsx handleSubmit function
+const handleSubmit = async (e: React.FormEvent) => {
+  e.preventDefault();
+  setIsSaving(true);
+  try {
+    // Convert undefined optional fields to null for Firestore
+    const cleanedFormData = {
+      ...formData,
+      description: formData.description ?? null,
+      prepTime: formData.prepTime ?? null,
+      cookTime: formData.cookTime ?? null,
+      imageUrl: formData.imageUrl ?? null,
+      notes: formData.notes ?? null,
+      mealTypes: formData.mealTypes ?? [],
+      cuisine: (formData.cuisine || []).map(c => c.startsWith('Other:') ? c.replace('Other:', '') : c),
+      rating: formData.rating ?? null
+    };
+    
+    // Calculate totalTime and displayTotalTime based on prepTime and cookTime
+    const prepTime = cleanedFormData.prepTime || 0;
+    const cookTime = cleanedFormData.cookTime || 0;
+    const totalTime = prepTime + cookTime;
+    const displayTotalTime = getDisplayTotalTime(totalTime);
+    
+    // Send to Firestore with null values instead of undefined
+    await updateRecipe(recipe.id, {
+      ...cleanedFormData,
+      totalTime,
+      displayTotalTime
+    });
+    
+    onSave();
+  } catch (error) {
+    console.error('Error saving recipe:', error);
+  } finally {
+    setIsSaving(false);
+  }
+};
+```
+
 ## Best Practices
 
 1. **Keep TypeScript Interfaces Unchanged**: Continue to use the `?` operator for optional fields in TypeScript interfaces, which allows them to be `undefined`.

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
-import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, CalendarIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
+import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType, Week } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
@@ -62,7 +62,6 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
   const [mealToDelete, setMealToDelete] = useState<string | null>(null);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
-  const [currentWeekLabel, setCurrentWeekLabel] = useState('');
   const [currentWeek, setCurrentWeek] = useState<Week | null>(null);
   const [weeks, setWeeks] = useState<Week[]>([]);
   const [meals, setMeals] = useState<Meal[]>([]);
@@ -128,20 +127,6 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
           setCurrentWeek(activeWeek);
           
           if (activeWeek) {
-            // Format the week label using safe date parsing
-            const startParts = activeWeek.startDate.split('-').map(Number);
-            const endParts = activeWeek.endDate.split('-').map(Number);
-            
-            // Create date objects (months are 0-indexed in JS Date)
-            const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-            const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
-            
-            const month = startDate.toLocaleString('default', { month: 'long' });
-            const startDay = startDate.getDate();
-            const endDay = endDate.getDate();
-            const year = startDate.getFullYear();
-            setCurrentWeekLabel(`${month} ${startDay}-${endDay}, ${year}`);
-            
             // Load meals for the current week
             const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, activeWeek.id);
             setMeals(weekMeals);
@@ -627,20 +612,6 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       setCurrentWeek(newCurrentWeek);
       
       if (newCurrentWeek) {
-        // Format the week label using safe date parsing
-        const startParts = newCurrentWeek.startDate.split('-').map(Number);
-        const endParts = newCurrentWeek.endDate.split('-').map(Number);
-        
-        // Create date objects (months are 0-indexed in JS Date)
-        const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
-        const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
-        
-        const month = startDate.toLocaleString('default', { month: 'long' });
-        const startDay = startDate.getDate();
-        const endDay = endDate.getDate();
-        const year = startDate.getFullYear();
-        setCurrentWeekLabel(`${month} ${startDay}-${endDay}, ${year}`);
-        
         // Load meals for the selected week
         const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, weekId);
         setMeals(weekMeals);
@@ -793,11 +764,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         <div className="bg-white rounded-lg shadow p-3 mb-3">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <h3 className="text-xs font-medium text-zinc-700">Timeline</h3>
-              <div className="flex items-center gap-1.5">
-                <CalendarIcon className="h-4 w-4 text-violet-600" />
-                <span className="font-medium text-sm">{currentWeekLabel}</span>
-              </div>
+              <h2 className="text-base font-semibold">Timeline</h2>
             </div>
             <div className="flex items-center gap-2">
               <button 

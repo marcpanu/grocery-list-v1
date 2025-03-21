@@ -36,7 +36,15 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
       // Strip "Other:" prefix from cuisine values before saving
       const cleanedFormData = {
         ...formData,
-        cuisine: (formData.cuisine || []).map(c => c.startsWith('Other:') ? c.replace('Other:', '') : c)
+        // Explicitly convert all optional fields from undefined to null for Firestore
+        description: formData.description ?? null,
+        prepTime: formData.prepTime ?? null,
+        cookTime: formData.cookTime ?? null,
+        imageUrl: formData.imageUrl ?? null,
+        notes: formData.notes ?? null,
+        mealTypes: formData.mealTypes ?? [],
+        cuisine: (formData.cuisine || []).map(c => c.startsWith('Other:') ? c.replace('Other:', '') : c),
+        rating: formData.rating ?? null
       };
       
       // Calculate totalTime
