@@ -1,14 +1,17 @@
 import React from 'react';
 import { MealPlanMealType } from '../../types/mealPlan';
+import { PencilSquareIcon, TrashIcon } from '@heroicons/react/24/outline';
 
 interface MealCardProps {
   name: string;
   description?: string;
   mealPlanMeal: MealPlanMealType;
   servings: number;
+  recipeId?: string | null;
   onEdit?: () => void;
   onDelete?: () => void;
   onClick?: () => void;
+  onViewRecipe?: () => void;
 }
 
 export const MealCard: React.FC<MealCardProps> = ({
@@ -16,25 +19,32 @@ export const MealCard: React.FC<MealCardProps> = ({
   description: _description,
   mealPlanMeal: _mealPlanMeal,
   servings,
+  recipeId,
   onEdit,
   onDelete,
-  onClick,
+  onViewRecipe,
 }) => {
+  const hasRecipe = !!recipeId;
+  
   return (
     <div 
-      className="bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow cursor-pointer"
+      className={`bg-white rounded-lg border border-gray-200 p-4 shadow-sm hover:shadow-md transition-shadow ${hasRecipe ? 'cursor-pointer' : ''}`}
       onClick={(e) => {
         // Only trigger onClick if the user didn't click on one of the action buttons
+        // AND the meal has a recipe
         if (e.target instanceof HTMLElement && 
             !e.target.closest('button') && 
-            onClick) {
-          onClick();
+            hasRecipe &&
+            onViewRecipe) {
+          onViewRecipe();
         }
       }}
     >
       <div className="flex justify-between items-start">
         <div>
-          <h4 className="font-medium text-gray-900">{name}</h4>
+          <h4 className="font-medium text-gray-900">
+            {name}
+          </h4>
           <div className="flex items-center text-sm text-gray-500 mt-1">
             <svg
               xmlns="http://www.w3.org/2000/svg"
@@ -54,6 +64,18 @@ export const MealCard: React.FC<MealCardProps> = ({
           </div>
         </div>
         <div className="flex gap-2">
+          {onEdit && (
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onEdit();
+              }}
+              className="p-1 text-gray-500 hover:text-violet-600"
+              title="Edit meal"
+            >
+              <PencilSquareIcon className="w-5 h-5" />
+            </button>
+          )}
           {onDelete && (
             <button
               onClick={(e) => {
@@ -61,21 +83,9 @@ export const MealCard: React.FC<MealCardProps> = ({
                 onDelete();
               }}
               className="p-1 text-gray-500 hover:text-red-600"
+              title="Delete meal"
             >
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                fill="none"
-                viewBox="0 0 24 24"
-                strokeWidth={1.5}
-                stroke="currentColor"
-                className="w-5 h-5"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  d="M14.74 9l-.346 9m-4.788 0L9.26 9m9.968-3.21c.342.052.682.107 1.022.166m-1.022-.165L18.16 19.673a2.25 2.25 0 01-2.244 2.077H8.084a2.25 2.25 0 01-2.244-2.077L4.772 5.79m14.456 0a48.108 48.108 0 00-3.478-.397m-12 .562c.34-.059.68-.114 1.022-.165m0 0a48.11 48.11 0 013.478-.397m7.5 0v-.916c0-1.18-.91-2.164-2.09-2.201a51.964 51.964 0 00-3.32 0c-1.18.037-2.09 1.022-2.09 2.201v.916m7.5 0a48.667 48.667 0 00-7.5 0"
-                />
-              </svg>
+              <TrashIcon className="w-5 h-5" />
             </button>
           )}
         </div>

@@ -8,6 +8,7 @@ interface DayDetailsProps {
   onEditMeal?: (meal: Meal) => void;
   onDeleteMeal?: (mealId: string) => void;
   onUpdateMeal?: (mealId: string, updates: Partial<Meal>) => void; 
+  onViewRecipe?: (recipeId: string) => void;
 }
 
 const mealTypeOrder: MealPlanMealType[] = ['breakfast', 'lunch', 'dinner', 'snack', 'dessert'];
@@ -39,6 +40,7 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
   onEditMeal,
   onDeleteMeal,
   onUpdateMeal,
+  onViewRecipe,
 }) => {
   const mealsByType = groupMealsByType(meals);
 
@@ -46,6 +48,13 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
   const handleMealClick = (meal: Meal) => {
     if (onEditMeal) {
       onEditMeal(meal);
+    }
+  };
+  
+  // Handle view recipe
+  const handleViewRecipe = (recipeId: string) => {
+    if (onViewRecipe && recipeId) {
+      onViewRecipe(recipeId);
     }
   };
 
@@ -78,8 +87,10 @@ export const DayDetails: React.FC<DayDetailsProps> = ({
                   description={meal.description}
                   mealPlanMeal={meal.mealPlanMeal}
                   servings={meal.servings}
-                  onClick={() => handleMealClick(meal)}
+                  recipeId={meal.recipeId}
+                  onEdit={() => handleMealClick(meal)}
                   onDelete={onDeleteMeal ? () => onDeleteMeal(meal.id) : undefined}
+                  onViewRecipe={meal.recipeId ? () => handleViewRecipe(meal.recipeId!) : undefined}
                 />
               ))}
             </div>

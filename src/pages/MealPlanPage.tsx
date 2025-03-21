@@ -35,6 +35,7 @@ import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryLis
 import { toast, Toaster } from 'react-hot-toast';
 import { AddWeekModal } from '../components/mealPlan/AddWeekModal';
 import { MealDetailModal } from '../components/mealPlan/MealDetailModal';
+import { RecipeDetail } from '../components/recipes/RecipeDetail';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -62,6 +63,8 @@ export const MealPlanPage: React.FC = () => {
   const [showAddWeekModal, setShowAddWeekModal] = useState(false);
   const [showMealDetailModal, setShowMealDetailModal] = useState(false);
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
+  const [showRecipeDetailModal, setShowRecipeDetailModal] = useState(false);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
 
   // Use the recipe import hook
   const {
@@ -724,6 +727,18 @@ export const MealPlanPage: React.FC = () => {
     }
   };
 
+  // Handle opening the recipe detail modal for a meal
+  const handleViewRecipe = (recipeId: string) => {
+    setSelectedRecipeId(recipeId);
+    setShowRecipeDetailModal(true);
+  };
+  
+  // Handle closing the recipe detail modal
+  const handleRecipeDetailClose = () => {
+    setShowRecipeDetailModal(false);
+    setSelectedRecipeId(null);
+  };
+
   return (
     <div className="min-h-full bg-zinc-50">
       <PageHeader 
@@ -897,6 +912,7 @@ export const MealPlanPage: React.FC = () => {
             }}
             onDeleteMeal={handleDeleteMeal}
             onUpdateMeal={handleUpdateMeal}
+            onViewRecipe={handleViewRecipe}
           />
         </div>
 
@@ -1349,6 +1365,27 @@ export const MealPlanPage: React.FC = () => {
             onEdit={handleUpdateMeal}
             onReplaceMeal={handleReplaceMeal}
           />
+        )}
+
+        {/* Recipe Detail Modal */}
+        {selectedRecipeId && (
+          <Dialog open={showRecipeDetailModal} onClose={handleRecipeDetailClose} className="relative z-50">
+            <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
+            <div className="fixed inset-0 flex items-center justify-center p-4">
+              <Dialog.Panel className="mx-auto max-w-4xl w-full bg-white rounded-lg shadow-xl overflow-hidden">
+                <div className="h-[90vh] overflow-y-auto">
+                  <RecipeDetail 
+                    recipeId={selectedRecipeId} 
+                    onBack={handleRecipeDetailClose}
+                    onEdit={() => {
+                      // Implement editing if needed
+                      handleRecipeDetailClose();
+                    }}
+                  />
+                </div>
+              </Dialog.Panel>
+            </div>
+          </Dialog>
         )}
       </div>
     </div>
