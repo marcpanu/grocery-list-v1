@@ -40,7 +40,9 @@ export async function extractRecipeFromHtml(html: string, url: string): Promise<
     const cleanedHtml = cleanHtml(html);
     console.log(`DEBUG: Original URL being passed to Gemini: ${url}`);
 
-    const prompt = `Extract a recipe from the following text and return it as a JSON object. DO NOT include markdown formatting, code blocks, or any other text - ONLY return the raw JSON object.
+    const prompt = `Extract a recipe from the following text and return it as a JSON object. 
+    
+DO NOT include markdown formatting, code blocks, or any other text - ONLY return the raw JSON object.
 
 Required fields and format:
 {
@@ -70,17 +72,34 @@ If insufficient data is available, respond with: {"error": "Not enough recipe de
 Text to analyze:
 ${cleanedHtml}`;
 
+    // Log the full prompt for debugging
+    console.log('===== GEMINI PROMPT BEGINS =====');
+    console.log(prompt);
+    console.log('===== GEMINI PROMPT ENDS =====');
+    
+    // Log a shortened version for quick viewing
+    const shortPrompt = prompt.substring(0, 500) + '... [truncated]';
+    console.log('Sending prompt to Gemini (truncated):', shortPrompt);
+    
+    // Log the HTML length to help debug issues
+    console.log(`HTML content length: ${cleanedHtml.length} characters`);
+
+    const requestBody = JSON.stringify({
+      contents: [{
+        role: 'user',
+        parts: [{ text: prompt }]
+      }]
+    });
+    
+    // Log the full request for debugging
+    console.log('Gemini API Request Body Size:', requestBody.length, 'bytes');
+
     const response = await fetch(`${API_ENDPOINT}?key=${API_KEY}`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
       },
-      body: JSON.stringify({
-        contents: [{
-          role: 'user',
-          parts: [{ text: prompt }]
-        }]
-      })
+      body: requestBody
     });
 
     if (!response.ok) {

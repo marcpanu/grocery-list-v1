@@ -39,7 +39,6 @@ export const AppLayout: React.FC = () => {
   
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const storeFilterRef = useRef<HTMLDivElement>(null);
-  const [listId, setListId] = useState<string | null>(null);
 
   // Shopping list view state
   const [viewMode, setViewMode] = useState<ViewMode>('combined');
@@ -78,10 +77,11 @@ export const AppLayout: React.FC = () => {
           if (userPrefs.shoppingListCurrentStore && userPrefs.shoppingListCurrentStore !== 'all') {
             const userLists = await getUserShoppingLists(USER_ID);
             if (userLists.length > 0) {
-              const list = userLists[0];
-              setListId(list.id);
+              // Don't set listId since we don't use it anymore
+              // setListId(list.id);
+              
               // Find the store object that matches the current store ID
-              setSelectedStore(list.stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
+              setSelectedStore(userLists[0].stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
             }
           } else {
             setSelectedStore(undefined);
