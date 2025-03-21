@@ -72,9 +72,12 @@ interface MealPlan {
 
 interface Week {
   id: string;
-  startDate: string;      // ISO date string for week start
-  endDate: string;        // ISO date string for week end
-  order: number;          // For ordering weeks in the UI
+  userId: string;         // Owner of the week
+  startDate: string;      // ISO date string for week start (YYYY-MM-DD)
+  endDate: string;        // ISO date string for week end (YYYY-MM-DD)
+  label: string;          // Display label for the week
+  createdAt: Date;
+  updatedAt: Date;
 }
 
 interface Meal {
@@ -115,6 +118,45 @@ interface ScheduleMealData {
   weekId: string;         // The week to schedule the meal in
 }
 ```
+
+### Multi-Week Meal Planning Implementation
+
+The multi-week meal planning system implements these key features:
+
+#### Week Management
+- **Week Creation**: Weeks are created via `createOrGetWeek` function that:
+  - Calculates proper Sunday-Saturday week dates for any given date
+  - Checks if a week already exists for that date range
+  - Creates a new week if it doesn't exist
+  - Returns the week object with ID
+  - Updates the meal plan document to include the week
+
+- **Week Storage**: 
+  - Weeks are stored in a dedicated `weeks` collection
+  - The `MealPlan` document stores references to weeks and tracks the current active week
+  - The `Meal` objects are associated with specific weeks via the `weekId` field
+
+#### Timeline Navigation
+- The timeline interface displays weeks in chronological order
+- Visual indicators show:
+  - Past weeks: Gray background with dark gray indicator
+  - Current week: Purple background and indicator
+  - Future weeks: White background with green indicator
+  - Week date range labels (e.g., "3/16-3/22")
+
+#### Date Handling
+- ISO date strings (YYYY-MM-DD) are used for storage to avoid timezone issues
+- When displaying dates, special handling converts ISO strings to local dates
+- Custom `getWeekDates` function calculates Sunday-Saturday date ranges
+- Week creation automatically handles full-week boundaries
+
+#### User Interface Components
+- **WeekTimeline**: Horizontal scrollable container of week chips
+- **WeekChip**: Individual selectable element for each week
+- **CurrentWeekIndicator**: Text display of active week dates
+- **Today Button**: Navigation control to jump to the current week
+- **Add Week Button**: Control to create a new week
+- **AddWeekModal**: Calendar-based interface for selecting a date for a new week
 
 ### Shopping List
 ```typescript
@@ -258,90 +300,3 @@ App
     ├── PantryManager
     └── DataManagement
 ```
-
-## Multi-Week Implementation
-
-The multi-week feature introduces a hierarchical data structure that separates meals by week:
-
-1. **Week Management**:
-   - `createOrGetWeek`: Creates a new week or retrieves an existing one
-   - `getCurrentWeek`: Gets the current active week
-   - `getWeeks`: Retrieves all weeks for a user
-   - `setCurrentWeek`: Updates the current active week
-
-2. **Meal Organization**:
-   - Meals are now associated with a specific week via `weekId`
-   - `getMealsByWeek`: Retrieves all meals for a specific week
-   - `getMealsByCurrentWeek`: Gets meals for the current week
-   - `addMealToWeek`: Adds a meal to a specific week
-
-3. **Migration Logic**:
-   - `migrateMealsToWeeks`: Migrates legacy data to the new structure
-   - Automatically runs when needed to ensure backward compatibility
-
-4. **Date Utilities**:
-   - Functions for calculating week start/end dates
-   - Week boundary determination (Sunday to Saturday)
-   - Date formatting for UI display
-
-## Performance Considerations
-
-- Lazy loading for recipe images
-- Memoization of expensive calculations
-- Efficient list rendering with virtualization
-- Optimistic UI updates
-- Local storage caching
-
-## Security
-
-- Input sanitization
-- XSS prevention
-- CORS configuration
-- API rate limiting
-- Secure data storage
-
-## Future Scalability
-
-- Microservices architecture
-- Database sharding
-- CDN integration
-- Caching strategies
-- API versioning 
-
-## Form Validation
-
-### Recipe Creation
-- Required fields:
-  - Name
-  - Servings
-  - At least one valid ingredient
-  - At least one valid instruction
-- Optional fields:
-  - Description
-  - Prep Time
-  - Cook Time
-  - Meal Types
-  - Cuisine
-  - Rating
-  - Notes
-
-### Meal Planning (via ScheduleMealModal)
-- Required fields when scheduling a meal:
-  - Recipe (must be selected first)
-  - Meal of the Day
-  - At least one day selected
-- Optional fields:
-  - Servings override (defaults to recipe servings)
-
-### Shopping List
-- Required fields for items:
-  - Name
-  - Quantity
-
-## State Management
-
-### Shopping List Filters
-- Store selection persistence
-- Filter state in URL
-- Clear UI feedback for active filters
-- Proper handling of "All Stores" view 

@@ -56,16 +56,36 @@ The meal planning screen features an enhanced interface with multi-week planning
 
 #### Timeline Navigation
 - View all available weeks in a horizontal timeline
-- Each week displayed with date range (e.g., "5/1-5/7")
-- Current week highlighted for easy identification
-- Navigate between past, present, and future weeks
-- "Today" button to quickly jump to current week
+- Each week displayed with date range (e.g., "3/16-3/22") 
+- Visual indicators show week status:
+  - Current week: Purple highlighting with vibrant purple indicator
+  - Past weeks: Light gray with darker gray indicator
+  - Future weeks: White with green indicator
+- Navigate between past, present, and future weeks by clicking any week chip
+- "Today" button to quickly jump to the current week
+- "Add Week" button to create new weeks in your meal plan
+
+#### Adding New Weeks
+- Click the "Add Week" button beside the "Today" button
+- A modal with a calendar will appear
+- By default, it will suggest the next week that follows your current week
+- Select any date to create a week containing that date
+  - The app automatically creates a Sunday-to-Saturday week
+  - If the selected date falls within an existing week, you'll be notified
+- Once created, the new week appears in the timeline
+- You can plan meals for any number of weeks in advance
 
 #### Weekly Overview
 - See all planned meals for the selected week
 - Organized by day (Sunday through Saturday)
-- Color-coded by meal type for easy visualization
+- Color-coded by meal type for easy visualization:
+  - Breakfast: Yellow
+  - Lunch: Green
+  - Dinner: Purple
+  - Snack: Blue
+  - Dessert: Pink
 - Add meals directly from the weekly view
+- Select any day to view its details below
 
 #### Day Detail Panel
 - View and manage meals for a selected day
@@ -107,9 +127,11 @@ Customize your shopping experience:
 - **Pantry Exclusions**: Maintain your pantry list to avoid purchasing items you already have
 - **Automatic Conversions**: Let the app handle converting recipe quantities to shopping quantities - review for accuracy but enjoy the convenience
 - **Category Management**: The app automatically categorizes items, but you can always adjust categories in the settings to match your shopping preferences
-- **Multi-Week Planning**: Plan meals for future weeks in advance or review past weeks' meal plans
+- **Multi-Week Planning**: Plan meals for future weeks in advance by adding new weeks with the "Add Week" button
 - **Week Navigation**: Use the timeline to quickly navigate between different weeks
+- **Week-Specific Grocery Lists**: Generate grocery lists for specific weeks to prepare in advance
 - **Today Button**: Instantly return to the current week with the Today button
+- **Weekly Meal Patterns**: Create consistent meal patterns across weeks by planning a full week, then adding a new week for variations
 
 ## Keyboard Shortcuts
 

@@ -59,10 +59,13 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Weekly overview with planned meals
 - Enhanced meal organization by meal type
 - Multi-week meal planning support
-  - Navigate between different weeks
+  - Create and manage multiple weeks in the meal plan
+  - Navigate between different weeks via timeline interface
+  - Visual indicators for past, current, and future weeks
   - View historical and future meal plans
-  - Today button to quickly navigate to current week
-  - Visual timeline of available weeks
+  - "Today" button to quickly navigate to current week
+  - Add new weeks with one click
+  - Week labels with clear date ranges for easy navigation
 - Simplified required fields:
   - Recipe creation: name, servings, ingredients, instructions
   - Meal scheduling: meal type, at least one day
