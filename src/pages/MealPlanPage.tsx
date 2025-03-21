@@ -110,9 +110,14 @@ export const MealPlanPage: React.FC = () => {
           setCurrentWeek(activeWeek);
           
           if (activeWeek) {
-            // Format the week label: "Month Day-Day, Year"
-            const startDate = new Date(activeWeek.startDate);
-            const endDate = new Date(activeWeek.endDate);
+            // Format the week label using safe date parsing
+            const startParts = activeWeek.startDate.split('-').map(Number);
+            const endParts = activeWeek.endDate.split('-').map(Number);
+            
+            // Create date objects (months are 0-indexed in JS Date)
+            const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+            const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+            
             const month = startDate.toLocaleString('default', { month: 'long' });
             const startDay = startDate.getDate();
             const endDay = endDate.getDate();
@@ -564,9 +569,14 @@ export const MealPlanPage: React.FC = () => {
       setCurrentWeek(newCurrentWeek);
       
       if (newCurrentWeek) {
-        // Format the week label
-        const startDate = new Date(newCurrentWeek.startDate);
-        const endDate = new Date(newCurrentWeek.endDate);
+        // Format the week label using safe date parsing
+        const startParts = newCurrentWeek.startDate.split('-').map(Number);
+        const endParts = newCurrentWeek.endDate.split('-').map(Number);
+        
+        // Create date objects (months are 0-indexed in JS Date)
+        const startDate = new Date(startParts[0], startParts[1] - 1, startParts[2]);
+        const endDate = new Date(endParts[0], endParts[1] - 1, endParts[2]);
+        
         const month = startDate.toLocaleString('default', { month: 'long' });
         const startDay = startDate.getDate();
         const endDay = endDate.getDate();
