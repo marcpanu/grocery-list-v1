@@ -312,6 +312,17 @@ export const AppLayout: React.FC = () => {
         <div className="max-w-screen-xl mx-auto">
           <div className="flex justify-around">
             <button
+              onClick={() => handleTabClick('browser')}
+              className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
+                activeTab === 'browser' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
+              }`}
+            >
+              <svg className="w-6 h-6 mb-1" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M3.055 11H5a2 2 0 012 2v1a2 2 0 002 2h2.945M8 3.935V5.5A2.5 2.5 0 0010.5 8h.5a2 2 0 012 2 2 2 0 104 0 2 2 0 012-2h1.064M15 20.488V18a2 2 0 012-2h3.064M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+              </svg>
+              Browser
+            </button>
+            <button
               onClick={() => handleTabClick('recipes')}
               className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
                 activeTab === 'recipes' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
@@ -343,16 +354,6 @@ export const AppLayout: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
               List
-            </button>
-            <button
-              onClick={() => handleTabClick('browser')}
-              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium ${
-                activeTab === 'browser'
-                  ? 'bg-violet-50 text-violet-700'
-                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-              }`}
-            >
-              <span>Recipe Browser</span>
             </button>
             <button
               onClick={() => handleTabClick('settings')}
