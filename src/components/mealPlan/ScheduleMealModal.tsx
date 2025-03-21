@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../../types/recipe';
 import { MealPlanMealType, Week } from '../../types/mealPlan';
+import { DaySelector } from './DaySelector';
 
 interface ScheduleMealModalProps {
   isOpen: boolean;
@@ -57,17 +58,15 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
     }
   };
 
-  const handleDaySelect = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { checked, value } = e.target;
-    const updatedDays = checked
-      ? [...formData.days, value]
-      : formData.days.filter((day) => day !== value);
+  const handleDaysChange = (newDays: string[]) => {
+    setFormData(prev => ({
+      ...prev,
+      days: newDays
+    }));
     
-    setFormData((prev) => ({ ...prev, days: updatedDays }));
-    
-    // Clear day error if at least one day is selected
-    if (updatedDays.length > 0 && errors.days) {
-      setErrors((prev) => ({ ...prev, days: undefined }));
+    // Clear the days error if days are selected
+    if (newDays.length > 0 && errors.days) {
+      setErrors(prev => ({ ...prev, days: '' }));
     }
   };
 
@@ -122,7 +121,7 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
             </button>
           </div>
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-6">
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">
                 Recipe
@@ -199,20 +198,11 @@ export const ScheduleMealModal: React.FC<ScheduleMealModalProps> = ({
               <label className="block text-sm font-medium text-gray-700 mb-2">
                 Days <span className="text-red-500">*</span>
               </label>
-              <div className="grid grid-cols-4 gap-x-4 gap-y-2">
-                {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                  <label key={day} className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      value={day}
-                      checked={formData.days.includes(day)}
-                      onChange={handleDaySelect}
-                      className="rounded text-violet-600 focus:ring-violet-500"
-                    />
-                    <span className="text-sm text-gray-700">{day}</span>
-                  </label>
-                ))}
-              </div>
+              <DaySelector 
+                selectedDays={formData.days}
+                onChange={handleDaysChange}
+                disabled={isLoading}
+              />
               {errors.days && (
                 <p className="mt-1 text-sm text-red-500">{errors.days}</p>
               )}

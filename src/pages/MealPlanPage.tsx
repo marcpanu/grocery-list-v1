@@ -8,6 +8,7 @@ import { AddMealData } from '../types/mealPlan';
 import { RecipeImportModal } from '../components/recipes/RecipeImportModal';
 import { RecipeUrlImport } from '../components/recipes/RecipeUrlImport';
 import { ScheduleMealModal, ScheduleMealData } from '../components/mealPlan/ScheduleMealModal';
+import { DaySelector } from '../components/mealPlan/DaySelector';
 import { 
   addMealPlan, 
   getUserMealPlans, 
@@ -70,6 +71,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
   const [selectedMeal, setSelectedMeal] = useState<Meal | null>(null);
   const [showRecipeDetailModal, setShowRecipeDetailModal] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [quickAddSelectedDays, setQuickAddSelectedDays] = useState<string[]>([]);
 
   // Use the recipe import hook
   const {
@@ -363,9 +365,8 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       return;
     }
     
-    const selectedDays = Object.entries(Object.fromEntries(formData.entries()))
-      .filter(([key, value]) => key.startsWith('day-') && value === 'on')
-      .map(([key]) => key.replace('day-', ''));
+    // Use the selectedDays state instead of getting them from form
+    const selectedDays = quickAddSelectedDays;
 
     if (selectedDays.length === 0) {
       setError('Please select at least one day');
@@ -388,12 +389,14 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       mealPlanMeal,
       days: selectedDays,
       servings: isNaN(servings) ? 1 : servings,
-      weekId, // Add the weekId
-      mealTypes: [] // Add an empty array for mealTypes
+      weekId,
+      mealTypes: []
     };
     
     handleAddMeal(newMeal);
     setShowQuickAddModal(false);
+    // Reset the selected days
+    setQuickAddSelectedDays([]);
   };
 
   // Function to handle adding all meal plan ingredients to grocery list
@@ -1057,14 +1060,24 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         />
 
         {/* Quick Add Modal */}
-        <Dialog open={showQuickAddModal} onClose={() => setShowQuickAddModal(false)} className="relative z-50">
+        <Dialog 
+          open={showQuickAddModal} 
+          onClose={() => {
+            setShowQuickAddModal(false);
+            setQuickAddSelectedDays([]);
+          }} 
+          className="relative z-50"
+        >
           <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
           <div className="fixed inset-0 flex items-center justify-center p-4">
             <Dialog.Panel className="mx-auto max-w-2xl w-full rounded bg-white p-6">
               <div className="flex justify-between items-center mb-4">
                 <Dialog.Title className="text-lg font-medium">Quick Add Meal</Dialog.Title>
                 <button
-                  onClick={() => setShowQuickAddModal(false)}
+                  onClick={() => {
+                    setShowQuickAddModal(false);
+                    setQuickAddSelectedDays([]);
+                  }}
                   className="text-gray-400 hover:text-gray-500"
                 >
                   <XMarkIcon className="h-6 w-6" />
@@ -1297,19 +1310,11 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
                   <label className="block text-sm font-medium text-zinc-700 mb-2">
                     Days
                   </label>
-                  <div className="grid grid-cols-4 gap-4">
-                    {['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'].map((day) => (
-                      <label key={day} className="flex items-center space-x-3">
-                        <input
-                          type="checkbox"
-                          name="days"
-                          value={day}
-                          className="rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
-                        />
-                        <span className="text-sm text-zinc-700">{day}</span>
-                      </label>
-                    ))}
-                  </div>
+                  <DaySelector
+                    selectedDays={quickAddSelectedDays}
+                    onChange={setQuickAddSelectedDays}
+                    disabled={isLoading}
+                  />
                 </div>
 
                 <div className="mt-6 flex justify-end gap-3">
@@ -1409,6 +1414,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
                       // Implement editing if needed
                       handleRecipeDetailClose();
                     }}
+                    hideDeleteButton={true}
                   />
                 </div>
               </Dialog.Panel>

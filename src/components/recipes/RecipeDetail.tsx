@@ -28,9 +28,10 @@ interface RecipeDetailProps {
   recipeId: string;
   onBack: () => void;
   onEdit: (id: string) => void;
+  hideDeleteButton?: boolean;
 }
 
-export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
+export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: RecipeDetailProps) => {
   const [recipe, setRecipe] = useState<Recipe | null>(null);
   const [isLoading, setIsLoading] = useState(true);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
@@ -227,12 +228,14 @@ export const RecipeDetail = ({ recipeId, onBack }: RecipeDetailProps) => {
           </button>
 
           {/* Delete Button */}
-          <button
-            onClick={() => setShowDeleteConfirm(true)}
-            className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
-          >
-            <TrashIcon className="w-5 h-5 text-zinc-600 hover:text-red-500" />
-          </button>
+          {!hideDeleteButton && (
+            <button
+              onClick={() => setShowDeleteConfirm(true)}
+              className="p-2 rounded-full bg-white/80 hover:bg-white transition-colors duration-200"
+            >
+              <TrashIcon className="w-5 h-5 text-zinc-600 hover:text-red-500" />
+            </button>
+          )}
 
           {/* Favorite Button */}
           <button
