@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, CalendarIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
 import { MealPlan, Meal, MealPlanMealType, Week } from '../types/mealPlan';
@@ -39,7 +39,12 @@ import { RecipeDetail } from '../components/recipes/RecipeDetail';
 
 const DEFAULT_USER_ID = 'default';
 
-export const MealPlanPage: React.FC = () => {
+// Define a ref type to expose methods to parent components
+export interface MealPlanRefType {
+  resetDetailViews: () => void;
+}
+
+const MealPlanPage = forwardRef<MealPlanRefType, {}>((props, ref) => {
   const [showRecipeSearch, setShowRecipeSearch] = useState(false);
   const [showAddMealModal, setShowAddMealModal] = useState(false);
   const [showQuickAddModal, setShowQuickAddModal] = useState(false);
@@ -739,6 +744,28 @@ export const MealPlanPage: React.FC = () => {
     setSelectedRecipeId(null);
   };
 
+  // Expose a reset function to parent components
+  useImperativeHandle(ref, () => ({
+    resetDetailViews: () => {
+      // Reset all modals and detail views
+      setShowActionModal(false);
+      setShowRecipeSearch(false);
+      setShowAddMealModal(false);
+      setShowScheduleMealModal(false);
+      setShowImportModal(false);
+      setShowQuickAddModal(false);
+      setShowGroceryListConfirm(false);
+      setShowMealDetailModal(false);
+      setShowRecipeDetailModal(false);
+      setSelectedMeal(null);
+      setSelectedRecipeId(null);
+      setSelectedRecipe(undefined);
+      
+      // Close URL import modal if open
+      closeUrlImport();
+    }
+  }));
+
   return (
     <div className="min-h-full bg-zinc-50">
       <PageHeader 
@@ -1390,6 +1417,6 @@ export const MealPlanPage: React.FC = () => {
       </div>
     </div>
   );
-};
+});
 
 export default MealPlanPage;

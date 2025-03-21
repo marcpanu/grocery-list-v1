@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect, useRef, forwardRef, useImperativeHandle } from 'react';
 import { 
   PlusIcon, 
   MagnifyingGlassIcon,
@@ -39,11 +39,16 @@ interface RecipeListProps {
   onRecipeSelect: (id: string) => void;
 }
 
+// Define a ref type to expose methods to parent components
+export interface RecipeListRefType {
+  resetDetailViews: () => void;
+}
+
 type ViewMode = 'grid' | 'compact';
 type SortBy = UserPreferences['recipeSortBy'];
 type SortOrder = UserPreferences['recipeSortOrder'];
 
-export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
+export const RecipeList = forwardRef<RecipeListRefType, RecipeListProps>(({ onRecipeSelect }, ref) => {
   const [recipes, setRecipes] = useState<RecipePreview[]>([]);
   const [searchQuery, setSearchQuery] = useState('');
   const [isLoading, setIsLoading] = useState(true);
@@ -417,6 +422,24 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       return sortOrder === 'asc' ? comparison : -comparison;
     });
 
+  // Expose reset function to parent
+  useImperativeHandle(ref, () => ({
+    resetDetailViews: () => {
+      // Reset all modals
+      setRecipeToDelete(null);
+      setShowGroceryListConfirm(false);
+      setShowAddMealModal(false);
+      
+      // Close import modals using the hook's close functions
+      closeUrlImport();
+      setShowImportModal(false);
+      
+      // Reset filter/sort dropdowns
+      setShowSortOptions(false);
+      setShowFilters(false);
+    }
+  }));
+
   return (
     <div className="min-h-screen bg-zinc-50 pb-16">
       {/* Header */}
@@ -746,4 +769,4 @@ export const RecipeList = ({ onRecipeSelect }: RecipeListProps) => {
       />
     </div>
   );
-}; 
+}); 

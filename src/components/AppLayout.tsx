@@ -2,7 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { ShoppingList } from './ShoppingList';
 import { PageHeader } from './PageHeader';
 import { Settings } from './Settings';
-import { RecipeList } from './recipes/RecipeList';
+import { RecipeList, RecipeListRefType } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
 import { ViewMode, Store } from '../types';
@@ -15,7 +15,7 @@ import {
   FunnelIcon,
 } from '@heroicons/react/24/outline';
 import { StoreSelector } from './StoreSelector';
-import MealPlanPage from '../pages/MealPlanPage';
+import MealPlanPage, { MealPlanRefType } from '../pages/MealPlanPage';
 
 // Expose addTestRecipes to window for development
 if (process.env.NODE_ENV === 'development') {
@@ -25,10 +25,18 @@ if (process.env.NODE_ENV === 'development') {
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default-user';
 
+// Local storage key for active tab
+const ACTIVE_TAB_STORAGE_KEY = 'shopping-list-active-tab';
+
 type Tab = 'recipes' | 'plan' | 'list' | 'settings';
 
 export const AppLayout: React.FC = () => {
-  const [activeTab, setActiveTab] = useState<Tab>('list');
+  // Initialize with saved tab from localStorage, or fall back to 'list'
+  const [activeTab, setActiveTab] = useState<Tab>(() => {
+    const savedTab = localStorage.getItem(ACTIVE_TAB_STORAGE_KEY);
+    return (savedTab as Tab) || 'list';
+  });
+  
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const storeFilterRef = useRef<HTMLDivElement>(null);
   const [listId, setListId] = useState<string | null>(null);
@@ -39,6 +47,16 @@ export const AppLayout: React.FC = () => {
   const [currentStore, setCurrentStore] = useState<string>('all');
   const [selectedStoreObj, setSelectedStoreObj] = useState<Store | undefined>();
   const [showStoreFilter, setShowStoreFilter] = useState(false);
+
+  // Reference to MealPlanPage component to reset detail views
+  const mealPlanRef = useRef<MealPlanRefType>(null);
+  // Reference to RecipeList component to reset detail views
+  const recipeListRef = useRef<RecipeListRefType>(null);
+
+  // Save active tab to localStorage whenever it changes
+  useEffect(() => {
+    localStorage.setItem(ACTIVE_TAB_STORAGE_KEY, activeTab);
+  }, [activeTab]);
 
   // Load view settings from Firestore
   useEffect(() => {
@@ -133,6 +151,25 @@ export const AppLayout: React.FC = () => {
     console.log('Edit recipe:', id);
   };
 
+  // Handle tab navigation with reset of detail views
+  const handleTabClick = (tab: Tab) => {
+    if (tab === activeTab) {
+      // If clicking the already active tab, reset detail views
+      setSelectedRecipeId(null);
+      
+      // Reset meal plan detail views if on meal plan tab
+      if (tab === 'plan' && mealPlanRef.current) {
+        mealPlanRef.current.resetDetailViews();
+      }
+      
+      // Reset recipe list detail views if on recipes tab
+      if (tab === 'recipes' && recipeListRef.current) {
+        recipeListRef.current.resetDetailViews();
+      }
+    }
+    setActiveTab(tab);
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'recipes':
@@ -143,10 +180,10 @@ export const AppLayout: React.FC = () => {
             onEdit={handleRecipeEdit}
           />
         ) : (
-          <RecipeList onRecipeSelect={handleRecipeSelect} />
+          <RecipeList ref={recipeListRef} onRecipeSelect={handleRecipeSelect} />
         );
       case 'plan':
-        return <MealPlanPage />;
+        return <MealPlanPage ref={mealPlanRef} />;
       case 'list':
         return (
           <>
@@ -256,7 +293,7 @@ export const AppLayout: React.FC = () => {
         <div className="max-w-screen-xl mx-auto">
           <div className="flex justify-around">
             <button
-              onClick={() => setActiveTab('recipes')}
+              onClick={() => handleTabClick('recipes')}
               className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
                 activeTab === 'recipes' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
               }`}
@@ -267,7 +304,7 @@ export const AppLayout: React.FC = () => {
               Recipes
             </button>
             <button
-              onClick={() => setActiveTab('plan')}
+              onClick={() => handleTabClick('plan')}
               className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
                 activeTab === 'plan' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
               }`}
@@ -278,7 +315,7 @@ export const AppLayout: React.FC = () => {
               Plan
             </button>
             <button
-              onClick={() => setActiveTab('list')}
+              onClick={() => handleTabClick('list')}
               className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
                 activeTab === 'list' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
               }`}
@@ -289,7 +326,7 @@ export const AppLayout: React.FC = () => {
               List
             </button>
             <button
-              onClick={() => setActiveTab('settings')}
+              onClick={() => handleTabClick('settings')}
               className={`flex flex-col items-center px-4 py-2 text-xs font-medium ${
                 activeTab === 'settings' ? 'text-violet-600' : 'text-zinc-600 hover:text-zinc-900'
               }`}
