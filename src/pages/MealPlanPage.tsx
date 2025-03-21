@@ -628,7 +628,18 @@ export const MealPlanPage: React.FC = () => {
   const handleTodayButtonClick = async () => {
     setIsLoading(true);
     try {
+      // Get current week
       const todayWeek = await getCurrentWeek(DEFAULT_USER_ID);
+      
+      // Set the current day of the week
+      const daysOfWeek = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
+      const today = new Date();
+      const currentDayName = daysOfWeek[today.getDay()];
+      
+      // Update selected day
+      setSelectedDay(currentDayName);
+      
+      // Update current week
       await handleWeekClick(todayWeek.id);
     } catch (error) {
       console.error('Failed to set current week:', error);
