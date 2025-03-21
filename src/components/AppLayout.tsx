@@ -16,6 +16,7 @@ import {
 } from '@heroicons/react/24/outline';
 import { StoreSelector } from './StoreSelector';
 import MealPlanPage, { MealPlanRefType } from '../pages/MealPlanPage';
+import RecipeBrowserPage from '../pages/RecipeBrowserPage';
 
 // Expose addTestRecipes to window for development
 if (process.env.NODE_ENV === 'development') {
@@ -28,7 +29,7 @@ const USER_ID = 'default-user';
 // Local storage key for active tab
 const ACTIVE_TAB_STORAGE_KEY = 'shopping-list-active-tab';
 
-type Tab = 'recipes' | 'plan' | 'list' | 'settings';
+type Tab = 'recipes' | 'plan' | 'list' | 'settings' | 'browser';
 
 export const AppLayout: React.FC = () => {
   // Initialize with saved tab from localStorage, or fall back to 'list'
@@ -37,7 +38,18 @@ export const AppLayout: React.FC = () => {
     return (savedTab as Tab) || 'list';
   });
   
-  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
+  const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(() => {
+    // Check if there's a selected recipe ID in localStorage
+    return localStorage.getItem('SELECTED_RECIPE_ID');
+  });
+  
+  // Clear the selected recipe ID from localStorage after it's been used
+  useEffect(() => {
+    if (selectedRecipeId) {
+      localStorage.removeItem('SELECTED_RECIPE_ID');
+    }
+  }, [selectedRecipeId]);
+
   const storeFilterRef = useRef<HTMLDivElement>(null);
 
   // Shopping list view state
@@ -274,6 +286,8 @@ export const AppLayout: React.FC = () => {
             />
           </>
         );
+      case 'browser':
+        return <RecipeBrowserPage />;
       case 'settings':
         return (
           <>
@@ -281,6 +295,8 @@ export const AppLayout: React.FC = () => {
             <Settings />
           </>
         );
+      default:
+        return null;
     }
   };
 
@@ -327,6 +343,16 @@ export const AppLayout: React.FC = () => {
                 <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2m-6 9l2 2 4-4" />
               </svg>
               List
+            </button>
+            <button
+              onClick={() => handleTabClick('browser')}
+              className={`flex items-center space-x-1 px-3 py-2 rounded-md text-sm font-medium ${
+                activeTab === 'browser'
+                  ? 'bg-violet-50 text-violet-700'
+                  : 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
+              }`}
+            >
+              <span>Recipe Browser</span>
             </button>
             <button
               onClick={() => handleTabClick('settings')}

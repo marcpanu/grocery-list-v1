@@ -44,6 +44,8 @@ export async function extractRecipeFromHtml(html: string, url: string): Promise<
     
 DO NOT include markdown formatting, code blocks, or any other text - ONLY return the raw JSON object.
 
+DO NOT INCLUDE ANY FRACTIONS (e.g., 1/4 cup or 1 / 4 cup, should instead be 0.25 cup). Convert any fractions to decimal format.
+
 Required fields and format:
 {
   "name": string (required),
