@@ -910,10 +910,37 @@ export const createOrGetWeek = async (userId: string, date: Date): Promise<Week>
   
   const weekRef = await addDoc(weeksRef, newWeek);
   
-  return {
+  const createdWeek = {
     id: weekRef.id,
     ...newWeek
   };
+
+  // Update the meal plan to include this week
+  try {
+    const mealPlanRef = doc(db, COLLECTIONS.MEAL_PLANS, userId);
+    const mealPlanSnap = await getDoc(mealPlanRef);
+
+    if (mealPlanSnap.exists()) {
+      // Get the existing weeks array or initialize an empty one
+      const existingWeeks = mealPlanSnap.data().weeks || [];
+      
+      // Check if the week ID already exists in the array
+      const weekExists = existingWeeks.some((week: any) => week.id === createdWeek.id);
+      
+      if (!weekExists) {
+        // Add the new week to the weeks array
+        await updateDoc(mealPlanRef, {
+          weeks: arrayUnion(createdWeek),
+          updatedAt: now
+        });
+      }
+    }
+  } catch (error) {
+    console.error('Error updating meal plan with new week:', error);
+    // Continue with the function even if this update fails
+  }
+  
+  return createdWeek;
 };
 
 // Get all weeks for a user

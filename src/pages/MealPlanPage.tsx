@@ -20,7 +20,8 @@ import {
   getCurrentWeek, 
   getMealsByWeek, 
   setCurrentWeek as updateCurrentWeekDb, // Rename to avoid conflict
-  getMealPlanWithWeeks
+  getMealPlanWithWeeks,
+  getWeeks
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -84,25 +85,30 @@ export const MealPlanPage: React.FC = () => {
       try {
         setIsLoading(true);
         setError(null);
+        
+        // Get the user's meal plans
         const plans = await getUserMealPlans(DEFAULT_USER_ID);
         setMealPlans(plans);
+        
+        // Get all weeks for the user directly from the weeks collection
+        const allWeeks = await getWeeks(DEFAULT_USER_ID);
+        
+        // Sort weeks by start date using safe date parsing
+        const sortedWeeks = [...allWeeks].sort((a, b) => {
+          const aStartParts = a.startDate.split('-').map(Number);
+          const bStartParts = b.startDate.split('-').map(Number);
+          
+          const dateA = new Date(aStartParts[0], aStartParts[1] - 1, aStartParts[2]);
+          const dateB = new Date(bStartParts[0], bStartParts[1] - 1, bStartParts[2]);
+          
+          return dateA.getTime() - dateB.getTime();
+        });
+        
+        setWeeks(sortedWeeks);
         
         // Get the current week from the meal plan
         if (plans.length > 0) {
           const activePlan = plans[0];
-          
-          // Sort weeks by start date
-          const sortedWeeks = [...(activePlan.weeks || [])].sort((a, b) => {
-            const aStartParts = a.startDate.split('-').map(Number);
-            const bStartParts = b.startDate.split('-').map(Number);
-            
-            const dateA = new Date(aStartParts[0], aStartParts[1] - 1, aStartParts[2]);
-            const dateB = new Date(bStartParts[0], bStartParts[1] - 1, bStartParts[2]);
-            
-            return dateA.getTime() - dateB.getTime();
-          });
-          
-          setWeeks(sortedWeeks);
           
           // Find the current week
           const currentWeekId = activePlan.currentWeekId;
@@ -125,7 +131,7 @@ export const MealPlanPage: React.FC = () => {
             setCurrentWeekLabel(`${month} ${startDay}-${endDay}, ${year}`);
             
             // Load meals for the current week
-            const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, currentWeekId);
+            const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, activeWeek.id);
             setMeals(weekMeals);
           }
         }
@@ -136,6 +142,7 @@ export const MealPlanPage: React.FC = () => {
         setIsLoading(false);
       }
     };
+
     loadMealPlans();
   }, []);
 
@@ -635,15 +642,12 @@ export const MealPlanPage: React.FC = () => {
   const handleWeekAdded = async () => {
     try {
       setIsLoading(true);
-      // Refresh the meal plan to get the new weeks
-      const updatedMealPlan = await getMealPlanWithWeeks(DEFAULT_USER_ID);
-      setMealPlans([updatedMealPlan]);
       
-      // Get the weeks from the updated meal plan and sort them by startDate
-      let updatedWeeks = updatedMealPlan.weeks || [];
+      // Get all weeks for the user directly from the weeks collection
+      const allWeeks = await getWeeks(DEFAULT_USER_ID);
       
-      // Sort weeks by start date
-      updatedWeeks = updatedWeeks.sort((a, b) => {
+      // Sort weeks by start date using safe date parsing
+      const sortedWeeks = [...allWeeks].sort((a, b) => {
         const aStartParts = a.startDate.split('-').map(Number);
         const bStartParts = b.startDate.split('-').map(Number);
         
@@ -653,7 +657,7 @@ export const MealPlanPage: React.FC = () => {
         return dateA.getTime() - dateB.getTime();
       });
       
-      setWeeks(updatedWeeks);
+      setWeeks(sortedWeeks);
       
       // Re-fetch the meals for the current week
       if (currentWeek) {
