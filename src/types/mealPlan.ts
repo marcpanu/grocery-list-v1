@@ -24,6 +24,12 @@ export interface Week {
   label?: string;          // Optional user-friendly name
   createdAt: Date;
   updatedAt: Date;
+  scalingFactors?: {
+    [recipeId: string]: number;  // Computed from meal.servings/recipe.servings
+  };
+  totalServings?: {
+    [recipeId: string]: number;  // Sum of all servings for this recipe in the week
+  };
 }
 
 export interface MealPlan {

@@ -304,7 +304,7 @@ export const RecipeList = forwardRef<RecipeListRefType, RecipeListProps>(({ onRe
       } else {
         // No items in list, set loading state here and add ingredients
         setAddingToGroceryList(true);
-        await addRecipeIngredientsToGroceryList(recipe, 1);
+        await addRecipeIngredientsToGroceryList(recipe);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
       }
@@ -342,7 +342,7 @@ export const RecipeList = forwardRef<RecipeListRefType, RecipeListProps>(({ onRe
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe, 1);
+        await addRecipeIngredientsToGroceryList(recipe);
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -380,7 +380,7 @@ export const RecipeList = forwardRef<RecipeListRefType, RecipeListProps>(({ onRe
       }
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe, 1);
+      await addRecipeIngredientsToGroceryList(recipe);
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);

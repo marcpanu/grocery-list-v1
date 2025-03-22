@@ -92,7 +92,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
         // No items in list, set loading state here before adding ingredients
         setAddingToGroceryList(true);
         const loadingToast = toast.loading('Adding ingredients to your grocery list...');
-        await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
+        await addRecipeIngredientsToGroceryList(recipe); // Use base servings without weekId
         toast.dismiss(loadingToast);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
@@ -121,7 +121,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
+        await addRecipeIngredientsToGroceryList(recipe); // Use base servings without weekId
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -148,7 +148,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
       const loadingToast = toast.loading('Adding ingredients to grocery list...');
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
+      await addRecipeIngredientsToGroceryList(recipe); // Use base servings without weekId
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);

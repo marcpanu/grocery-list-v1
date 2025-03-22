@@ -443,8 +443,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       // Add ingredients from each recipe with its multiplier
       for (const recipe of recipes) {
         if (!recipe) continue;
-        const multiplier = recipeServingMultipliers.get(recipe.id) || 1;
-        await addRecipeIngredientsToGroceryList(recipe, multiplier);
+        await addRecipeIngredientsToGroceryList(recipe, currentWeek?.id);
       }
     } catch (error) {
       console.error('Error adding ingredients:', error);

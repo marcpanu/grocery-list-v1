@@ -799,7 +799,7 @@ const isIngredientInPantry = (ingredientName: string, pantryItems: PantryItem[])
 };
 
 // Function to add recipe ingredients to the grocery list with pantry exclusion and quantity adjustment
-export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingMultiplier: number = 1): Promise<void> => {
+export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, weekId?: string): Promise<void> => {
   try {
     // Get the user's shopping list
     const userLists = await getUserShoppingLists('default');
@@ -823,6 +823,19 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     }
     
     const pantryItems = preferences?.pantryItems || [];
+
+    // Get scaling factor from week if weekId is provided
+    let scalingFactor = 1;
+    if (weekId) {
+      const weekRef = doc(db, COLLECTIONS.WEEKS, weekId);
+      const weekSnap = await getDoc(weekRef);
+      if (weekSnap.exists()) {
+        const weekData = weekSnap.data();
+        if (weekData.scalingFactors && weekData.scalingFactors[recipe.id]) {
+          scalingFactor = weekData.scalingFactors[recipe.id];
+        }
+      }
+    }
     
     // Import the ingredient processing utilities
     const { processIngredientsToShoppingItems } = await import('../services/recipeIngredientProcessing');
@@ -833,7 +846,7 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
       ...ing,
       quantity: typeof ing.quantity === 'string' 
         ? parseFloat(ing.quantity) || 1 
-        : ing.quantity * servingMultiplier
+        : ing.quantity * scalingFactor
     })));
     
     console.log('Standardized grocery items:', standardizedItems);
@@ -850,7 +863,7 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
     // Process ingredients to standardized shopping items with automatic categorization
     const shoppingItems = processIngredientsToShoppingItems(
       formattedIngredients,
-      1, // We've already applied the multiplier
+      1, // We've already applied the scaling factor
       list.categories // Pass the user's categories
     );
     
@@ -877,7 +890,8 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, servingM
         unit: item.unit,
         category: item.category, // This will be the category from categorizeIngredient
         store: item.store,
-        checked: false
+        checked: false,
+        order: 0 // Default order for new items
       };
       
       console.log('Adding item to list with category:', itemToAdd.category?.name);
@@ -1077,8 +1091,10 @@ export const setCurrentWeek = async (userId: string, weekId: string): Promise<vo
 // Add a meal to a specific week
 export const addMealToWeek = async (userId: string, weekId: string, mealData: Omit<Meal, 'id' | 'userId' | 'weekId' | 'createdAt'>): Promise<Meal> => {
   const mealsRef = collection(db, COLLECTIONS.MEALS);
+  const weekRef = doc(db, COLLECTIONS.WEEKS, weekId);
   const now = Timestamp.now();
   
+  // Create the new meal
   const newMeal: Omit<Meal, 'id'> = {
     userId,
     weekId,
@@ -1086,12 +1102,50 @@ export const addMealToWeek = async (userId: string, weekId: string, mealData: Om
     createdAt: now.toDate()
   };
   
+  // Add the meal to the meals collection
   const mealRef = await addDoc(mealsRef, newMeal);
-  
-  return {
+  const createdMeal = {
     id: mealRef.id,
     ...newMeal
   };
+
+  // If this meal is linked to a recipe, update the week's scaling factors
+  if (mealData.recipeId) {
+    try {
+      // Get the recipe to check if it's scalable and get base servings
+      const recipe = await getRecipe(mealData.recipeId);
+      if (recipe) {
+        // Get the current week data
+        const weekSnap = await getDoc(weekRef);
+        if (weekSnap.exists()) {
+          const weekData = weekSnap.data();
+          const currentScalingFactors = weekData.scalingFactors || {};
+          const currentTotalServings = weekData.totalServings || {};
+
+          // Calculate scaling factor only if recipe is scalable
+          const scalingFactor = recipe.isScalable 
+            ? mealData.servings / recipe.servings 
+            : 1;
+
+          // Update or set the scaling factor and total servings
+          currentScalingFactors[mealData.recipeId] = scalingFactor;
+          currentTotalServings[mealData.recipeId] = (currentTotalServings[mealData.recipeId] || 0) + mealData.servings;
+
+          // Update the week document
+          await updateDoc(weekRef, {
+            scalingFactors: currentScalingFactors,
+            totalServings: currentTotalServings,
+            updatedAt: now.toDate()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating week scaling factors:', error);
+      // Continue with the function even if scaling factor update fails
+    }
+  }
+  
+  return createdMeal;
 };
 
 // Get all meals for a specific week
@@ -1107,15 +1161,124 @@ export const getMealsByWeek = async (userId: string, weekId: string): Promise<Me
   return snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() } as Meal));
 };
 
-// Update a meal
-export const updateMealDetails = async (mealId: string, updates: Partial<Omit<Meal, 'id' | 'userId' | 'createdAt'>>): Promise<void> => {
+// Update meal details
+export const updateMealDetails = async (mealId: string, updates: Partial<Meal>): Promise<void> => {
   const mealRef = doc(db, COLLECTIONS.MEALS, mealId);
-  await updateDoc(mealRef, updates);
+  const mealSnap = await getDoc(mealRef);
+  
+  if (!mealSnap.exists()) {
+    throw new Error('Meal not found');
+  }
+
+  const mealData = mealSnap.data() as Meal;
+  const weekRef = doc(db, COLLECTIONS.WEEKS, mealData.weekId);
+  const now = Timestamp.now();
+
+  // If servings are being updated and there's a recipe, update scaling factors
+  if (updates.servings !== undefined && mealData.recipeId) {
+    try {
+      // Get the recipe to check if it's scalable and get base servings
+      const recipe = await getRecipe(mealData.recipeId);
+      if (recipe) {
+        // Get the current week data
+        const weekSnap = await getDoc(weekRef);
+        if (weekSnap.exists()) {
+          const weekData = weekSnap.data();
+          const currentScalingFactors = weekData.scalingFactors || {};
+          const currentTotalServings = weekData.totalServings || {};
+
+          // Calculate the difference in servings
+          const servingsDiff = updates.servings - mealData.servings;
+
+          // Calculate new scaling factor only if recipe is scalable
+          const scalingFactor = recipe.isScalable 
+            ? updates.servings / recipe.servings 
+            : 1;
+
+          // Update scaling factor and total servings
+          currentScalingFactors[mealData.recipeId] = scalingFactor;
+          currentTotalServings[mealData.recipeId] = (currentTotalServings[mealData.recipeId] || 0) + servingsDiff;
+
+          // Update the week document
+          await updateDoc(weekRef, {
+            scalingFactors: currentScalingFactors,
+            totalServings: currentTotalServings,
+            updatedAt: now.toDate()
+          });
+        }
+      }
+    } catch (error) {
+      console.error('Error updating week scaling factors:', error);
+      // Continue with the function even if scaling factor update fails
+    }
+  }
+
+  // Update the meal
+  await updateDoc(mealRef, {
+    ...updates,
+    updatedAt: now.toDate()
+  });
 };
 
-// Delete a meal
+// Delete a meal by ID
 export const deleteMealById = async (mealId: string): Promise<void> => {
   const mealRef = doc(db, COLLECTIONS.MEALS, mealId);
+  const mealSnap = await getDoc(mealRef);
+  
+  if (!mealSnap.exists()) {
+    throw new Error('Meal not found');
+  }
+
+  const mealData = mealSnap.data() as Meal;
+  const weekRef = doc(db, COLLECTIONS.WEEKS, mealData.weekId);
+  const now = Timestamp.now();
+
+  // If the meal has a recipe, update the week's scaling factors
+  if (mealData.recipeId) {
+    try {
+      // Get the current week data
+      const weekSnap = await getDoc(weekRef);
+      if (weekSnap.exists()) {
+        const weekData = weekSnap.data();
+        const currentScalingFactors = weekData.scalingFactors || {};
+        const currentTotalServings = weekData.totalServings || {};
+
+        // Get all meals for this week to check if this is the last meal using this recipe
+        const weekMeals = await getMealsByWeek(mealData.userId, mealData.weekId);
+        const otherMealsWithRecipe = weekMeals.filter(meal => 
+          meal.id !== mealId && meal.recipeId === mealData.recipeId
+        );
+
+        if (otherMealsWithRecipe.length === 0) {
+          // This was the last meal using this recipe, remove it from scaling factors
+          delete currentScalingFactors[mealData.recipeId];
+          delete currentTotalServings[mealData.recipeId];
+        } else {
+          // Update total servings
+          currentTotalServings[mealData.recipeId] = (currentTotalServings[mealData.recipeId] || 0) - mealData.servings;
+          
+          // Recalculate scaling factor based on remaining meals
+          const recipe = await getRecipe(mealData.recipeId);
+          if (recipe && recipe.isScalable) {
+            const totalServings = otherMealsWithRecipe.reduce((sum, meal) => sum + meal.servings, 0);
+            currentScalingFactors[mealData.recipeId] = totalServings / recipe.servings;
+          }
+        }
+
+        // Update the week document
+        await updateDoc(weekRef, {
+          scalingFactors: currentScalingFactors,
+          totalServings: currentTotalServings,
+          updatedAt: now.toDate()
+        });
+      }
+    } catch (error) {
+      console.error('Error updating week scaling factors:', error);
+      // Continue with the function even if scaling factor update fails
+    }
+  }
+
+  // Delete the meal
   await deleteDoc(mealRef);
 };
 
