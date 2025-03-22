@@ -38,7 +38,6 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
   const [showEditModal, setShowEditModal] = useState(false);
   const [showGroceryListConfirm, setShowGroceryListConfirm] = useState(false);
   const [addingToGroceryList, setAddingToGroceryList] = useState(false);
-  const [servingMultiplier, setServingMultiplier] = useState(1);
 
   useEffect(() => {
     loadRecipe();
@@ -93,7 +92,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
         // No items in list, set loading state here before adding ingredients
         setAddingToGroceryList(true);
         const loadingToast = toast.loading('Adding ingredients to your grocery list...');
-        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
         toast.dismiss(loadingToast);
         toast.success('Recipe ingredients added to your grocery list!');
         setAddingToGroceryList(false);
@@ -122,7 +121,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
       if (userLists.length > 0) {
         const list = userLists[0];
         await updateShoppingList(list.id, { items: [] });
-        await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+        await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
         
         // Dismiss loading toast and show success
         toast.dismiss(loadingToast);
@@ -149,7 +148,7 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
       const loadingToast = toast.loading('Adding ingredients to grocery list...');
       
       // Add to existing list
-      await addRecipeIngredientsToGroceryList(recipe, servingMultiplier);
+      await addRecipeIngredientsToGroceryList(recipe, 1); // Use base servings
       
       // Dismiss loading toast and show success
       toast.dismiss(loadingToast);
@@ -278,8 +277,8 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
             <ClockIcon className="w-4 h-4 mr-1" />
             <span>{recipe.prepTime}</span>
           </div>
-          <div className="flex items-center">
-            <UserIcon className="w-4 h-4 mr-1" />
+          <div className="flex items-center gap-2 text-zinc-600">
+            <UserIcon className="w-5 h-5" />
             <span>{recipe.servings} servings</span>
           </div>
         </div>
@@ -350,26 +349,6 @@ export const RecipeDetail = ({ recipeId, onBack, hideDeleteButton = false }: Rec
             <h2 className="text-lg font-semibold text-zinc-900 mb-3">Notes</h2>
             <p className="text-zinc-600">{recipe.notes}</p>
           </section>
-        )}
-
-        {recipe && (
-          <div className="flex items-center space-x-4 mb-4">
-            <label htmlFor="servings" className="text-sm font-medium text-gray-700 dark:text-gray-200">
-              Servings:
-            </label>
-            <select
-              id="servings"
-              value={servingMultiplier}
-              onChange={(e) => setServingMultiplier(Number(e.target.value))}
-              className="block w-24 rounded-lg border border-gray-300 bg-gray-50 p-2.5 text-sm text-gray-900 focus:border-blue-500 focus:ring-blue-500 dark:border-gray-600 dark:bg-gray-700 dark:text-white dark:placeholder-gray-400 dark:focus:border-blue-500 dark:focus:ring-blue-500"
-            >
-              {[0.5, 1, 1.5, 2, 2.5, 3, 3.5, 4].map((value) => (
-                <option key={value} value={value}>
-                  {value}x
-                </option>
-              ))}
-            </select>
-          </div>
         )}
       </div>
 

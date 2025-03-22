@@ -24,6 +24,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
     cuisine: recipe.cuisine || [],
     rating: recipe.rating,
     isFavorite: recipe.isFavorite,
+    isScalable: recipe.isScalable || false,
     source: recipe.source
   });
 
@@ -309,6 +310,19 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
             value={formData.imageUrl || ''}
             onChange={(e) => setFormData(prev => ({ ...prev, imageUrl: e.target.value || null }))}
             className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+          />
+        </div>
+
+        <div className="flex items-center space-x-2">
+          <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
+            Recipe quantities can be scaled (non-integer multipliers allowed)
+          </label>
+          <input
+            type="checkbox"
+            id="isScalable"
+            checked={formData.isScalable}
+            onChange={(e) => setFormData(prev => ({ ...prev, isScalable: e.target.checked }))}
+            className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
           />
         </div>
 

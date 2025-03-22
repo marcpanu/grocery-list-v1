@@ -30,6 +30,7 @@ export interface Recipe {
   rating: number | null;
   dateAdded: Date;
   isFavorite: boolean;
+  isScalable: boolean;
   source: {
     type: 'url' | 'instagram' | 'tiktok';
     url: string;
