@@ -1,5 +1,5 @@
 import { useState, useEffect } from 'react';
-import { addCategory, getCategories, deleteCategory, reorderCategories } from '../firebase/firestore';
+import { addCategory, getCategories, deleteCategory, reorderCategories, updateCategory } from '../firebase/firestore';
 import { Category } from '../types';
 
 export const CategoryManager: React.FC = () => {
@@ -8,6 +8,8 @@ export const CategoryManager: React.FC = () => {
   const [isAdding, setIsAdding] = useState(false);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [editingCategoryId, setEditingCategoryId] = useState<string | null>(null);
+  const [editedCategoryName, setEditedCategoryName] = useState('');
 
   useEffect(() => {
     loadCategories();
@@ -22,6 +24,40 @@ export const CategoryManager: React.FC = () => {
       setError('Failed to load categories');
     } finally {
       setIsLoading(false);
+    }
+  };
+
+  const handleStartEditing = (category: Category) => {
+    setEditingCategoryId(category.id);
+    setEditedCategoryName(category.name);
+  };
+
+  const handleCategoryNameUpdate = async () => {
+    if (!editingCategoryId) return;
+    
+    const category = categories.find(c => c.id === editingCategoryId);
+    if (!category || editedCategoryName.trim() === category.name) {
+      setEditingCategoryId(null);
+      return;
+    }
+
+    setError(null);
+    try {
+      await updateCategory(editingCategoryId, { name: editedCategoryName.trim() });
+      await loadCategories();
+    } catch (err) {
+      console.error('Failed to update category name:', err);
+      setError('Failed to update category name');
+    } finally {
+      setEditingCategoryId(null);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleCategoryNameUpdate();
+    } else if (e.key === 'Escape') {
+      setEditingCategoryId(null);
     }
   };
 
@@ -113,7 +149,24 @@ export const CategoryManager: React.FC = () => {
             key={category.id}
             className="flex items-center justify-between py-2 group"
           >
-            <span className="text-sm text-gray-900">{category.name}</span>
+            {editingCategoryId === category.id ? (
+              <input
+                type="text"
+                value={editedCategoryName}
+                onChange={(e) => setEditedCategoryName(e.target.value)}
+                onBlur={handleCategoryNameUpdate}
+                onKeyDown={handleEditKeyDown}
+                className="flex-1 px-1 py-0.5 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-sm text-gray-900"
+                autoFocus
+              />
+            ) : (
+              <span 
+                onClick={() => handleStartEditing(category)}
+                className="text-sm text-gray-900 cursor-text hover:text-violet-600"
+              >
+                {category.name}
+              </span>
+            )}
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex gap-1">
                 <button

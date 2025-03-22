@@ -1,5 +1,13 @@
 import { useState, useEffect } from 'react';
-import { addStore, getStores, deleteStore, reorderStores, getUserPreferences, updateUserPreferences } from '../firebase/firestore';
+import { 
+  addStore, 
+  getStores, 
+  deleteStore, 
+  reorderStores, 
+  getUserPreferences, 
+  updateUserPreferences, 
+  updateStore 
+} from '../firebase/firestore';
 import { Store } from '../types';
 
 export const StoreManager: React.FC = () => {
@@ -9,6 +17,8 @@ export const StoreManager: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [defaultStore, setDefaultStore] = useState<string | null>(null);
+  const [editingStoreId, setEditingStoreId] = useState<string | null>(null);
+  const [editedStoreName, setEditedStoreName] = useState('');
 
   useEffect(() => {
     loadData();
@@ -124,6 +134,40 @@ export const StoreManager: React.FC = () => {
     }
   };
 
+  const handleStartEditing = (store: Store) => {
+    setEditingStoreId(store.id);
+    setEditedStoreName(store.name);
+  };
+
+  const handleStoreNameUpdate = async () => {
+    if (!editingStoreId) return;
+    
+    const store = stores.find(s => s.id === editingStoreId);
+    if (!store || editedStoreName.trim() === store.name) {
+      setEditingStoreId(null);
+      return;
+    }
+
+    setError(null);
+    try {
+      await updateStore(editingStoreId, { name: editedStoreName.trim() });
+      await loadData();
+    } catch (err) {
+      console.error('Failed to update store name:', err);
+      setError('Failed to update store name');
+    } finally {
+      setEditingStoreId(null);
+    }
+  };
+
+  const handleEditKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === 'Enter') {
+      handleStoreNameUpdate();
+    } else if (e.key === 'Escape') {
+      setEditingStoreId(null);
+    }
+  };
+
   if (isLoading) return <div>Loading stores...</div>;
 
   return (
@@ -169,12 +213,28 @@ export const StoreManager: React.FC = () => {
                 onChange={() => handleSetDefaultStore(store.id)}
                 className="rounded-full border-zinc-300 text-violet-600 focus:ring-violet-500"
               />
-              <label
-                htmlFor={`default-store-${store.id}`}
-                className="text-sm text-gray-900 cursor-pointer"
-              >
-                {store.name}
-              </label>
+              {editingStoreId === store.id ? (
+                <input
+                  type="text"
+                  value={editedStoreName}
+                  onChange={(e) => setEditedStoreName(e.target.value)}
+                  onBlur={handleStoreNameUpdate}
+                  onKeyDown={handleEditKeyDown}
+                  className="flex-1 px-1 py-0.5 border-0 border-b-2 border-violet-500 focus:ring-0 bg-transparent text-sm text-gray-900"
+                  autoFocus
+                />
+              ) : (
+                <label
+                  htmlFor={`default-store-${store.id}`}
+                  onClick={(e) => {
+                    e.preventDefault();
+                    handleStartEditing(store);
+                  }}
+                  className="text-sm text-gray-900 cursor-text hover:text-violet-600"
+                >
+                  {store.name}
+                </label>
+              )}
             </div>
             <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
               <div className="flex gap-1">

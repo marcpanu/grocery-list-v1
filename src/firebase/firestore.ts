@@ -317,6 +317,11 @@ export const reorderStores = async (stores: Store[]): Promise<void> => {
   await batch.commit();
 };
 
+export const updateStore = async (storeId: string, storeData: Partial<Store>): Promise<void> => {
+  const storeRef = doc(db, COLLECTIONS.STORES, storeId);
+  return updateDoc(storeRef, storeData);
+};
+
 // Category Operations
 export const addCategory = async (category: Omit<Category, 'id'>): Promise<Category> => {
   const categoriesRef = collection(db, COLLECTIONS.CATEGORIES);
@@ -353,6 +358,11 @@ export const reorderCategories = async (categories: Category[]): Promise<void> =
   });
   
   await batch.commit();
+};
+
+export const updateCategory = async (categoryId: string, categoryData: Partial<Category>): Promise<void> => {
+  const categoryRef = doc(db, COLLECTIONS.CATEGORIES, categoryId);
+  return updateDoc(categoryRef, categoryData);
 };
 
 // Shopping List Operations
