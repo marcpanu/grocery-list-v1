@@ -28,7 +28,8 @@ export interface ShoppingItem {
   category?: Category;
   store?: Store;
   checked: boolean;
-  addedAt: Timestamp;
+  addedAt: Date;
+  order: number;
 }
 
 export interface ShoppingList {

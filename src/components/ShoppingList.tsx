@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
 import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateItemInList } from '../firebase/firestore';
-import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode } from '../types/index';
+import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode, ShoppingItem } from '../types/index';
 import { AddItemModal } from './AddItemModal';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
 
@@ -99,16 +99,25 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
       items = items.filter(item => item.store?.id === currentStoreId);
     }
 
-    // Sort by category order
+    // Sort by category order, then by item order within categories
     return items.sort((a, b) => {
-      const orderA = a.category?.order ?? Number.MAX_SAFE_INTEGER;
-      const orderB = b.category?.order ?? Number.MAX_SAFE_INTEGER;
-      return orderA - orderB;
+      // First sort by category order
+      const categoryOrderA = a.category?.order ?? Number.MAX_SAFE_INTEGER;
+      const categoryOrderB = b.category?.order ?? Number.MAX_SAFE_INTEGER;
+      
+      if (categoryOrderA !== categoryOrderB) {
+        return categoryOrderA - categoryOrderB;
+      }
+      
+      // If same category, sort by item order
+      const itemOrderA = a.order ?? 0;
+      const itemOrderB = b.order ?? 0;
+      return itemOrderA - itemOrderB;
     });
   };
 
   const handleDragEnd = async (result: DropResult) => {
-    const { destination, draggableId } = result;
+    const { destination, source, draggableId } = result;
 
     // Drop was cancelled or dropped outside a droppable
     if (!destination || !list) return;
@@ -117,19 +126,100 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
     const item = list.items.find(item => item.id === draggableId);
     if (!item) return;
 
-    // Get the store ID from the droppable ID (format: "store-{storeId}")
-    const newStoreId = destination.droppableId.replace('store-', '');
-    const newStore = list.stores.find(store => store.id === newStoreId);
-
-    // If the store hasn't changed, do nothing
-    if (item.store?.id === newStore?.id) return;
+    // Parse the droppable IDs to get context
+    const [destType, ...destParts] = destination.droppableId.split('-');
+    const [sourceType, ...sourceParts] = source.droppableId.split('-');
 
     try {
-      // Update the item's store
-      await updateItemInList(list.id, item.id, { store: newStore });
-      refreshList();
+      const updates: Partial<ShoppingItem> = {};
+      let reorder = false;
+
+      // Handle different types of drops
+      if (destType === 'sequence') {
+        // Format: sequence-{storeId}-{categoryId}
+        const [destStoreId, destCategoryId] = destParts;
+        const [sourceStoreId, sourceCategoryId] = sourceParts;
+        
+        if (destStoreId && destStoreId !== sourceStoreId) {
+          const newStore = list.stores.find(s => s.id === destStoreId);
+          if (newStore) {
+            updates.store = newStore;
+          }
+        }
+        
+        if (destCategoryId && destCategoryId !== sourceCategoryId) {
+          const newCategory = list.categories.find(c => c.id === destCategoryId);
+          if (newCategory) {
+            updates.category = newCategory;
+          }
+        }
+
+        reorder = true;
+      } else if (destType === 'store' && destParts[0]) {
+        // Format: store-{storeId}
+        const newStore = list.stores.find(s => s.id === destParts[0]);
+        if (newStore && item.store?.id !== newStore.id) {
+          updates.store = newStore;
+        }
+      } else if (destType === 'category' && destParts[0]) {
+        // Format: category-{categoryId}
+        const newCategory = list.categories.find(c => c.id === destParts[0]);
+        if (newCategory && item.category?.id !== newCategory.id) {
+          updates.category = newCategory;
+        }
+      }
+
+      // If we have updates or need to reorder, apply them
+      if (Object.keys(updates).length > 0 || reorder) {
+        // Get all items in the destination container for reordering
+        const itemsInDestination = list.items.filter(i => {
+          if (destType === 'sequence') {
+            const [destStoreId, destCategoryId] = destParts;
+            return (destStoreId ? i.store?.id === destStoreId : !i.store) && 
+                   (destCategoryId ? i.category?.id === destCategoryId : !i.category);
+          } else if (destType === 'store') {
+            return destParts[0] ? i.store?.id === destParts[0] : !i.store;
+          } else {
+            return destParts[0] ? i.category?.id === destParts[0] : !i.category;
+          }
+        });
+
+        // Remove the dragged item from the array if it's there
+        const itemsWithoutDragged = itemsInDestination.filter(i => i.id !== item.id);
+        
+        // Insert the dragged item at the new position
+        const newItems = [
+          ...itemsWithoutDragged.slice(0, destination.index),
+          item,
+          ...itemsWithoutDragged.slice(destination.index)
+        ];
+
+        // Update the order field for all affected items
+        const orderUpdates = newItems.map((item, index) => ({
+          id: item.id,
+          updates: { order: index }
+        }));
+
+        // Apply updates to the dragged item
+        await updateItemInList(list.id, item.id, { 
+          ...updates, 
+          order: destination.index 
+        });
+
+        // If reordering, update the order of other items
+        if (reorder) {
+          await Promise.all(
+            orderUpdates
+              .filter(update => update.id !== item.id)
+              .map(update => updateItemInList(list.id, update.id, update.updates))
+          );
+        }
+
+        refreshList();
+      }
     } catch (err) {
-      console.error('Failed to update item store:', err);
+      console.error('Failed to update item:', err);
+      setError('Failed to update item');
     }
   };
 
@@ -192,12 +282,15 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
                         </h2>
                       </div>
                     </div>
+                    {/* Store droppable area */}
                     <Droppable droppableId={`store-${storeId}`}>
-                      {(provided) => (
+                      {(provided, snapshot) => (
                         <div 
                           ref={provided.innerRef}
                           {...provided.droppableProps}
-                          className="divide-y divide-zinc-100"
+                          className={`divide-y divide-zinc-100 ${
+                            snapshot.isDraggingOver ? 'bg-violet-50' : ''
+                          }`}
                         >
                           {Object.entries(categorizedItems).map(([categoryId, items]) => {
                             const category = list?.categories.find((c: Category) => c.id === categoryId);
@@ -208,19 +301,31 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
                                     {category?.name || 'Uncategorized'}
                                   </h3>
                                 </div>
-                                <div className="px-3 py-1">
-                                  <div className="space-y-1">
-                                    {items.map((item, index) => (
-                                      <ShoppingListItem
-                                        key={item.id}
-                                        item={item}
-                                        listId={list?.id || ''}
-                                        onUpdate={refreshList}
-                                        index={index}
-                                      />
-                                    ))}
-                                  </div>
-                                </div>
+                                {/* Sequence droppable area */}
+                                <Droppable droppableId={`sequence-${storeId}-${categoryId}`}>
+                                  {(seqProvided, seqSnapshot) => (
+                                    <div 
+                                      ref={seqProvided.innerRef}
+                                      {...seqProvided.droppableProps}
+                                      className={`px-3 py-1 ${
+                                        seqSnapshot.isDraggingOver ? 'bg-violet-50/50' : ''
+                                      }`}
+                                    >
+                                      <div className="space-y-1">
+                                        {items.map((item, index) => (
+                                          <ShoppingListItem
+                                            key={item.id}
+                                            item={item}
+                                            listId={list?.id || ''}
+                                            onUpdate={refreshList}
+                                            index={index}
+                                          />
+                                        ))}
+                                      </div>
+                                      {seqProvided.placeholder}
+                                    </div>
+                                  )}
+                                </Droppable>
                               </div>
                             );
                           })}
@@ -234,41 +339,43 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
             </div>
           ) : (
             <div className="space-y-3">
-              <Droppable droppableId="store-all">
-                {(provided) => (
-                  <div 
-                    ref={provided.innerRef}
-                    {...provided.droppableProps}
-                  >
-                    {Object.entries(itemsByCategory).map(([categoryId, items]) => {
-                      const category = list?.categories.find((c: Category) => c.id === categoryId);
-                      return (
-                        <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
-                          <div className="px-3 py-1.5 bg-zinc-50/50">
-                            <h3 className="text-xs font-medium text-zinc-700">
-                              {category?.name || 'Uncategorized'}
-                            </h3>
+              {Object.entries(itemsByCategory).map(([categoryId, items]) => {
+                const category = list?.categories.find((c: Category) => c.id === categoryId);
+                return (
+                  <div key={categoryId} className="bg-white rounded-lg shadow-sm overflow-hidden">
+                    <div className="px-3 py-1.5 bg-zinc-50/50">
+                      <h3 className="text-xs font-medium text-zinc-700">
+                        {category?.name || 'Uncategorized'}
+                      </h3>
+                    </div>
+                    {/* Category droppable area */}
+                    <Droppable droppableId={`category-${categoryId}`}>
+                      {(provided, snapshot) => (
+                        <div 
+                          ref={provided.innerRef}
+                          {...provided.droppableProps}
+                          className={`px-3 py-1 ${
+                            snapshot.isDraggingOver ? 'bg-violet-50/50' : ''
+                          }`}
+                        >
+                          <div className="space-y-1">
+                            {items.map((item, index) => (
+                              <ShoppingListItem
+                                key={item.id}
+                                item={item}
+                                listId={list?.id || ''}
+                                onUpdate={refreshList}
+                                index={index}
+                              />
+                            ))}
                           </div>
-                          <div className="px-3 py-1">
-                            <div className="space-y-1">
-                              {items.map((item, index) => (
-                                <ShoppingListItem
-                                  key={item.id}
-                                  item={item}
-                                  listId={list?.id || ''}
-                                  onUpdate={refreshList}
-                                  index={index}
-                                />
-                              ))}
-                            </div>
-                          </div>
+                          {provided.placeholder}
                         </div>
-                      );
-                    })}
-                    {provided.placeholder}
+                      )}
+                    </Droppable>
                   </div>
-                )}
-              </Droppable>
+                );
+              })}
             </div>
           )}
         </DragDropContext>
