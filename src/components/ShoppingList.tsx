@@ -1,10 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { ShoppingListItem } from './ShoppingListItem';
-import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateItemInList, updateShoppingList } from '../firebase/firestore';
+import { createShoppingList, getShoppingList, addItemToList, getUserShoppingLists, updateItemInList } from '../firebase/firestore';
 import { ShoppingList as ShoppingListType, NewShoppingItem, Category, Store, ViewMode, ShoppingItem } from '../types/index';
 import { AddItemModal } from './AddItemModal';
 import { DragDropContext, Droppable, DropResult } from '@hello-pangea/dnd';
-import ConfirmDialog from './common/ConfirmDialog';
 
 // Since this is a single-user app, we'll use a constant ID
 const USER_ID = 'default';
@@ -29,7 +28,6 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
-  const [isClearConfirmOpen, setIsClearConfirmOpen] = useState(false);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -84,18 +82,6 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
       refreshList();
     } catch (err) {
       console.error('Failed to add item:', err);
-    }
-  };
-
-  const handleClearList = async () => {
-    if (!list?.id) return;
-
-    try {
-      await updateShoppingList(list.id, { items: [] });
-      refreshList();
-    } catch (err) {
-      console.error('Failed to clear list:', err);
-      setError('Failed to clear list');
     }
   };
 
@@ -277,22 +263,6 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
 
   return (
     <div className="min-h-screen bg-zinc-50 pb-16">
-      {/* Header with view options and clear button */}
-      <div className="px-4 pt-4 pb-2 flex justify-between items-center">
-        <div className="flex items-center gap-2">
-          {/* Add your existing view options here */}
-        </div>
-        <button
-          onClick={() => setIsClearConfirmOpen(true)}
-          className="inline-flex items-center px-3 py-1.5 text-sm font-medium text-red-600 hover:text-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500"
-        >
-          <svg className="w-4 h-4 mr-1.5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
-          </svg>
-          Clear List
-        </button>
-      </div>
-
       {/* List Content */}
       <div className="px-4 pt-4">
         <DragDropContext onDragEnd={handleDragEnd}>
@@ -411,6 +381,16 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
         </DragDropContext>
       </div>
 
+      {/* Floating Action Button */}
+      <button
+        onClick={() => setIsAddModalOpen(true)}
+        className="fixed right-4 bottom-20 inline-flex items-center justify-center w-14 h-14 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+      >
+        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
+        </svg>
+      </button>
+
       {/* Add Item Modal */}
       <AddItemModal
         isOpen={isAddModalOpen}
@@ -427,27 +407,6 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
         selectedStore={selectedStore}
         setSelectedStore={setSelectedStore}
       />
-
-      {/* Clear List Confirmation Dialog */}
-      <ConfirmDialog
-        isOpen={isClearConfirmOpen}
-        onClose={() => setIsClearConfirmOpen(false)}
-        onConfirm={handleClearList}
-        title="Clear Shopping List"
-        message="Are you sure you want to clear the entire shopping list? This action cannot be undone."
-        confirmText="Clear List"
-        cancelText="Cancel"
-      />
-
-      {/* Floating Action Button */}
-      <button
-        onClick={() => setIsAddModalOpen(true)}
-        className="fixed right-4 bottom-20 inline-flex items-center justify-center w-14 h-14 rounded-full bg-violet-600 text-white shadow-lg hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
-      >
-        <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 6v6m0 0v6m0-6h6m-6 0H6" />
-        </svg>
-      </button>
     </div>
   );
 }; 

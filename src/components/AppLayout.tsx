@@ -6,16 +6,18 @@ import { RecipeList, RecipeListRefType } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
 import { ViewMode, Store } from '../types';
-import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrateShoppingListSettings } from '../firebase/firestore';
+import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrateShoppingListSettings, clearList } from '../firebase/firestore';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
   EyeIcon,
   EyeSlashIcon,
   FunnelIcon,
+  TrashIcon
 } from '@heroicons/react/24/outline';
 import { StoreSelector } from './StoreSelector';
 import MealPlanPage, { MealPlanRefType } from '../pages/MealPlanPage';
+import { ConfirmClearListDialog } from './common/ConfirmClearListDialog';
 
 // Expose addTestRecipes to window for development
 if (process.env.NODE_ENV === 'development') {
@@ -23,7 +25,7 @@ if (process.env.NODE_ENV === 'development') {
 }
 
 // Since this is a single-user app, we'll use a constant ID
-const USER_ID = 'default-user';
+const USER_ID = 'default';
 
 // Local storage key for active tab
 const ACTIVE_TAB_STORAGE_KEY = 'shopping-list-active-tab';
@@ -47,11 +49,15 @@ export const AppLayout: React.FC = () => {
   const [currentStoreId, setCurrentStoreId] = useState<string>('all');
   const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [showStoreFilter, setShowStoreFilter] = useState(false);
+  const [refreshTimestamp, setRefreshTimestamp] = useState(Date.now());
 
   // Reference to MealPlanPage component to reset detail views
   const mealPlanRef = useRef<MealPlanRefType>(null);
   // Reference to RecipeList component to reset detail views
   const recipeListRef = useRef<RecipeListRefType>(null);
+
+  const [showClearListConfirm, setShowClearListConfirm] = useState(false);
+  const [clearingList, setClearingList] = useState(false);
 
   // Save active tab to localStorage whenever it changes
   useEffect(() => {
@@ -65,26 +71,28 @@ export const AppLayout: React.FC = () => {
         // Migrate any existing settings from shopping list to user preferences
         await migrateShoppingListSettings();
         
-        // Load user preferences for view settings
-        const userPrefs = await getUserPreferences();
-        if (userPrefs) {
-          setViewMode(userPrefs.shoppingListViewMode);
-          setShowCompleted(userPrefs.shoppingListShowCompleted);
+        // Get the user's shopping list first
+        const userLists = await getUserShoppingLists(USER_ID);
+        if (userLists.length > 0) {
+          const list = userLists[0];
+          setListId(list.id);
           
-          // Set current store and selected store object
-          setCurrentStoreId(userPrefs.shoppingListCurrentStore || 'all');
-          
-          // Get shopping list to find store object if needed
-          if (userPrefs.shoppingListCurrentStore && userPrefs.shoppingListCurrentStore !== 'all') {
-            const userLists = await getUserShoppingLists(USER_ID);
-            if (userLists.length > 0) {
-              const list = userLists[0];
-              setListId(list.id);
+          // Load user preferences for view settings
+          const userPrefs = await getUserPreferences();
+          if (userPrefs) {
+            setViewMode(userPrefs.shoppingListViewMode);
+            setShowCompleted(userPrefs.shoppingListShowCompleted);
+            
+            // Set current store and selected store object
+            setCurrentStoreId(userPrefs.shoppingListCurrentStore || 'all');
+            
+            // Find the store object that matches the current store ID if needed
+            if (userPrefs.shoppingListCurrentStore && userPrefs.shoppingListCurrentStore !== 'all') {
               // Find the store object that matches the current store ID
               setSelectedStore(list.stores.find(s => s.id === userPrefs.shoppingListCurrentStore));
+            } else {
+              setSelectedStore(undefined);
             }
-          } else {
-            setSelectedStore(undefined);
           }
         }
       } catch (err) {
@@ -172,6 +180,34 @@ export const AppLayout: React.FC = () => {
     setActiveTab(tab);
   };
 
+  const handleClearList = async () => {
+    if (!listId) {
+      console.error('No list ID available');
+      return;
+    }
+    
+    console.log('Clearing list:', listId);
+    setClearingList(true);
+    
+    try {
+      await clearList(listId);
+      setShowClearListConfirm(false);
+      
+      // Force a re-render of the shopping list
+      const userLists = await getUserShoppingLists(USER_ID);
+      if (userLists.length > 0) {
+        setListId(userLists[0].id);
+      }
+      
+      // Update refresh timestamp to force a complete re-render
+      setRefreshTimestamp(Date.now());
+    } catch (err) {
+      console.error('Failed to clear list:', err);
+    } finally {
+      setClearingList(false);
+    }
+  };
+
   const renderContent = () => {
     switch (activeTab) {
       case 'recipes':
@@ -249,19 +285,11 @@ export const AppLayout: React.FC = () => {
                   </div>
 
                   <button
-                    onClick={() => handleShowCompletedChange(!showCompleted)}
-                    className={`p-1.5 rounded-md transition-colors duration-200 ${
-                      showCompleted
-                        ? 'text-zinc-600 hover:text-zinc-900 hover:bg-zinc-100'
-                        : 'text-violet-600 bg-violet-50'
-                    }`}
-                    title={showCompleted ? 'Hide completed items' : 'Show completed items'}
+                    onClick={() => setShowClearListConfirm(true)}
+                    className="p-1.5 rounded-md text-zinc-600 hover:text-red-600 hover:bg-red-50 transition-colors duration-200"
+                    title="Clear list"
                   >
-                    {showCompleted ? (
-                      <EyeIcon className="w-5 h-5" />
-                    ) : (
-                      <EyeSlashIcon className="w-5 h-5" />
-                    )}
+                    <TrashIcon className="w-5 h-5" />
                   </button>
                 </div>
               }
@@ -270,7 +298,14 @@ export const AppLayout: React.FC = () => {
               viewMode={viewMode}
               showCompleted={showCompleted}
               currentStoreId={currentStoreId}
-              key={`list-${currentStoreId}`} // Force re-render when store changes
+              key={`list-${currentStoreId}-${refreshTimestamp}`} // Add refresh timestamp to force re-render
+            />
+
+            <ConfirmClearListDialog
+              isOpen={showClearListConfirm}
+              onClose={() => setShowClearListConfirm(false)}
+              onConfirm={handleClearList}
+              isLoading={clearingList}
             />
           </>
         );

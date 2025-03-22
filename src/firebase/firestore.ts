@@ -1245,4 +1245,12 @@ export const migrateShoppingListSettings = async (): Promise<void> => {
   } catch (error) {
     console.error('Error migrating shopping list settings:', error);
   }
+};
+
+export const clearList = async (listId: string): Promise<void> => {
+  const listRef = doc(db, COLLECTIONS.SHOPPING_LISTS, listId);
+  await updateDoc(listRef, {
+    items: [],
+    updatedAt: Timestamp.now()
+  });
 }; 
