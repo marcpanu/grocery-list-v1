@@ -5,8 +5,8 @@ import { Settings } from './Settings';
 import { RecipeList, RecipeListRefType } from './recipes/RecipeList';
 import { RecipeDetail } from './recipes/RecipeDetail';
 import { addTestRecipes } from '../scripts/addTestRecipes';
-import { ViewMode, Store } from '../types';
-import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrateShoppingListSettings, clearList } from '../firebase/firestore';
+import { ViewMode, Store, NewShoppingItem } from '../types';
+import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrateShoppingListSettings, clearList, addItemToList, getCategories } from '../firebase/firestore';
 import { 
   Squares2X2Icon,
   ListBulletIcon,
@@ -191,6 +191,25 @@ export const AppLayout: React.FC = () => {
     
     try {
       await clearList(listId);
+      
+      // Get the default store and first category
+      const userPrefs = await getUserPreferences();
+      const defaultStore = userPrefs?.defaultStore;
+      const categories = await getCategories();
+      const defaultCategory = categories[0]; // First category is the default
+      
+      // Add a default empty item
+      const defaultItem: NewShoppingItem = {
+        name: '',
+        quantity: 1,
+        unit: 'piece',
+        category: defaultCategory,
+        store: defaultStore ? { id: defaultStore } as Store : undefined,
+        checked: false,
+        order: 0
+      };
+      
+      await addItemToList(listId, defaultItem);
       setShowClearListConfirm(false);
       
       // Force a re-render of the shopping list

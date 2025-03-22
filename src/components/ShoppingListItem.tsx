@@ -200,10 +200,12 @@ export const ShoppingListItem: React.FC<ShoppingListItemProps> = ({
                     className={`text-sm font-medium cursor-text transition-colors flex-1 flex items-center ${
                       item.checked 
                         ? 'line-through text-zinc-400' 
-                        : 'text-zinc-900 hover:text-violet-600'
+                        : item.name 
+                          ? 'text-zinc-900 hover:text-violet-600'
+                          : 'text-zinc-400 italic hover:text-violet-600'
                     }`}
                   >
-                    <span className="truncate">{item.name}</span>
+                    <span className="truncate">{item.name || 'Add an item'}</span>
                   </span>
                 )}
               </div>
