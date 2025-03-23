@@ -50,19 +50,26 @@ export interface WeeklyTemplate {
 export interface AddMealData {
   name: string;
   description?: string;
-  mealTypes?: string[];
-  mealPlanMeal?: MealPlanMealType;
-  days?: string[];
+  mealTypes: string[];
   servings: number;
   prepTime?: string;
   cookTime?: string;
   totalTime?: string;
-  ingredients?: any[];
-  instructions?: string[];
+  ingredients: {
+    name: string;
+    quantity: string | number;
+    unit?: string;
+    notes?: string;
+  }[];
+  instructions: string[];
   cuisine?: string[];
   rating?: number;
   recipeId?: string;
   weekId: string;
+  notes?: string;
+  isScalable?: boolean;
+  mealPlanMeal?: MealPlanMealType;
+  days?: string[];
 }
 
 export interface ScheduleMealData {
@@ -73,3 +80,24 @@ export interface ScheduleMealData {
   recipeId: string;
   weekId: string;
 }
+
+export interface WeekTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  meals: TemplateMeal[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+export interface TemplateMeal {
+  name: string;
+  mealPlanMeal: MealPlanMealType;
+  days: string[];
+  servings: number;
+  recipeId?: string;
+  description?: string;
+}
+
+export type TemplateApplicationMode = 'replace' | 'merge';

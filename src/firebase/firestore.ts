@@ -34,7 +34,9 @@ import {
   MealPlan,
   PantryItem,
   Week,
-  Meal
+  Meal,
+  WeekTemplate,
+  TemplateApplicationMode
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
 import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
@@ -42,6 +44,7 @@ import { calculateScalingFactor, updateWeekScalingFactors } from '../utils/scali
 
 // Collection names
 const COLLECTIONS = {
+  USERS: 'users',
   RECIPES: 'recipes',
   MEAL_PLANS: 'mealPlans',
   WEEKS: 'weeks',
@@ -49,7 +52,8 @@ const COLLECTIONS = {
   SHOPPING_LISTS: 'shoppingLists',
   STORES: 'stores',
   CATEGORIES: 'categories',
-  USER_PREFERENCES: 'userPreferences'
+  USER_PREFERENCES: 'userPreferences',
+  WEEK_TEMPLATES: 'weekTemplates'
 } as const;
 
 // User data collection reference
@@ -1486,4 +1490,147 @@ export const clearList = async (listId: string): Promise<void> => {
     items: [],
     updatedAt: Timestamp.now()
   });
+};
+
+// Week Template Management Functions
+
+/**
+ * Save the current week as a template
+ */
+export const saveWeekAsTemplate = async (
+  userId: string,
+  weekId: string,
+  name: string,
+  description?: string
+): Promise<WeekTemplate> => {
+  // Get all meals for the week
+  const meals = await getMealsByWeek(userId, weekId);
+  
+  // Create template data
+  const now = Timestamp.now();
+  const templateData: Omit<WeekTemplate, 'id'> = {
+    userId,
+    name,
+    description: description || '', // Convert undefined to empty string
+    meals: meals.map(meal => ({
+      name: meal.name,
+      description: meal.description || '', // Convert undefined to empty string
+      mealPlanMeal: meal.mealPlanMeal,
+      days: meal.days,
+      servings: meal.servings,
+      recipeId: meal.recipeId // Keep as string | undefined
+    })),
+    createdAt: now.toDate(),
+    updatedAt: now.toDate()
+  };
+
+  // Add the template to Firestore
+  const templateRef = collection(db, COLLECTIONS.WEEK_TEMPLATES);
+  const docRef = await addDoc(templateRef, templateData);
+  
+  return {
+    id: docRef.id,
+    ...templateData
+  };
+};
+
+/**
+ * Get all week templates for a user
+ */
+export const getWeekTemplates = async (userId: string): Promise<WeekTemplate[]> => {
+  const templatesRef = collection(db, COLLECTIONS.WEEK_TEMPLATES);
+  const q = query(
+    templatesRef,
+    where('userId', '==', userId),
+    orderBy('createdAt', 'desc')
+  );
+
+  const snapshot = await getDocs(q);
+  return snapshot.docs.map(doc => ({
+    id: doc.id,
+    ...doc.data()
+  })) as WeekTemplate[];
+};
+
+/**
+ * Delete a week template
+ */
+export const deleteWeekTemplate = async (templateId: string): Promise<void> => {
+  const templateRef = doc(db, COLLECTIONS.WEEK_TEMPLATES, templateId);
+  await deleteDoc(templateRef);
+};
+
+/**
+ * Clear all meals from a week
+ */
+export const clearWeekMeals = async (userId: string, weekId: string): Promise<void> => {
+  const meals = await getMealsByWeek(userId, weekId);
+  
+  // Delete all meals in parallel
+  await Promise.all(
+    meals.map(meal => 
+      deleteDoc(doc(db, COLLECTIONS.MEALS, meal.id))
+    )
+  );
+};
+
+/**
+ * Apply a template to a week
+ */
+export const applyTemplateToWeek = async (
+  templateId: string,
+  weekId: string,
+  mode: TemplateApplicationMode
+): Promise<void> => {
+  // Get the template
+  const templateRef = doc(db, COLLECTIONS.WEEK_TEMPLATES, templateId);
+  const templateDoc = await getDoc(templateRef);
+  
+  if (!templateDoc.exists()) {
+    throw new Error('Template not found');
+  }
+  
+  const template = templateDoc.data() as WeekTemplate;
+  
+  // If mode is 'replace', clear existing meals
+  if (mode === 'replace') {
+    const week = await getDoc(doc(db, COLLECTIONS.WEEKS, weekId));
+    if (!week.exists()) {
+      throw new Error('Week not found');
+    }
+    await clearWeekMeals(week.data().userId, weekId);
+  }
+  
+  // Get the week to verify it exists and get userId
+  const weekRef = doc(db, COLLECTIONS.WEEKS, weekId);
+  const weekDoc = await getDoc(weekRef);
+  
+  if (!weekDoc.exists()) {
+    throw new Error('Week not found');
+  }
+  
+  const week = weekDoc.data();
+  const now = Timestamp.now();
+  
+  // Add all template meals to the week
+  const mealPromises = template.meals.map(async templateMeal => {
+    const mealData: Omit<Meal, 'id'> = {
+      userId: week.userId,
+      weekId,
+      name: templateMeal.name,
+      mealPlanMeal: templateMeal.mealPlanMeal,
+      days: templateMeal.days,
+      servings: templateMeal.servings,
+      recipeId: templateMeal.recipeId,
+      description: templateMeal.description,
+      createdAt: now.toDate()
+    };
+    
+    await addDoc(collection(db, COLLECTIONS.MEALS), {
+      ...mealData,
+      createdAt: now
+    });
+  });
+  
+  await Promise.all(mealPromises);
 }; 

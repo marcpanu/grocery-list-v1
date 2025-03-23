@@ -1,7 +1,7 @@
 import React, { useState, useEffect, forwardRef, useImperativeHandle } from 'react';
 import { BookOpenIcon, PencilSquareIcon, DocumentTextIcon, PlusIcon, DocumentDuplicateIcon, ShoppingCartIcon, PlusCircleIcon } from '@heroicons/react/24/outline';
 import { Recipe } from '../types/recipe';
-import { MealPlan, Meal, MealPlanMealType, Week } from '../types/mealPlan';
+import { MealPlan, Meal, MealPlanMealType, Week, WeekTemplate } from '../types/mealPlan';
 import RecipeSearchModal from '../components/mealPlan/RecipeSearchModal';
 import { AddMealModal } from '../components/mealPlan/AddMealModal';
 import { AddMealData } from '../types/mealPlan';
@@ -20,8 +20,13 @@ import {
   updateMealDetails, 
   getCurrentWeek, 
   getMealsByWeek, 
-  setCurrentWeek as updateCurrentWeekDb, // Rename to avoid conflict
-  getWeeks
+  setCurrentWeek as updateCurrentWeekDb,
+  getWeeks,
+  getWeekTemplates,
+  applyTemplateToWeek,
+  createOrGetWeek,
+  addMealToWeek,
+  addRecipe
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -30,13 +35,13 @@ import { useRecipeImport } from '../hooks/useRecipeImport';
 import { WeeklyCalendarView } from '../components/mealPlan/WeeklyCalendarView';
 import { DayDetails } from '../components/mealPlan/DayDetails';
 import { PageHeader } from '../components/PageHeader';
-import { addRecipe } from '../firebase/firestore';
-import ConfirmDialog from '../components/common/ConfirmDialog';
 import { ConfirmGroceryListDialog } from '../components/common/ConfirmGroceryListDialog';
 import { toast, Toaster } from 'react-hot-toast';
 import { AddWeekModal } from '../components/mealPlan/AddWeekModal';
 import { MealDetailModal } from '../components/mealPlan/MealDetailModal';
 import { RecipeDetail } from '../components/recipes/RecipeDetail';
+import { NewPlanModal } from '../components/mealPlan/NewPlanModal';
+import ConfirmDialog from '../components/common/ConfirmDialog';
 
 const DEFAULT_USER_ID = 'default';
 
@@ -71,6 +76,10 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
   const [showRecipeDetailModal, setShowRecipeDetailModal] = useState(false);
   const [selectedRecipeId, setSelectedRecipeId] = useState<string | null>(null);
   const [quickAddSelectedDays, setQuickAddSelectedDays] = useState<string[]>([]);
+  const [templates, setTemplates] = useState<WeekTemplate[]>([]);
+  const [isLoadingTemplates, setIsLoadingTemplates] = useState(false);
+  const [showNewPlanModal, setShowNewPlanModal] = useState(false);
+  const [isApplyingTemplate, setIsApplyingTemplate] = useState(false);
 
   // Use the recipe import hook
   const {
@@ -143,6 +152,23 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     loadMealPlans();
   }, []);
 
+  useEffect(() => {
+    const loadTemplates = async () => {
+      try {
+        setIsLoadingTemplates(true);
+        const userTemplates = await getWeekTemplates(DEFAULT_USER_ID);
+        setTemplates(userTemplates);
+      } catch (error) {
+        console.error('Failed to load templates:', error);
+        toast.error('Failed to load week templates');
+      } finally {
+        setIsLoadingTemplates(false);
+      }
+    };
+
+    loadTemplates();
+  }, []);
+
   const handleRecipeSelect = (recipe: Recipe) => {
     setSelectedRecipe(recipe);
     setShowRecipeSearch(false);
@@ -201,96 +227,99 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     }
   };
 
-  const handleAddMeal = async (data: Recipe | AddMealData) => {
+  interface AddMealFormData extends Omit<AddMealData, 'ingredients' | 'instructions'> {
+    ingredients: {
+      name: string;
+      quantity: string | number;
+      unit?: string;
+      notes?: string;
+    }[];
+    instructions: string[];
+  }
+
+  const handleAddMeal = async (data: Recipe | AddMealFormData) => {
     try {
-      setError(null);
-      setSuccess(null);
       setIsLoading(true);
-      const now = Timestamp.now();
-
-      // If we don't have a selectedRecipe and data is AddMealData with ingredients, create a recipe
-      let recipeId = selectedRecipe?.id;
-      let createdRecipe: Recipe | null = null;
       
-      if (!selectedRecipe && 'ingredients' in data && data.ingredients && data.ingredients.length > 0) {
-        // Creating a new recipe from the meal plan data
-        const newRecipe = await addRecipe({
+      // If this is a new recipe, create it first
+      let recipeId: string;
+      if ('id' in data) {
+        // If data is a Recipe, use its ID
+        recipeId = data.id;
+        
+        // Create the meal for an existing recipe
+        const mealData: Omit<Meal, 'id' | 'userId' | 'weekId' | 'createdAt'> = {
           name: data.name,
-          description: data.description ?? null,
-          prepTime: typeof data.prepTime === 'string' ? parseInt(data.prepTime) || null : null,
-          cookTime: typeof data.cookTime === 'string' ? parseInt(data.cookTime) || null : null,
-          totalTime: null,
-          displayTotalTime: "unknown", // This will be calculated properly when saved
+          description: data.description || '',
+          mealPlanMeal: 'dinner', // Default to dinner for existing recipes
+          days: [], // Will be set by the meal planner
           servings: data.servings,
-          ingredients: data.ingredients.map((ing: any) => ({
-            name: ing.name,
-            quantity: ing.quantity,
-            unit: ing.unit ?? null,
-            notes: ing.notes ?? null
-          })),
-          instructions: data.instructions?.map((instruction: any) => ({
-            order: 1,
-            instruction: typeof instruction === 'string' ? instruction : instruction.instruction
-          })) || [],
-          imageUrl: null,
-          notes: null,
-          mealTypes: data.mealTypes || [], // Ensure it's not undefined
-          cuisine: data.cuisine ?? null,
-          rating: data.rating ?? null,
-          dateAdded: now.toDate(),
-          isFavorite: false,
-          source: null
-        });
-        
-        recipeId = newRecipe.id;
-        createdRecipe = newRecipe;
-        
-        // After creating the recipe, show the schedule meal modal
-        if (createdRecipe) {
-          setSelectedRecipe(createdRecipe);
-          setShowAddMealModal(false);
-          setShowScheduleMealModal(true);
-          setIsLoading(false);
-          return;
-        }
-      }
-
-      // For the existing "Quick Add" flow, continue as before
-      if ('mealPlanMeal' in data && !createdRecipe) {
-        // Create the meal plan entry
-        const mealPlanData = {
-          userId: DEFAULT_USER_ID,
-          meals: [{
-            name: data.name,
-            description: data.description ?? null,
-            mealPlanMeal: data.mealPlanMeal,
-            days: data.days,
-            servings: data.servings,
-            recipeId: recipeId ?? null,
-            createdAt: now
-          }],
-          createdAt: now,
-          updatedAt: now,
+          recipeId: recipeId
         };
 
-        await addMealPlan(DEFAULT_USER_ID, mealPlanData);
+        await addMealToWeek(DEFAULT_USER_ID, currentWeek?.id || '', mealData);
         
-        // Add a small delay to ensure Firestore has processed the update
-        await new Promise(resolve => setTimeout(resolve, 500));
+        // Refresh the week data
+        if (currentWeek) {
+          await loadWeekData(currentWeek.id);
+        }
+        toast.success('Meal added successfully!');
+      } else {
+        // If this is AddMealData and we need to create a recipe
+        if (!data.recipeId) {
+          const recipeData: Omit<Recipe, 'id'> = {
+            name: data.name,
+            ingredients: data.ingredients.map(ing => ({
+              name: ing.name,
+              quantity: ing.quantity,
+              unit: ing.unit || null,
+              notes: ing.notes || null
+            })),
+            instructions: data.instructions.map((instruction, index) => ({
+              order: index + 1,
+              instruction
+            })),
+            servings: data.servings,
+            isScalable: data.isScalable || false,
+            notes: data.notes || '',
+            mealTypes: data.mealTypes || [],
+            dateAdded: new Date(),
+            description: null,
+            prepTime: data.prepTime ? parseInt(data.prepTime) : null,
+            cookTime: data.cookTime ? parseInt(data.cookTime) : null,
+            totalTime: data.totalTime ? parseInt(data.totalTime) : null,
+            displayTotalTime: data.totalTime || '',
+            imageUrl: null,
+            cuisine: data.cuisine || null,
+            rating: data.rating || null,
+            isFavorite: false,
+            source: null
+          };
+          const newRecipe = await addRecipe(recipeData);
+          recipeId = newRecipe.id;
+        } else {
+          recipeId = data.recipeId;
+        }
+
+        // Now create the meal
+        const mealData: Omit<Meal, 'id' | 'userId' | 'weekId' | 'createdAt'> = {
+          name: data.name,
+          description: data.description || '',
+          mealPlanMeal: data.mealPlanMeal || 'dinner',
+          days: data.days || [],
+          servings: data.servings,
+          recipeId: recipeId
+        };
+
+        await addMealToWeek(DEFAULT_USER_ID, data.weekId, mealData);
         
-        // Refresh meal plans
-        const plans = await getUserMealPlans(DEFAULT_USER_ID);
-        setMealPlans(plans);
-        setSuccess('Meal added successfully!');
-        
-        // Reset states on success
-        setSelectedRecipe(undefined);
-        setShowAddMealModal(false);
-        setShowQuickAddModal(false);
+        // Refresh the week data
+        await loadWeekData(data.weekId);
+        toast.success('Meal added successfully!');
       }
     } catch (error) {
-      console.error('Failed to add meal:', error);
-      setError('Failed to add meal. Please try again.');
+      console.error('Error adding meal:', error);
+      toast.error('Failed to add meal');
     } finally {
       setIsLoading(false);
     }
@@ -349,9 +378,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     }
     
     // Use the selectedDays state instead of getting them from form
-    const selectedDays = quickAddSelectedDays;
-
-    if (selectedDays.length === 0) {
+    if (quickAddSelectedDays.length === 0) {
       setError('Please select at least one day');
       return;
     }
@@ -367,13 +394,15 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     const servings = Number(formData.get('servings'));
     
     // Create a meal with default empty arrays for optional fields
-    const newMeal: AddMealData = {
+    const newMeal: AddMealFormData = {
       name,
       mealPlanMeal,
-      days: selectedDays,
+      days: quickAddSelectedDays,
       servings: isNaN(servings) ? 1 : servings,
       weekId,
-      mealTypes: []
+      mealTypes: [],
+      ingredients: [],
+      instructions: []
     };
     
     handleAddMeal(newMeal);
@@ -717,6 +746,102 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     setSelectedRecipeId(null);
   };
 
+  const handleAddWeek = async () => {
+    try {
+      setIsLoading(true);
+      
+      // Create a new week
+      const date = new Date();
+      const week = await createOrGetWeek(DEFAULT_USER_ID, date);
+      
+      // Set as current week and load data
+      await updateCurrentWeekDb(DEFAULT_USER_ID, week.id);
+      await loadWeekData(week.id);
+      
+      toast.success('New week created');
+    } catch (error) {
+      console.error('Failed to create new week:', error);
+      toast.error('Failed to create new week');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleCreateFromTemplate = async (templateId: string) => {
+    try {
+      setIsApplyingTemplate(true);
+      
+      // Create a new week
+      const date = new Date();
+      const week = await createOrGetWeek(DEFAULT_USER_ID, date);
+      
+      // Apply the template
+      await applyTemplateToWeek(templateId, week.id, 'replace');
+      
+      // Set as current week and load data
+      await updateCurrentWeekDb(DEFAULT_USER_ID, week.id);
+      await loadWeekData(week.id);
+      
+      toast.success('Week created from template');
+    } catch (error) {
+      console.error('Failed to create week from template:', error);
+      toast.error('Failed to create week from template');
+    } finally {
+      setIsApplyingTemplate(false);
+    }
+  };
+
+  const handleTemplateCreated = async () => {
+    try {
+      setIsLoadingTemplates(true);
+      const userTemplates = await getWeekTemplates(DEFAULT_USER_ID);
+      setTemplates(userTemplates);
+      toast.success('Template saved successfully');
+    } catch (error) {
+      console.error('Failed to refresh templates:', error);
+      toast.error('Failed to refresh templates');
+    } finally {
+      setIsLoadingTemplates(false);
+    }
+  };
+
+  const handleAddRecipe = async (recipe: Recipe) => {
+    try {
+      setIsLoading(true);
+      const recipeData: Omit<Recipe, 'id'> = {
+        name: recipe.name,
+        description: recipe.description,
+        prepTime: recipe.prepTime,
+        cookTime: recipe.cookTime,
+        totalTime: recipe.totalTime,
+        displayTotalTime: recipe.displayTotalTime,
+        servings: recipe.servings,
+        ingredients: recipe.ingredients.map(ing => ({
+          name: ing.name,
+          quantity: ing.quantity,
+          unit: ing.unit,
+          notes: ing.notes
+        })),
+        instructions: recipe.instructions,
+        imageUrl: recipe.imageUrl,
+        notes: recipe.notes,
+        mealTypes: recipe.mealTypes,
+        cuisine: recipe.cuisine,
+        rating: recipe.rating,
+        dateAdded: new Date(),
+        isFavorite: false,
+        source: recipe.source,
+        isScalable: recipe.isScalable || false
+      };
+      
+      const newRecipeId = await addRecipe(recipeData);
+      return newRecipeId;
+    } catch (error) {
+      console.error('Failed to add recipe:', error);
+      throw error;
+    }
+  };
+
   // Expose a reset function to parent components
   useImperativeHandle(ref, () => ({
     resetDetailViews: () => {
@@ -743,7 +868,11 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     <div className="min-h-full bg-zinc-50">
       <PageHeader 
         title="Meal Planning"
-        actions={null}
+        actions={
+          <div className="flex items-center space-x-4">
+            {/* Remove the duplicate Add Week button */}
+          </div>
+        }
       />
 
       <div className="container mx-auto px-4 py-8">
@@ -762,7 +891,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         <div className="bg-white rounded-lg shadow p-3 mb-3">
           <div className="flex items-center justify-between mb-1">
             <div className="flex items-center gap-2">
-              <h2 className="text-base font-semibold">Timeline</h2>
+              <h2 className="text-lg font-medium">Timeline</h2>
             </div>
             <div className="flex items-center gap-2">
               <button 
@@ -840,31 +969,15 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         
         {/* Weekly Calendar */}
         <div className="bg-white rounded-lg shadow p-3 md:p-4 mb-4">
-          <div className="flex items-center justify-between mb-3">
-            <h2 className="text-base font-semibold">Weekly Overview</h2>
-            {/* Current week indicator - using safe date parsing */}
-            <span className="text-xs text-zinc-500">
-              {currentWeek?.startDate ? (
-                (() => {
-                  // Parse date safely to avoid timezone issues
-                  const parts = currentWeek.startDate.split('-').map(Number);
-                  const weekStartDate = new Date(parts[0], parts[1] - 1, parts[2]);
-                  return `Week of ${weekStartDate.toLocaleDateString(undefined, { 
-                    month: 'short', 
-                    day: 'numeric', 
-                    year: 'numeric' 
-                  })}`;
-                })()
-              ) : 'No week selected'}
-            </span>
-          </div>
-          
           <WeeklyCalendarView
             mealPlans={mealPlans}
             isLoading={isLoading}
             selectedDate={selectedDay}
             onDateSelect={setSelectedDay}
-            meals={meals} // Pass the meals directly to the component
+            meals={meals}
+            weekId={currentWeek?.id ?? ''}
+            userId={DEFAULT_USER_ID}
+            onTemplateCreated={handleTemplateCreated}
           />
           
           {/* Add All to Grocery List button */}
@@ -966,6 +1079,10 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
                   <span>Quick Add</span>
                 </button>
                 <button
+                  onClick={() => {
+                    setShowActionModal(false);
+                    setShowNewPlanModal(true);
+                  }}
                   className="w-full flex items-center gap-3 px-4 py-3 text-left text-gray-700 hover:bg-gray-50 rounded-lg"
                 >
                   <DocumentDuplicateIcon className="h-5 w-5 text-violet-600" />
@@ -1386,6 +1503,15 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
             </div>
           </Dialog>
         )}
+
+        <NewPlanModal
+          isOpen={showNewPlanModal}
+          onClose={() => setShowNewPlanModal(false)}
+          onCreateBlank={handleAddWeek}
+          onCreateFromTemplate={handleCreateFromTemplate}
+          templates={templates}
+          isLoading={isLoading || isApplyingTemplate}
+        />
       </div>
     </div>
   );
