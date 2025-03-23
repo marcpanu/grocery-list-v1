@@ -26,7 +26,8 @@ import {
   applyTemplateToWeek,
   createOrGetWeek,
   addMealToWeek,
-  addRecipe
+  addRecipe,
+  clearWeekMeals
 } from '../firebase/firestore';
 import { Dialog } from '@headlessui/react';
 import { XMarkIcon } from '@heroicons/react/24/outline';
@@ -767,7 +768,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     }
   };
 
-  const handleCreateFromTemplate = async (templateId: string) => {
+  const handleCreateFromTemplate = async (templateId: string, shouldOverwrite: boolean) => {
     try {
       setIsApplyingTemplate(true);
       
@@ -775,8 +776,8 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       const date = new Date();
       const week = await createOrGetWeek(DEFAULT_USER_ID, date);
       
-      // Apply the template
-      await applyTemplateToWeek(templateId, week.id, 'replace');
+      // Apply the template with the correct mode
+      await applyTemplateToWeek(templateId, week.id, shouldOverwrite ? 'replace' : 'merge');
       
       // Set as current week and load data
       await updateCurrentWeekDb(DEFAULT_USER_ID, week.id);
@@ -791,14 +792,20 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     }
   };
 
-  const handleCreateFromPreviousWeek = async (weekId: string) => {
+  const handleCreateFromPreviousWeek = async (weekId: string, shouldOverwrite: boolean) => {
     try {
       setIsLoading(true);
+      
       // Get the meals from the selected week
       const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, weekId);
       
       // Create a new week starting from today
       const newWeek = await createOrGetWeek(DEFAULT_USER_ID, new Date());
+
+      // If overwriting, clear existing meals first
+      if (shouldOverwrite) {
+        await clearWeekMeals(DEFAULT_USER_ID, newWeek.id);
+      }
       
       // Copy each meal to the new week
       for (const meal of weekMeals) {

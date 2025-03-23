@@ -4,11 +4,12 @@ import { CategoryManager } from './CategoryManager';
 import { SettingsMenuItem } from './SettingsMenuItem';
 import { DataManagement } from './settings/DataManagement';
 import { PantryManager } from './settings/PantryManager';
+import { TemplateManager } from './settings/TemplateManager';
 import { getUserData, addStoredCredential, deleteStoredCredential, deleteAllImages } from '../firebase/firestore';
 import { formatBytes } from '../utils/format';
 import { UserData, StoredCredential } from '../types';
 
-type SettingsSection = 'main' | 'stores' | 'categories' | 'data' | 'pantry';
+type SettingsSection = 'main' | 'stores' | 'categories' | 'data' | 'pantry' | 'templates';
 
 export const Settings = () => {
   const [activeSection, setActiveSection] = useState<SettingsSection>('main');
@@ -150,6 +151,27 @@ export const Settings = () => {
     );
   }
 
+  if (activeSection === 'templates') {
+    return (
+      <div className="h-full bg-zinc-100">
+        <button
+          onClick={() => setActiveSection('main')}
+          className="flex items-center gap-2 px-4 py-3 text-sm font-medium text-zinc-600 hover:text-zinc-900 bg-white"
+        >
+          <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 19l-7-7 7-7" />
+          </svg>
+          Back to Settings
+        </button>
+        <div className="p-4">
+          <div className="bg-white rounded-lg shadow-sm">
+            <TemplateManager />
+          </div>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="h-full bg-zinc-100">
       <div className="p-4 space-y-4">
@@ -188,6 +210,23 @@ export const Settings = () => {
               title="Manage Pantry Items"
               description="Configure items that you always have on hand"
               onClick={() => setActiveSection('pantry')}
+            />
+          </div>
+        </div>
+
+        {/* Meal Planning Section */}
+        <div>
+          <h2 className="px-4 text-base font-bold text-zinc-900 mb-2">Meal Planning</h2>
+          <div className="bg-white rounded-lg shadow-sm">
+            <SettingsMenuItem
+              icon={
+                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+                </svg>
+              }
+              title="Manage Templates"
+              description="View and delete saved week templates"
+              onClick={() => setActiveSection('templates')}
             />
           </div>
         </div>
