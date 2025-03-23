@@ -814,7 +814,7 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, weekId?:
     
     const list = userLists[0];
     console.log('Shopping list for ingredient processing:', list.id);
-    console.log('Available categories:', list.categories);
+    //console.log('Available categories:', list.categories);
     
     // Get user preferences to check for default store and pantry items
     const preferences = await getUserPreferences();

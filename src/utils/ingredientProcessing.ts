@@ -11,7 +11,7 @@ export const categorizeIngredient = (
   userCategories: Category[]
 ): Category | undefined => {
   console.log("categorizeIngredient called with:", ingredientName);
-  console.log("Available categories:", JSON.stringify(userCategories, null, 2));
+  //console.log("Available categories:", JSON.stringify(userCategories, null, 2));
 
   if (!userCategories || userCategories.length === 0) {
     console.log("No user categories available for categorization");

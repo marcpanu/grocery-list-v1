@@ -9,6 +9,9 @@ import { Ingredient } from '../types';
  * - defaultUnit: the standard unit for shopping
  * - variants: alternative names for matching
  * - category: the food category for organization
+ * - isPrecise?: Is this ingredient used in precise measurements?
+ * - preferCount?: Always prefer count when possible?
+ * - commonForms?: e.g. ['whole', 'chopped', 'diced']
  */
 interface IngredientConversion {
   name: string;                 // Standardized name for shopping
@@ -17,6 +20,9 @@ interface IngredientConversion {
   defaultUnit: string;          // Standard unit for shopping
   variants: string[];           // Alternative names to match
   category: string;             // Category for organization
+  isPrecise?: boolean;         // Is this ingredient used in precise measurements?
+  preferCount?: boolean;       // Always prefer count when possible?
+  commonForms?: string[];      // e.g. ['whole', 'chopped', 'diced']
 }
 
 // Mini database of common ingredients with volume-to-weight-to-count conversions
@@ -27,7 +33,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 150,     // 1 medium bell pepper = ~150g
     defaultUnit: 'whole',
     variants: ['red bell pepper', 'green bell pepper', 'yellow bell pepper', 'orange bell pepper', 'sweet pepper', 'chopped bell pepper', 'diced bell pepper', 'sliced bell pepper'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'chopped', 'diced', 'sliced']
   },
   {
     name: 'onion',
@@ -35,7 +43,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 180,     // 1 medium onion = ~180g
     defaultUnit: 'whole',
     variants: ['yellow onion', 'white onion', 'red onion', 'chopped onion', 'diced onion', 'sliced onion'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'chopped', 'diced', 'sliced']
   },
   {
     name: 'garlic',
@@ -43,7 +53,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 5,       // 1 clove = ~5g
     defaultUnit: 'clove',
     variants: ['minced garlic', 'chopped garlic', 'crushed garlic', 'garlic clove', 'garlic cloves'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'minced', 'chopped', 'crushed']
   },
   {
     name: 'carrot',
@@ -51,7 +63,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 80,      // 1 medium carrot = ~80g
     defaultUnit: 'whole',
     variants: ['chopped carrot', 'diced carrot', 'sliced carrot', 'grated carrot', 'shredded carrot'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'chopped', 'diced', 'sliced', 'grated']
   },
   {
     name: 'tomato',
@@ -59,7 +73,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 125,     // 1 medium tomato = ~125g
     defaultUnit: 'whole',
     variants: ['chopped tomato', 'diced tomato', 'sliced tomato', 'roma tomato', 'plum tomato'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'chopped', 'diced', 'sliced']
   },
   {
     name: 'potato',
@@ -67,21 +83,25 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 200,     // 1 medium potato = ~200g
     defaultUnit: 'whole',
     variants: ['russet potato', 'white potato', 'yellow potato', 'diced potato', 'chopped potato'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'diced', 'chopped']
   },
   {
     name: 'flour',
     density: 120,             // 1 cup = ~120g
     defaultUnit: 'g',
     variants: ['all-purpose flour', 'white flour', 'ap flour'],
-    category: 'baking'
+    category: 'baking',
+    isPrecise: true
   },
   {
     name: 'sugar',
     density: 200,             // 1 cup = ~200g
     defaultUnit: 'g',
     variants: ['granulated sugar', 'white sugar'],
-    category: 'baking'
+    category: 'baking',
+    isPrecise: true
   },
   {
     name: 'jalapeno pepper',
@@ -89,7 +109,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 15,      // 1 medium jalapeno = ~15g
     defaultUnit: 'whole',
     variants: ['jalapeno', 'chopped jalapeno', 'diced jalapeno', 'sliced jalapeno'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'chopped', 'diced', 'sliced']
   },
   {
     name: 'lemon',
@@ -97,7 +119,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 100,     // 1 medium lemon = ~100g (yields ~2-3 tbsp juice)
     defaultUnit: 'whole',
     variants: ['lemon juice', 'fresh lemon', 'juice of lemon', 'lemon zest'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'juiced', 'zested']
   },
   {
     name: 'lime',
@@ -105,7 +129,9 @@ const ingredientConversions: IngredientConversion[] = [
     countEquivalent: 60,      // 1 medium lime = ~60g (yields ~1-2 tbsp juice)
     defaultUnit: 'whole',
     variants: ['lime juice', 'fresh lime', 'juice of lime', 'lime zest'],
-    category: 'produce'
+    category: 'produce',
+    preferCount: true,
+    commonForms: ['whole', 'juiced', 'zested']
   }
 ];
 
@@ -190,7 +216,7 @@ export const standardizeGroceryItem = (ingredient: Ingredient): {
       unit: ingredient.unit || 'item'
     };
   }
-  
+
   // Convert the ingredient quantity to a number if it's a string
   let quantity: number;
   if (typeof ingredient.quantity === 'string') {
@@ -199,35 +225,70 @@ export const standardizeGroceryItem = (ingredient: Ingredient): {
   } else {
     quantity = ingredient.quantity;
   }
-  
-  // Step 1: Convert to cups if the unit is volume-based
-  if (ingredient.unit) {
-    quantity = convertToCups(quantity, ingredient.unit);
-  }
-  
-  // Step 2: Convert from cups to weight in grams
-  const weightInGrams = quantity * conversionData.density;
-  
-  // Step 3: If the ingredient can be counted, convert from weight to count
-  if (conversionData.countEquivalent) {
-    // Calculate how many whole items needed
-    const countNeeded = weightInGrams / conversionData.countEquivalent;
+
+  // If the ingredient requires precise measurements (like flour), always convert to weight
+  if (conversionData.isPrecise) {
+    // If already in grams, return as is
+    if (ingredient.unit === 'g' || ingredient.unit === 'grams') {
+      return {
+        name: conversionData.name,
+        quantity: quantity,
+        unit: 'g'
+      };
+    }
     
-    // Round up to the nearest whole item
-    const roundedCount = Math.ceil(countNeeded);
+    // Convert to cups first if it's a volume measurement
+    if (ingredient.unit && ingredient.unit in volumeConversions) {
+      quantity = convertToCups(quantity, ingredient.unit);
+    }
     
+    // Convert to grams using density
     return {
       name: conversionData.name,
-      quantity: roundedCount,
+      quantity: Math.ceil(quantity * conversionData.density),
+      unit: 'g'
+    };
+  }
+
+  // If we prefer counting this ingredient and it has a count equivalent
+  if (conversionData.preferCount && conversionData.countEquivalent) {
+    let weightInGrams = quantity;
+    
+    // If it's a volume measurement, convert to grams first
+    if (ingredient.unit && ingredient.unit in volumeConversions) {
+      const cups = convertToCups(quantity, ingredient.unit);
+      weightInGrams = cups * conversionData.density;
+    }
+    // If it's already in grams, use it directly
+    else if (ingredient.unit === 'g' || ingredient.unit === 'grams') {
+      weightInGrams = quantity;
+    }
+    
+    // Convert to count
+    const countNeeded = weightInGrams / conversionData.countEquivalent;
+    return {
+      name: conversionData.name,
+      quantity: Math.ceil(countNeeded),
       unit: conversionData.defaultUnit
     };
   }
-  
-  // For non-countable items, return in the default unit
+
+  // For all other cases, maintain the original unit if possible
+  // or convert to a sensible default using the standard conversion
+  if (ingredient.unit && ingredient.unit in volumeConversions) {
+    quantity = convertToCups(quantity, ingredient.unit);
+    return {
+      name: conversionData.name,
+      quantity: Math.ceil(quantity * conversionData.density),
+      unit: conversionData.defaultUnit
+    };
+  }
+
+  // If no specific conversion needed, return with standardized name
   return {
     name: conversionData.name,
-    quantity: Math.ceil(weightInGrams), // Round up to the nearest gram
-    unit: conversionData.defaultUnit
+    quantity: Math.ceil(quantity),
+    unit: ingredient.unit || conversionData.defaultUnit
   };
 };
 
