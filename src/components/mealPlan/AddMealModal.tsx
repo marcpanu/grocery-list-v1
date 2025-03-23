@@ -202,8 +202,8 @@ export const AddMealModal = ({
     <Dialog open={isOpen} onClose={onClose} className="relative z-50">
       <div className="fixed inset-0 bg-black/30" aria-hidden="true" />
       
-      <div className="fixed inset-0 flex items-center justify-center p-4">
-        <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 max-h-[90vh] overflow-y-auto">
+      <div className="fixed inset-0 flex items-start justify-center p-4 sm:items-center">
+        <Dialog.Panel className="mx-auto max-w-2xl w-full rounded-lg bg-white p-6 max-h-[85vh] sm:max-h-[90vh] overflow-y-auto relative">
           <div className="flex justify-between items-center mb-4">
             <Dialog.Title className="text-lg font-semibold">
               {selectedRecipe ? 'Add Recipe to Meal Plan' : 'Add New Recipe'}
