@@ -150,10 +150,10 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           />
         </div>
 
-        <div className="grid grid-cols-1 gap-4 sm:grid-cols-3">
+        <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
           <div>
             <label htmlFor="prepTime" className="block text-sm font-medium text-zinc-700">
-              Prep Time (minutes)
+              Prep Time (min)
             </label>
             <input
               type="number"
@@ -167,7 +167,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
 
           <div>
             <label htmlFor="cookTime" className="block text-sm font-medium text-zinc-700">
-              Cook Time (minutes)
+              Cook Time (min)
             </label>
             <input
               type="number"
@@ -179,7 +179,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
             />
           </div>
 
-          <div>
+          <div className="col-span-2 sm:col-span-1">
             <label htmlFor="servings" className="block text-sm font-medium text-zinc-700">
               Servings
             </label>
@@ -196,7 +196,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
         </div>
 
         <div className="flex items-center space-x-2">
-        <input
+          <input
             type="checkbox"
             id="isScalable"
             checked={formData.isScalable}
@@ -204,7 +204,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
             className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
           />
           <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
-            This recipe works well for making smaller or larger portions (e.g., cut in half)
+            Recipe is easily scalable
           </label>
         </div>
       </div>
@@ -216,15 +216,15 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           <button
             type="button"
             onClick={addIngredient}
-            className="text-sm text-violet-600 hover:text-violet-700"
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-violet-700 bg-violet-50 hover:bg-violet-100"
           >
-            + Add Ingredient
+            + Add
           </button>
         </div>
         <div className="space-y-4">
           {formData.ingredients.map((ingredient, index) => (
-            <div key={index} className="flex gap-4 items-start">
-              <div className="flex-1">
+            <div key={index} className="flex flex-col sm:flex-row gap-2 sm:gap-4 items-start">
+              <div className="w-full sm:flex-1">
                 <input
                   type="text"
                   value={ingredient.name}
@@ -233,40 +233,35 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
                   className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                 />
               </div>
-              <div className="w-24">
-                <input
-                  type="text"
-                  value={ingredient.quantity}
-                  onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
-                  placeholder="Amount"
-                  className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                />
+              <div className="flex gap-2 w-full sm:w-auto">
+                <div className="flex-1 sm:w-24">
+                  <input
+                    type="text"
+                    value={ingredient.quantity}
+                    onChange={(e) => handleIngredientChange(index, 'quantity', e.target.value)}
+                    placeholder="Amount"
+                    className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  />
+                </div>
+                <div className="flex-1 sm:w-24">
+                  <input
+                    type="text"
+                    value={ingredient.unit || ''}
+                    onChange={(e) => handleIngredientChange(index, 'unit', e.target.value || null)}
+                    placeholder="Unit"
+                    className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  />
+                </div>
+                <button
+                  type="button"
+                  onClick={() => removeIngredient(index)}
+                  className="inline-flex items-center p-1.5 text-zinc-500 hover:text-zinc-600"
+                >
+                  <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                  </svg>
+                </button>
               </div>
-              <div className="w-24">
-                <input
-                  type="text"
-                  value={ingredient.unit || ''}
-                  onChange={(e) => handleIngredientChange(index, 'unit', e.target.value || null)}
-                  placeholder="Unit"
-                  className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                />
-              </div>
-              <div className="flex-1">
-                <input
-                  type="text"
-                  value={ingredient.notes || ''}
-                  onChange={(e) => handleIngredientChange(index, 'notes', e.target.value || null)}
-                  placeholder="Notes (optional)"
-                  className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
-                />
-              </div>
-              <button
-                type="button"
-                onClick={() => removeIngredient(index)}
-                className="text-red-500 hover:text-red-700"
-              >
-                ×
-              </button>
             </div>
           ))}
         </div>
@@ -279,32 +274,34 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
           <button
             type="button"
             onClick={addInstruction}
-            className="text-sm text-violet-600 hover:text-violet-700"
+            className="inline-flex items-center px-3 py-1.5 text-sm font-medium rounded-md text-violet-700 bg-violet-50 hover:bg-violet-100"
           >
-            + Add Step
+            + Add
           </button>
         </div>
         <div className="space-y-4">
           {formData.instructions.map((instruction, index) => (
-            <div key={index} className="flex gap-4">
-              <div className="flex-shrink-0 w-8 h-8 flex items-center justify-center rounded-full bg-violet-100 text-violet-600 font-medium">
-                {index + 1}
+            <div key={index} className="flex gap-4 items-start">
+              <div className="flex-none pt-2 text-sm font-medium text-zinc-700">
+                {index + 1}.
               </div>
               <div className="flex-1">
                 <textarea
                   value={instruction.instruction}
                   onChange={(e) => handleInstructionChange(index, e.target.value)}
-                  placeholder="Step instruction"
                   rows={2}
                   className="block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
+                  placeholder={`Step ${index + 1}`}
                 />
               </div>
               <button
                 type="button"
                 onClick={() => removeInstruction(index)}
-                className="text-red-500 hover:text-red-700"
+                className="flex-none inline-flex items-center p-1.5 text-zinc-500 hover:text-zinc-600"
               >
-                ×
+                <svg className="h-5 w-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+                </svg>
               </button>
             </div>
           ))}
@@ -466,20 +463,20 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
       </div>
 
       {/* Form Actions */}
-      <div className="flex justify-end gap-4">
+      <div className="flex justify-end gap-3 pt-6">
         <button
           type="button"
           onClick={onCancel}
-          className="px-4 py-2 text-sm font-medium text-zinc-700 bg-white border border-zinc-300 rounded-md hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500"
+          className="inline-flex justify-center rounded-md border border-zinc-300 bg-white px-4 py-2 text-sm font-medium text-zinc-700 shadow-sm hover:bg-zinc-50 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
         >
           Cancel
         </button>
         <button
           type="submit"
           disabled={isSaving}
-          className="px-4 py-2 text-sm font-medium text-white bg-violet-600 border border-transparent rounded-md hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-violet-500 disabled:opacity-50"
+          className="inline-flex justify-center rounded-md border border-transparent bg-violet-600 px-4 py-2 text-sm font-medium text-white shadow-sm hover:bg-violet-700 focus:outline-none focus:ring-2 focus:ring-violet-500 focus:ring-offset-2"
         >
-          {isSaving ? 'Saving...' : 'Save Changes'}
+          {isSaving ? 'Saving...' : 'Save Recipe'}
         </button>
       </div>
     </form>
