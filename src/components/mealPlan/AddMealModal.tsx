@@ -27,6 +27,7 @@ interface FormData {
   notes: string;
   cuisine: string[];
   rating: number | undefined;
+  isScalable: boolean;
 }
 
 export const AddMealModal = ({
@@ -49,7 +50,8 @@ export const AddMealModal = ({
     instructions: [{ order: 1, instruction: '' }],
     notes: '',
     cuisine: [],
-    rating: undefined
+    rating: undefined,
+    isScalable: false
   });
 
   const [error, setError] = useState<string | null>(null);
@@ -69,7 +71,8 @@ export const AddMealModal = ({
         instructions: [...selectedRecipe.instructions],
         notes: selectedRecipe.notes || '',
         cuisine: selectedRecipe.cuisine || [],
-        rating: selectedRecipe.rating || undefined
+        rating: selectedRecipe.rating || undefined,
+        isScalable: selectedRecipe.isScalable || false
       });
     } else if (!isOpen) {
       setFormData({
@@ -84,7 +87,8 @@ export const AddMealModal = ({
         instructions: [{ order: 1, instruction: '' }],
         notes: '',
         cuisine: [],
-        rating: undefined
+        rating: undefined,
+        isScalable: false
       });
       setError(null);
     }
@@ -329,11 +333,25 @@ export const AddMealModal = ({
                   type="number"
                   id="servings"
                   value={formData.servings}
-                  onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) }))}
-                  min="1"
+                  onChange={(e) => setFormData(prev => ({ ...prev, servings: parseInt(e.target.value) || 2 }))}
                   className="mt-1 block w-full rounded-md border-zinc-300 shadow-sm focus:border-violet-500 focus:ring-violet-500 sm:text-sm"
                   required
-                  disabled={isLoading}
+                  min="1"
+                  disabled={!!selectedRecipe || isLoading}
+                />
+              </div>
+
+              <div className="flex items-center space-x-2">
+                <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
+                  This recipe works well for making smaller or larger portions
+                </label>
+                <input
+                  type="checkbox"
+                  id="isScalable"
+                  checked={formData.isScalable}
+                  onChange={(e) => setFormData(prev => ({ ...prev, isScalable: e.target.checked }))}
+                  className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
+                  disabled={!!selectedRecipe || isLoading}
                 />
               </div>
             </div>

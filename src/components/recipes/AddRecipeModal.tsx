@@ -53,7 +53,7 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
   return (
     <div className="flex items-center space-x-2 mb-4">
       <label className="text-sm font-medium text-gray-700">
-        Recipe quantities can be scaled (non-integer multipliers allowed)
+        This recipe works well for easily making smaller or larger portions
       </label>
       <input
         type="checkbox"

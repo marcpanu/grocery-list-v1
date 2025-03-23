@@ -315,7 +315,7 @@ export const RecipeEditForm = ({ recipe, onSave, onCancel }: RecipeEditFormProps
 
         <div className="flex items-center space-x-2">
           <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
-            Recipe quantities can be scaled (non-integer multipliers allowed)
+            This recipe works well for making smaller or larger portions (e.g., cut in half or make for 6 or 8 people)
           </label>
           <input
             type="checkbox"

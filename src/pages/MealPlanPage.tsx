@@ -160,7 +160,6 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       const mealPlanData = {
         userId: DEFAULT_USER_ID,
         meals: [{
-          id: crypto.randomUUID(),
           name: data.name,
           description: null,
           mealPlanMeal: data.mealPlanMeal,
@@ -262,7 +261,6 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         const mealPlanData = {
           userId: DEFAULT_USER_ID,
           meals: [{
-            id: crypto.randomUUID(),
             name: data.name,
             description: data.description ?? null,
             mealPlanMeal: data.mealPlanMeal,
@@ -443,6 +441,7 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
       // Add ingredients from each recipe with its multiplier
       for (const recipe of recipes) {
         if (!recipe) continue;
+        const multiplier = recipeServingMultipliers.get(recipe.id) || 1;
         await addRecipeIngredientsToGroceryList(recipe, currentWeek?.id);
       }
     } catch (error) {
