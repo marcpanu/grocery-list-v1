@@ -19,6 +19,10 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Delete recipes with confirmation
 - Mark recipes as favorites
 - Rate recipes
+- Configure recipe scalability
+  - Mark recipes as scalable/non-scalable
+  - Control serving size adjustments
+  - Preserve exact measurements for precision recipes
 - Advanced UI features:
   - Sort by name, date, rating
   - Filter by meal type and cuisine
@@ -40,10 +44,15 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
 - Categorize items (produce, meat, etc.)
 - Automatic item categorization based on ingredient names
 - Smart quantity standardization
-  - Converts recipe measurements to shopping quantities
+  - Context-aware ingredient processing
+  - Intelligent unit conversion based on ingredient type
+  - Precise measurements for baking ingredients
+  - Count-based conversion for produce
+  - Volume-to-weight conversion with density data
   - Combines duplicate ingredients
   - Converts volume measurements to whole items for produce
   - Standardizes units for better shopping experience
+  - Respects recipe scalability settings
 
 ### Meal Planning
 - Improved two-step workflow:
@@ -108,8 +117,12 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - Filter state persistence
   - Clear UI feedback
 - Intelligent grocery list generation
-  - Automatic ingredient categorization
-  - Smart quantity standardization (volume to count)
+  - Context-aware ingredient processing
+  - Smart quantity standardization
+    - Weight-based for precise ingredients
+    - Count-based for whole items
+    - Volume-based with context awareness
+  - Recipe scalability controls
   - Combining duplicate ingredients
   - Pantry item exclusion
 

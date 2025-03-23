@@ -3,15 +3,25 @@ import { Ingredient } from '../types';
 /**
  * Mini database of ingredient conversions - structured to match industry food databases
  * For each ingredient we track:
- * - name: the standardized name
- * - density: the weight in grams per cup (for volume to weight conversion)
- * - countEquivalent: how many grams equals one whole item (for weight to count conversion)
- * - defaultUnit: the standard unit for shopping
- * - variants: alternative names for matching
- * - category: the food category for organization
- * - isPrecise?: Is this ingredient used in precise measurements?
- * - preferCount?: Always prefer count when possible?
- * - commonForms?: e.g. ['whole', 'chopped', 'diced']
+ * - name: the standardized name for consistent shopping list entries
+ * - density: weight in grams per cup, used for volume-to-weight conversions
+ * - countEquivalent: weight in grams of one whole item (if applicable)
+ * - defaultUnit: preferred unit for shopping list display
+ * - variants: alternative names and forms for matching ingredients
+ * - category: food category for organization
+ * - isPrecise: indicates ingredients requiring exact measurements (e.g. baking ingredients)
+ * - preferCount: indicates ingredients better tracked by count (e.g. whole produce)
+ * - commonForms: list of preparation forms (e.g. chopped, diced) for smart matching
+ * 
+ * The system handles three main types of conversions:
+ * 1. Weight-based: Used for precise ingredients (e.g. flour) - always converts to grams
+ * 2. Count-based: Used for whole items (e.g. produce) - converts to number of items
+ * 3. Volume-based: Converts to weight or count based on ingredient context
+ * 
+ * Conversion logic prioritizes:
+ * - Precise measurements for baking ingredients
+ * - Whole counts for produce when possible
+ * - Original units when no specific conversion is needed
  */
 interface IngredientConversion {
   name: string;                 // Standardized name for shopping
@@ -88,7 +98,7 @@ const ingredientConversions: IngredientConversion[] = [
     commonForms: ['whole', 'diced', 'chopped']
   },
   {
-    name: 'flour',
+    name: 'plain flour',
     density: 120,             // 1 cup = ~120g
     defaultUnit: 'g',
     variants: ['all-purpose flour', 'white flour', 'ap flour'],
@@ -158,19 +168,11 @@ const volumeConversions: Record<string, number> = {
 export const findIngredientConversion = (ingredientName: string): IngredientConversion | undefined => {
   const normalizedName = ingredientName.toLowerCase().trim();
   
-  // First try exact match
-  const exactMatch = ingredientConversions.find(ing => 
+  // Only do exact matches against name or variants
+  return ingredientConversions.find(ing => 
     ing.name === normalizedName ||
     ing.variants.includes(normalizedName)
   );
-  
-  if (exactMatch) return exactMatch;
-  
-  // Try partial match
-  return ingredientConversions.find(ing => {
-    if (normalizedName.includes(ing.name)) return true;
-    return ing.variants.some(variant => normalizedName.includes(variant));
-  });
 };
 
 /**

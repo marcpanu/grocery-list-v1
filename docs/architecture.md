@@ -228,7 +228,7 @@ interface PantryItem {
 
 ## Ingredient Processing
 
-### Quantity Standardization
+### Context-Aware Processing System
 ```typescript
 interface IngredientConversion {
   name: string;                 // Standardized name for shopping
@@ -237,42 +237,137 @@ interface IngredientConversion {
   defaultUnit: string;          // Standard unit for shopping
   variants: string[];           // Alternative names to match
   category: string;             // Category for organization
+  isPrecise?: boolean;         // Indicates ingredients requiring exact measurements (e.g., baking ingredients)
+  preferCount?: boolean;       // Indicates ingredients better tracked by count
+  commonForms?: string[];      // List of preparation forms
+}
+
+interface ProcessingContext {
+  isScalable: boolean;         // Whether the recipe allows scaling
+  scalingFactor: number;       // total servings / base servings - used to scale ingredient quantities
 }
 ```
 
-The quantity standardization system converts recipe measurements to shopping-friendly units using a three-step process:
+The system processes ingredients through several stages:
 
-1. **Volume Standardization**: Converts various volume measurements (tsp, tbsp, cups) to a standard unit (cups)
-2. **Weight Conversion**: Converts volume measurements to weight using density values (cups → grams)
-3. **Count Conversion**: For countable items (produce, etc.), converts weight to count using per-item weights
+1. **Ingredient Classification**
+   - Determines the appropriate conversion type:
+     - Weight-based for precise ingredients (isPrecise: true)
+     - Count-based for whole items (preferCount: true)
+     - Volume-based for flexible conversion
+   - Uses exact matching against ingredient names and variants
+     - Matches must be exact, no partial matching
+     - Example: "flour" matches "flour" or "all-purpose flour" (variant)
+     - Example: "good bread flour" does not match "flour"
+   - Identifies preparation forms from commonForms list
+   - Checks recipe scalability requirements
+   - Uses ingredient's isPrecise flag to determine measurement handling
 
-This allows the app to:
-- Convert "1/2 cup chopped bell pepper" → "1 bell pepper"
-- Convert "2 tbsp minced garlic" → "6 garlic cloves"
-- Convert "3 cups flour" → "360g flour"
+2. **Unit Standardization**
+   - Volume measurements → cups (base unit)
+   - Weight measurements → grams (base unit)
+     - Always maintains gram precision for isPrecise ingredients
+   - Count-based measurements preserved
+   - Density-based conversions when needed
 
-### Automatic Categorization
+3. **Quantity Processing**
+   - **Weight-based Processing**
+     - Used for: Baking ingredients (isPrecise: true)
+     - Always converts to grams
+     - Maintains exact measurements
+     - Example: "1 cup flour" → "120g flour"
 
-The categorization system uses pattern matching to assign appropriate categories to grocery items:
+   - **Count-based Processing**
+     - Used for: Produce, packaged items (preferCount: true)
+     - Converts to whole units
+     - Uses density and count equivalent data
+     - Example: "1/2 cup chopped bell pepper" → "1 bell pepper"
 
-1. **Category Matching**: Ingredients are matched against common keywords for each category
-2. **Fallback Processing**: If no direct match, tries partial and substring matching
-3. **Default Category**: Uses an "Other" category as fallback when no match is found
+   - **Volume-based Processing**
+     - Used for: Liquids, flexible ingredients
+     - Converts based on context
+     - Uses density data when needed
+     - Example: "1 cup milk" → "240ml milk"
 
-This enables automatic organization of shopping lists without requiring manual categorization by users.
+4. **Scaling Handling**
+   - Checks recipe's `isScalable` flag
+   - For scalable recipes:
+     - Uses scalingFactor (total servings / base servings) to adjust quantities
+     - Example: If a recipe serves 4 and we need 8 servings, scalingFactor = 8/4 = 2
+     - Maintains unit consistency when scaling
+     - For isPrecise ingredients:
+       - Maintains exact gram measurements when scaling
+       - Uses precise decimal arithmetic
+       - No rounding of measurements
+     - For other ingredients:
+       - Rounds to appropriate precision based on ingredient type
+   - For non-scalable recipes:
+     - Preserves original measurements exactly
+     - Provides scaling warnings to user
+     - Maintains exact ratios for precision recipes
 
-### Shopping List Generation Process
+### Implementation Flow
 
-The complete ingredient processing flow:
+```typescript
+function processIngredient(
+  ingredient: Ingredient,
+  context: ProcessingContext
+): ProcessedIngredient {
+  // 1. Get conversion data
+  const conversionData = findIngredientConversion(ingredient.name);
+  
+  // 2. Determine processing type
+  const processingType = determineProcessingType(ingredient, conversionData);
+  
+  // 3. Standardize units
+  const standardized = standardizeUnits(ingredient, processingType);
+  
+  // 4. Apply scaling if allowed
+  const scaled = context.isScalable
+    ? applyScaling(standardized, context.scalingFactor)
+    : standardized;
+  
+  // 5. Format for shopping
+  return formatForShopping(scaled, conversionData);
+}
 
-1. Recipe ingredients are extracted from selected recipes
-2. Quantities are adjusted based on serving sizes
-3. Duplicate ingredients are identified and combined
-4. Pantry items are filtered out
-5. Ingredients are standardized to shopping-friendly quantities
-6. Automatic categorization is applied
-7. Default store assignments are applied based on user preferences
-8. Final shopping items are added to the list
+// Scaling factor calculation example:
+interface Week {
+  id: string;
+  recipes: {
+    [recipeId: string]: {
+      baseServings: number;    // Original recipe servings
+      totalServings: number;   // Total servings needed for the week
+      scalingFactor: number;   // totalServings / baseServings
+    };
+  };
+}
+```
+
+### Key Functions
+
+- `findIngredientConversion`: Matches ingredients with conversion data
+- `standardizeGroceryItem`: Applies smart unit conversion
+- `processIngredientsForGrocery`: Handles batch processing with scaling factors
+- `convertToCups`: Standardizes volume measurements
+- `calculateScalingFactor`: Computes scaling factor based on total and base servings
+
+### Benefits
+
+1. **Accuracy**
+   - Precise measurements for critical ingredients
+   - Appropriate rounding for different types
+   - Consistent unit handling
+
+2. **Usability**
+   - Shopping-friendly quantities
+   - Intuitive unit presentation
+   - Clear scaling limitations
+
+3. **Flexibility**
+   - Context-aware processing
+   - Recipe-specific handling
+   - Customizable conversion rules
 
 ## Component Hierarchy
 

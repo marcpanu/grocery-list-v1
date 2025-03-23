@@ -278,7 +278,81 @@ const setCurrentWeek = async (userId: string, weekId: string): Promise<void>;
 const getMealsByWeek = async (userId: string, weekId: string): Promise<Meal[]>;
 const getMealsByCurrentWeek = async (userId: string): Promise<Meal[]>;
 const addMealToWeek = async (userId: string, weekId: string, meal: Partial<Meal>): Promise<Meal>;
+
+// Recipe Structure with Scalability
+interface Recipe {
+  // ... existing fields ...
+  isScalable: boolean;    // Whether the recipe can be scaled
+}
+
+// Ingredient Processing System
+interface IngredientConversion {
+  name: string;                 // Standardized name for shopping
+  density: number;              // Grams per cup
+  countEquivalent?: number;     // Grams per whole item (if applicable)
+  defaultUnit: string;          // Standard unit for shopping
+  variants: string[];           // Alternative names to match
+  category: string;             // Category for organization
+  isPrecise?: boolean;         // Is this ingredient used in precise measurements?
+  preferCount?: boolean;       // Always prefer count when possible?
+  commonForms?: string[];      // e.g. ['whole', 'chopped', 'diced']
+}
+
+// Conversion Types
+type ConversionType = 'weight' | 'count' | 'volume';
+
+// Processing Logic
+interface ProcessingResult {
+  name: string;
+  quantity: number;
+  unit: string;
+  conversionType: ConversionType;
+}
 ```
+
+### Ingredient Processing System
+
+The system uses a context-aware approach to process ingredients:
+
+1. **Classification**
+   - Determines ingredient type and preferred conversion method
+   - Checks for precise measurement requirements
+   - Identifies countable items
+
+2. **Unit Standardization**
+   - Converts volume measurements to cups
+   - Maintains weight measurements in grams
+   - Preserves count-based measurements
+
+3. **Quantity Processing**
+   - Weight-based: Used for precise ingredients (e.g., flour)
+     - Always converts to grams
+     - Maintains exact measurements
+   - Count-based: Used for whole items (e.g., produce)
+     - Converts to number of items
+     - Uses density and count equivalent data
+   - Volume-based: Flexible conversion
+     - Converts based on ingredient context
+     - Uses density data for weight conversion
+     - Converts to count when appropriate
+
+4. **Scaling Logic**
+   - Checks recipe's isScalable flag
+   - For scalable recipes:
+     - Adjusts quantities based on serving ratio
+     - Maintains unit consistency
+   - For non-scalable recipes:
+     - Preserves exact measurements
+     - Warns about scaling limitations
+
+### Implementation Notes
+
+- Use the `findIngredientConversion` function to get conversion data
+- Apply `standardizeGroceryItem` for smart unit conversion
+- Handle scaling through `processIngredientsForGrocery`
+- Maintain precise measurements for baking ingredients
+- Convert produce to whole units when possible
+- Combine duplicate ingredients with compatible units
 
 ### Implementation Guidelines
 1. State Management

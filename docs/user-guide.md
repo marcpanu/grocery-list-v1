@@ -10,6 +10,11 @@ The recipe selection screen is your starting point for meal planning. Here you c
 - Import recipes from external links
 - Add recipes from pictures
 - Manually enter new recipes
+  - Set recipe name, servings, and ingredients
+  - Configure recipe scalability
+    - Mark recipes that require exact measurements
+    - Control whether servings can be adjusted
+  - Add preparation instructions and notes
 - Add selected recipes to your weekly plan using the "Add to This Week" button
 
 ### 2. Recipe Scheduling Screen
@@ -31,9 +36,10 @@ The scheduling screen is split into two main sections:
 - Features:
   - Drag recipes to any meal slot
   - Copy recipes to multiple slots
-  - Adjust serving sizes per meal
+  - Adjust serving sizes per meal (for scalable recipes)
     - Default: 2 servings
     - Customizable for single meals or guests
+    - Maintains exact measurements for precision recipes
 
 ### 3. Grocery List Screen
 
@@ -43,8 +49,14 @@ The smart shopping list automatically:
 - Organizes items by category
 - Adjusts quantities based on serving sizes
 - Smart quantity conversion features:
-  - Converts recipe measurements to shopping-friendly quantities (e.g., "1/2 cup chopped bell pepper" becomes "1 bell pepper")
-  - Standardizes units for more intuitive shopping (e.g., produce in whole units, dry goods in grams)
+  - Context-aware ingredient processing:
+    - Weight-based: Maintains precise measurements for baking ingredients
+    - Count-based: Converts to whole items for produce (e.g., "1/2 cup chopped bell pepper" → "1 bell pepper")
+    - Volume-based: Converts based on ingredient context and density
+  - Respects recipe scalability settings:
+    - Scales quantities for adjustable recipes
+    - Preserves exact measurements for precision recipes
+  - Standardizes units for more intuitive shopping
   - Combines duplicate ingredients across recipes automatically
 - Intelligent categorization:
   - Automatically assigns categories to ingredients based on their names
@@ -136,7 +148,7 @@ Customize your shopping experience:
 - **Flexible Servings**: Adjust serving sizes individually for each meal occurrence
 - **Smart Organization**: Utilize store-specific organization to optimize your shopping route
 - **Pantry Exclusions**: Maintain your pantry list to avoid purchasing items you already have
-- **Automatic Conversions**: Let the app handle converting recipe quantities to shopping quantities - review for accuracy but enjoy the convenience
+- **Automatic Conversions**: The app intelligently handles unit conversions based on ingredient type and recipe requirements
 - **Category Management**: The app automatically categorizes items, but you can always adjust categories in the settings to match your shopping preferences
 - **Multi-Week Planning**: Plan meals for future weeks in advance by adding new weeks with the "Add Week" button
 - **Week Navigation**: Use the timeline to quickly navigate between different weeks
@@ -144,6 +156,8 @@ Customize your shopping experience:
 - **Today Button**: Instantly return to the current week with the Today button
 - **Weekly Meal Patterns**: Create consistent meal patterns across weeks by planning a full week, then adding a new week for variations
 - **Improved Meal Editing**: Click directly on meal cards to view recipe details, or use the edit button to modify meal settings without changing the recipe details
+- **Recipe Scalability**: Mark recipes that require exact measurements as non-scalable to prevent conversion errors
+- **Serving Size Adjustments**: Only adjust serving sizes for scalable recipes to maintain recipe integrity
 
 ## Keyboard Shortcuts
 
