@@ -791,6 +791,39 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
     }
   };
 
+  const handleCreateFromPreviousWeek = async (weekId: string) => {
+    try {
+      setIsLoading(true);
+      // Get the meals from the selected week
+      const weekMeals = await getMealsByWeek(DEFAULT_USER_ID, weekId);
+      
+      // Create a new week starting from today
+      const newWeek = await createOrGetWeek(DEFAULT_USER_ID, new Date());
+      
+      // Copy each meal to the new week
+      for (const meal of weekMeals) {
+        const mealData = {
+          name: meal.name,
+          description: meal.description || '',
+          mealPlanMeal: meal.mealPlanMeal,
+          days: meal.days,
+          servings: meal.servings,
+          recipeId: meal.recipeId
+        };
+        await addMealToWeek(DEFAULT_USER_ID, newWeek.id, mealData);
+      }
+
+      // Load the new week
+      await loadWeekData(newWeek.id);
+      toast.success('Week created successfully!');
+    } catch (error) {
+      console.error('Failed to create week from previous:', error);
+      toast.error('Failed to create week');
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
   const handleTemplateCreated = async () => {
     try {
       setIsLoadingTemplates(true);
@@ -1507,10 +1540,11 @@ const MealPlanPage = forwardRef<MealPlanRefType, {}>((_, ref) => {
         <NewPlanModal
           isOpen={showNewPlanModal}
           onClose={() => setShowNewPlanModal(false)}
-          onCreateBlank={handleAddWeek}
+          onCreateFromPreviousWeek={handleAddWeek}
           onCreateFromTemplate={handleCreateFromTemplate}
           templates={templates}
-          isLoading={isLoading || isApplyingTemplate}
+          previousWeeks={weeks}
+          isLoading={isLoading}
         />
       </div>
     </div>
