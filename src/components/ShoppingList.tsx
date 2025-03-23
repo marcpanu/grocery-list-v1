@@ -28,6 +28,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
   const [selectedCategory, setSelectedCategory] = useState<Category | undefined>(undefined);
   const [selectedStore, setSelectedStore] = useState<Store | undefined>(undefined);
   const [isAddModalOpen, setIsAddModalOpen] = useState(false);
+  const [items, setItems] = useState<ShoppingItem[]>([]);
 
   useEffect(() => {
     const initializeList = async () => {
@@ -42,6 +43,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
         }
         
         setList(activeList);
+        setItems(activeList.items);
       } catch (err) {
         setError('Failed to initialize shopping list');
         console.error(err);
@@ -60,6 +62,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
       const updatedList = await getShoppingList(list.id);
       if (updatedList) {
         setList(updatedList);
+        setItems(updatedList.items);
       } else {
         setError('Shopping list not found');
       }
@@ -128,7 +131,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
 
     // Parse the droppable IDs to get context
     const [destType, ...destParts] = destination.droppableId.split('-');
-    const [sourceType, ...sourceParts] = source.droppableId.split('-');
+    const [...sourceParts] = source.droppableId.split('-');
 
     try {
       const updates: Partial<ShoppingItem> = {};
@@ -406,6 +409,7 @@ export const ShoppingList: React.FC<ShoppingListProps> = ({
         setSelectedCategory={setSelectedCategory}
         selectedStore={selectedStore}
         setSelectedStore={setSelectedStore}
+        items={items}
       />
     </div>
   );

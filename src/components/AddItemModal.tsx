@@ -16,6 +16,7 @@ interface AddItemModalProps {
   setSelectedCategory: (category: Category | undefined) => void;
   selectedStore: Store | undefined;
   setSelectedStore: (store: Store | undefined) => void;
+  items: NewShoppingItem[];
 }
 
 export const AddItemModal: React.FC<AddItemModalProps> = ({
@@ -32,6 +33,7 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
   setSelectedCategory,
   selectedStore,
   setSelectedStore,
+  items,
 }) => {
   if (!isOpen) return null;
 
@@ -43,7 +45,8 @@ export const AddItemModal: React.FC<AddItemModalProps> = ({
       unit: newItemUnit.trim() || undefined,
       category: selectedCategory,
       store: selectedStore,
-      checked: false
+      checked: false,
+      order: items.length + 1
     };
 
     await onSubmit(newItem);

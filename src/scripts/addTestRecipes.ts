@@ -32,7 +32,8 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     notes: 'For an authentic carbonara, never add cream. The creaminess comes from the eggs and cheese.',
     rating: 5,
     dateAdded: new Date(),
-    source: null
+    source: null,
+    isScalable: true
   },
   {
     name: 'Overnight Oats with Berries',
@@ -63,7 +64,8 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     notes: 'Can be stored in refrigerator for up to 3 days. For added protein, mix in your favorite protein powder.',
     rating: 4,
     dateAdded: new Date(),
-    source: null
+    source: null,
+    isScalable: true
   },
   {
     name: 'Thai Green Curry',
@@ -97,7 +99,8 @@ const testRecipes: Omit<Recipe, 'id'>[] = [
     notes: 'Can be made vegetarian by substituting chicken with tofu. Adjust curry paste amount based on desired spiciness.',
     rating: 5,
     dateAdded: new Date(),
-    source: null
+    source: null,
+    isScalable: true
   }
 ];
 

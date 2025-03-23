@@ -10,8 +10,6 @@ import { getUserShoppingLists, getUserPreferences, updateUserPreferences, migrat
 import { 
   Squares2X2Icon,
   ListBulletIcon,
-  EyeIcon,
-  EyeSlashIcon,
   FunnelIcon,
   TrashIcon
 } from '@heroicons/react/24/outline';
@@ -123,15 +121,6 @@ export const AppLayout: React.FC = () => {
       await updateUserPreferences({ shoppingListViewMode: newMode });
     } catch (err) {
       console.error('Failed to update view mode:', err);
-    }
-  };
-
-  const handleShowCompletedChange = async (show: boolean) => {
-    setShowCompleted(show);
-    try {
-      await updateUserPreferences({ shoppingListShowCompleted: show });
-    } catch (err) {
-      console.error('Failed to update show completed setting:', err);
     }
   };
 

@@ -1,53 +1,38 @@
 import React, { useState } from 'react';
-import { Recipe, Ingredient, Instruction, getDisplayTotalTime } from '../../types/recipe';
+import { Recipe } from '../../types/recipe';
 
 interface AddRecipeModalProps {
-  isOpen: boolean;
-  onClose: () => void;
-  onAdd: (recipe: Recipe) => void;
+  onSubmit: (recipe: Recipe) => void;
 }
 
-export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
-  isOpen,
-  onClose,
-  onAdd,
+const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
+  onSubmit
 }) => {
-  const [name, setName] = useState('');
-  const [description, setDescription] = useState('');
-  const [prepTime, setPrepTime] = useState<number | null>(null);
-  const [servings, setServings] = useState(4);
-  const [ingredients, setIngredients] = useState<Ingredient[]>([{ name: '', quantity: '', unit: null, notes: null }]);
-  const [instructions, setInstructions] = useState<Instruction[]>([{ order: 1, instruction: '' }]);
-  const [mealTypes, setMealTypes] = useState<string[]>(['dinner']);
-  const [cuisine, setCuisine] = useState<string[]>(['']);
   const [isScalable, setIsScalable] = useState(false);
 
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    
+  const handleSubmit = () => {
     const newRecipe: Recipe = {
       id: crypto.randomUUID(),
-      name,
-      description: description || null,
-      prepTime,
-      servings,
-      ingredients: ingredients.filter(ing => ing.name.trim() !== ''),
-      instructions: instructions.filter(inst => inst.instruction.trim() !== ''),
-      mealTypes: mealTypes.filter(type => type.trim() !== '') || null,
-      cuisine: cuisine.filter(c => c.trim() !== '') || null,
-      dateAdded: new Date(),
-      isFavorite: false,
-      isScalable: isScalable,
+      name: '',
+      description: null,
+      prepTime: null,
       cookTime: null,
       totalTime: null,
-      displayTotalTime: getDisplayTotalTime(null),
+      displayTotalTime: '',
+      servings: 4,
+      ingredients: [],
+      instructions: [],
       imageUrl: null,
       notes: null,
+      mealTypes: [],
+      cuisine: null,
       rating: null,
-      source: null
+      dateAdded: new Date(),
+      isFavorite: false,
+      source: null,
+      isScalable
     };
-
-    onAdd(newRecipe);
+    onSubmit(newRecipe);
   };
 
   return (
@@ -61,6 +46,9 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
       <label className="text-sm font-medium text-gray-700">
         This recipe works well for easily making smaller or larger portions (e.g., cut in half)
       </label>
+      <button onClick={handleSubmit} className="ml-4 px-4 py-2 bg-violet-600 text-white rounded-md">
+        Add Recipe
+      </button>
     </div>
   );
 };

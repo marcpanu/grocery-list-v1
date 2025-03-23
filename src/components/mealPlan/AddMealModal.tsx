@@ -159,9 +159,12 @@ export const AddMealModal = ({
     }
 
     // Validate ingredients
-    const validIngredients = formData.ingredients.filter(ing => 
-      ing.name.trim() && (typeof ing.quantity === 'string' ? ing.quantity.trim() : ing.quantity)
-    );
+    const validIngredients = formData.ingredients.map(ing => ({
+      name: ing.name,
+      quantity: ing.quantity,
+      unit: ing.unit || undefined,
+      notes: ing.notes || undefined
+    }));
     if (validIngredients.length === 0) {
       setError('At least one ingredient with name and quantity is required');
       return;

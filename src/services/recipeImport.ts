@@ -64,7 +64,8 @@ export async function importRecipeFromUrl(data: {
       type: 'url',
       url: parsedRecipe.source,
       title: null
-    }
+    },
+    isScalable: true
   };
 
   // Add the recipe to Firestore

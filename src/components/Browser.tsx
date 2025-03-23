@@ -3,7 +3,6 @@ import { PageHeader } from './PageHeader';
 
 export const Browser: React.FC = () => {
   const [url, setUrl] = useState('');
-  const [isOpen, setIsOpen] = useState(false);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();

@@ -45,60 +45,20 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
   userId,
   onTemplateCreated
 }) => {
-  const [isSaveTemplateOpen, setIsSaveTemplateOpen] = useState(false);
-  const [isTemplateSaving, setIsTemplateSaving] = useState(false);
-  const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [showTemplateModal, setShowTemplateModal] = useState(false);
 
   const handleSaveTemplate = async (name: string, description?: string) => {
     try {
-      setIsTemplateSaving(true);
-      setError(null);
-      
+      setLoading(true);
       await saveWeekAsTemplate(userId, weekId, name, description);
-      setIsSaveTemplateOpen(false);
+      setShowTemplateModal(false);
       await onTemplateCreated();
     } catch (err) {
       console.error('Failed to save template:', err);
-      setError('Failed to save template. Please try again.');
+      toast.error('Failed to save template. Please try again.');
     } finally {
-      setIsTemplateSaving(false);
-    }
-  };
-
-  const handleSaveAsTemplate = async () => {
-    try {
-      const templateName = prompt('Enter a name for this template:');
-      if (!templateName) return;
-
-      // Get all meals for the current week
-      const weekMeals = meals.map(meal => ({
-        name: meal.name,
-        description: meal.description || '', // Convert undefined to empty string
-        mealPlanMeal: meal.mealPlanMeal,
-        days: meal.days,
-        servings: meal.servings,
-        recipeId: meal.recipeId || null // Convert undefined to null
-      }));
-
-      // Create the template
-      const templateData = {
-        name: templateName,
-        description: '', // Default empty string
-        meals: weekMeals,
-        createdAt: new Date()
-      };
-
-      await saveWeekAsTemplate(userId, weekId, templateName, '');
-      
-      // Notify parent component
-      if (onTemplateCreated) {
-        await onTemplateCreated();
-      }
-      
-      toast.success('Template saved successfully');
-    } catch (error) {
-      console.error('Failed to save template:', error);
-      toast.error('Failed to save template');
+      setLoading(false);
     }
   };
 
@@ -144,7 +104,7 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
         <div className="flex justify-between items-center">
           <h2 className="text-lg font-semibold">Week Overview</h2>
           <button
-            onClick={() => setIsSaveTemplateOpen(true)}
+            onClick={() => setShowTemplateModal(true)}
             className="px-3 py-1.5 text-sm font-medium rounded-md text-violet-700 bg-violet-50 hover:bg-violet-100 transition-colors"
             disabled={isLoading || meals.length === 0}
           >
@@ -200,10 +160,10 @@ export const WeeklyCalendarView: React.FC<WeeklyCalendarViewProps> = ({
       </div>
 
       <SaveAsTemplateModal
-        isOpen={isSaveTemplateOpen}
-        onClose={() => setIsSaveTemplateOpen(false)}
+        isOpen={showTemplateModal}
+        onClose={() => setShowTemplateModal(false)}
         onSave={handleSaveTemplate}
-        isLoading={isTemplateSaving}
+        isLoading={loading}
       />
     </>
   );

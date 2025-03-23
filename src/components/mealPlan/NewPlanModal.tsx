@@ -65,7 +65,7 @@ export const NewPlanModal: React.FC<NewPlanModalProps> = ({
                     name="weekType"
                     value="previous"
                     checked={selectedOption === 'previous'}
-                    onChange={(e) => setSelectedOption('previous')}
+                    onChange={() => setSelectedOption('previous')}
                     className="text-violet-600 focus:ring-violet-500"
                   />
                   <label htmlFor="previous" className="text-sm font-medium text-gray-700">
@@ -80,7 +80,7 @@ export const NewPlanModal: React.FC<NewPlanModalProps> = ({
                     name="weekType"
                     value="template"
                     checked={selectedOption === 'template'}
-                    onChange={(e) => setSelectedOption('template')}
+                    onChange={() => setSelectedOption('template')}
                     className="text-violet-600 focus:ring-violet-500"
                   />
                   <label htmlFor="template" className="text-sm font-medium text-gray-700">

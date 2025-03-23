@@ -40,7 +40,7 @@ import {
 } from '../types/index';
 import { encryptPassword } from '../utils/encryption';
 import { DEFAULT_PANTRY_ITEMS } from '../utils/defaultPantryItems';
-import { calculateScalingFactor, updateWeekScalingFactors } from '../utils/scalingCalculations';
+import { updateWeekScalingFactors } from '../utils/scalingCalculations';
 
 // Collection names
 const COLLECTIONS = {
@@ -806,9 +806,12 @@ const isIngredientInPantry = (ingredientName: string, pantryItems: PantryItem[])
 };
 
 // Function to add recipe ingredients to the grocery list with pantry exclusion and quantity adjustment
-export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, weekId?: string): Promise<void> => {
+export const addRecipeIngredientsToGroceryList = async (
+  recipe: Recipe,
+  servingsMultiplier: number
+): Promise<void> => {
   try {
-    console.log(`Adding recipe ${recipe.id} ingredients to grocery list${weekId ? ` for week ${weekId}` : ''}`);
+    console.log(`Adding recipe ${recipe.id} ingredients to grocery list`);
 
     // Get the user's shopping list
     const userLists = await getUserShoppingLists('default');
@@ -835,20 +838,12 @@ export const addRecipeIngredientsToGroceryList = async (recipe: Recipe, weekId?:
 
     // Get scaling factor from week if weekId is provided
     let scalingFactor = 1;
-    console.log('weekId:', weekId);
+    console.log('weekId:', servingsMultiplier);
     console.log('scalingFactor:', scalingFactor);
 
-    if (weekId) {
-      const weekRef = doc(db, COLLECTIONS.WEEKS, weekId);
-      const weekSnap = await getDoc(weekRef);
-     
-      if (weekSnap.exists()) {
-        const week = weekSnap.data() as Week;
-        if (week.scalingFactors?.[recipe.id]) {
-          scalingFactor = week.scalingFactors[recipe.id];
-          console.log(`Using week scaling factor for recipe ${recipe.id}: ${scalingFactor}`);
-        }
-      }
+    if (servingsMultiplier) {
+      scalingFactor = servingsMultiplier;
+      console.log(`Using servings multiplier: ${servingsMultiplier}`);
     }
     
     // Import the ingredient processing utilities

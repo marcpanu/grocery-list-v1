@@ -65,7 +65,8 @@ export const processIngredientsToShoppingItems = (
           quantity: combined.quantity,
           unit: combined.unit,
           category: category,
-          checked: false
+          checked: false,
+          order: shoppingItems.length + 1
         };
         
         console.log(`Adding shopping item with category: ${newItem.name} -> ${newItem.category ? newItem.category.name : 'none'}`);
@@ -112,7 +113,8 @@ export const processIngredientsToShoppingItems = (
           quantity: standardized.quantity,
           unit: standardized.unit,
           category: category,
-          checked: false
+          checked: false,
+          order: shoppingItems.length + 1
         };
         
         console.log(`Adding shopping item with category: ${newItem.name} -> ${newItem.category ? newItem.category.name : 'none'}`);
@@ -130,7 +132,8 @@ export const processIngredientsToShoppingItems = (
           quantity: quantity,
           unit: singleItem.unit || undefined,
           category: category,
-          checked: false
+          checked: false,
+          order: shoppingItems.length + 1
         };
         
         console.log(`Adding shopping item with category (after error): ${newItem.name} -> ${newItem.category ? newItem.category.name : 'none'}`);
