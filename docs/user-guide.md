@@ -36,7 +36,7 @@ The scheduling screen is split into two main sections:
 - Features:
   - Drag recipes to any meal slot
   - Copy recipes to multiple slots
-  - Adjust serving sizes per meal (for scalable recipes)
+  - Adjust serving sizes per meal
     - Default: 2 servings
     - Customizable for single meals or guests
     - Maintains exact measurements for precision recipes

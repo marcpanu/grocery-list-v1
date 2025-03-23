@@ -342,10 +342,7 @@ export const AddMealModal = ({
               </div>
 
               <div className="flex items-center space-x-2">
-                <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
-                  This recipe works well for making smaller or larger portions
-                </label>
-                <input
+              <input
                   type="checkbox"
                   id="isScalable"
                   checked={formData.isScalable}
@@ -353,6 +350,9 @@ export const AddMealModal = ({
                   className="h-4 w-4 rounded border-zinc-300 text-violet-600 focus:ring-violet-500"
                   disabled={!!selectedRecipe || isLoading}
                 />
+                <label htmlFor="isScalable" className="text-sm font-medium text-zinc-700">
+                  This recipe works well for making smaller or larger portions (e.g., cut in half)
+                </label>
               </div>
             </div>
 

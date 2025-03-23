@@ -52,15 +52,15 @@ export const AddRecipeModal: React.FC<AddRecipeModalProps> = ({
 
   return (
     <div className="flex items-center space-x-2 mb-4">
-      <label className="text-sm font-medium text-gray-700">
-        This recipe works well for easily making smaller or larger portions
-      </label>
       <input
         type="checkbox"
         checked={isScalable}
         onChange={(e) => setIsScalable(e.target.checked)}
         className="h-4 w-4 rounded border-gray-300 text-violet-600 focus:ring-violet-500"
       />
+      <label className="text-sm font-medium text-gray-700">
+        This recipe works well for easily making smaller or larger portions (e.g., cut in half)
+      </label>
     </div>
   );
 };
