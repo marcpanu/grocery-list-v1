@@ -197,6 +197,26 @@ npm run test:e2e
    - Updated meal creation to include week selection
    - Enhanced meal retrieval to filter by week
 
+6. Template and Settings Management
+   - Implemented week template system
+     - Template creation from existing weeks
+     - Template storage and retrieval
+     - Template application with merge/overwrite options
+     - Template management in settings
+   - Reorganized settings interface
+     - List management section (stores, categories, pantry)
+     - Meal planning section (templates)
+     - Data management section
+     - About section
+   - Enhanced template UI components
+     - Template list with meal counts
+     - Delete functionality
+     - Clear empty states
+   - Improved settings navigation
+     - Consistent back button behavior
+     - Section-specific management views
+     - Proper state persistence
+
 ### Known Issues
 1. Meal Plan Page
    - Recipe import modal close/cancel functionality fixed
@@ -213,10 +233,12 @@ npm run test:e2e
    - Improve weekly view interactions
    - Add drag-and-drop functionality
    - Enhance form validation
-   - Add meal plan templates
    - Expand week navigation with more options
    - Add week duplication capability
    - Implement meal copying between weeks
+   - Add template search and filtering
+   - Enhance template application UX
+   - Add template categories or tags
 
 2. Recipe Import Enhancement
    - Improve error messages
@@ -569,3 +591,79 @@ interface UserCategorizations {
 ```
 
 ## Technical Details 
+
+### Component Organization
+```
+src/
+  ├── components/
+  │   ├── settings/
+  │   │   ├── TemplateManager.tsx    # Template management
+  │   │   ├── StoreManager.tsx       # Store management
+  │   │   ├── CategoryManager.tsx    # Category management
+  │   │   ├── PantryManager.tsx      # Pantry management
+  │   │   └── DataManagement.tsx     # Data management
+  │   └── mealPlan/
+  │       ├── NewPlanModal.tsx       # Week creation with template support
+  │       └── WeeklyCalendarView.tsx # Week view with template actions
+```
+
+### Template Management Implementation
+```typescript
+// Template Creation
+const handleSaveTemplate = async (name: string, description?: string) => {
+  const weekMeals = await getMealsByWeek(userId, weekId);
+  const templateData = {
+    name,
+    description,
+    meals: weekMeals.map(meal => ({
+      name: meal.name,
+      description: meal.description,
+      mealPlanMeal: meal.mealPlanMeal,
+      days: meal.days,
+      servings: meal.servings,
+      recipeId: meal.recipeId
+    }))
+  };
+  await saveWeekAsTemplate(userId, templateData);
+};
+
+// Template Application
+const handleApplyTemplate = async (
+  templateId: string,
+  weekId: string,
+  mode: 'merge' | 'replace'
+) => {
+  if (mode === 'replace') {
+    await clearWeekMeals(userId, weekId);
+  }
+  const template = await getTemplate(templateId);
+  for (const meal of template.meals) {
+    await addMealToWeek(userId, weekId, meal);
+  }
+};
+```
+
+### Settings Component Structure
+```typescript
+// Settings Organization
+const Settings: React.FC = () => {
+  const [activeSection, setActiveSection] = useState<SettingsSection>(
+    'main' | 'stores' | 'categories' | 'pantry' | 'templates' | 'data'
+  );
+
+  // Section-specific views
+  if (activeSection === 'templates') {
+    return <TemplateManager />;
+  }
+
+  // Main settings view with sections
+  return (
+    <div>
+      <ListManagementSection />
+      <MealPlanningSection />
+      <DataManagementSection />
+      <AboutSection />
+    </div>
+  );
+};
+```

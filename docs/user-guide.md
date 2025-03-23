@@ -122,25 +122,48 @@ The meal planning screen features an enhanced interface with multi-week planning
 
 ### 4. Configuration Screen
 
-Customize your shopping experience:
+The settings screen is organized into four main sections:
 
-#### Store Management
-- Add and manage your preferred grocery stores
-- Set default store preferences
+#### List Management
+- **Manage Stores**
+  - Add and edit your preferred grocery stores
+  - Set store order and active status
+  - Customize store-specific settings
+- **Manage Categories**
+  - Create and organize item categories
+  - Set category order and visibility
+  - Map items to categories
+- **Manage Pantry Items**
+  - Define items you always have in stock
+  - Add variant names for ingredients
+  - Categorize pantry items
+  - Items are automatically excluded from shopping lists
 
-#### Store Organization
-- Optional: Customize item sequencing per store
-- Create store-specific shopping paths
+#### Meal Planning
+- **Manage Templates**
+  - View all saved week templates
+  - See template details including:
+    - Template name and description
+    - Number of meals included
+    - Creation date
+  - Delete unused templates
+  - Templates can be applied when creating new weeks
+  - Choose to overwrite or merge when applying templates
 
-#### Category Management
-- Map items to categories
-- Set store priority for specific items or categories
+#### Data Management
+- **Manage Recipe Images**
+  - View stored recipe images
+  - Monitor storage usage
+  - Clean up unused images
+- **Website Credentials**
+  - Manage saved credentials for recipe imports
+  - Add new website credentials
+  - Remove old or unused credentials
 
-#### Pantry Management
-- Define items you always have in your pantry
-- Add variant names for pantry items (e.g., "salt" can include "sea salt", "kosher salt")
-- Categorize pantry items for better organization
-- Pantry items are automatically excluded from generated grocery lists
+#### About
+- View application version
+- Access documentation
+- Find support information
 
 ## Tips & Tricks
 
@@ -158,6 +181,14 @@ Customize your shopping experience:
 - **Improved Meal Editing**: Click directly on meal cards to view recipe details, or use the edit button to modify meal settings without changing the recipe details
 - **Recipe Scalability**: Mark recipes that require exact measurements as non-scalable to prevent conversion errors
 - **Serving Size Adjustments**: Only adjust serving sizes for scalable recipes to maintain recipe integrity
+
+### Template Management
+- **Create Templates**: Save frequently used meal plans as templates
+- **Template Application**: When applying templates, choose between:
+  - Overwrite: Replace all meals in the target week
+  - Merge: Add template meals while keeping existing ones
+- **Previous Weeks**: Use past weeks as templates for new weeks
+- **Template Organization**: Delete unused templates to keep your list manageable
 
 ## Keyboard Shortcuts
 

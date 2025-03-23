@@ -75,6 +75,13 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - "Today" button to quickly navigate to current week
   - Add new weeks with one click
   - Week labels with clear date ranges for easy navigation
+  - Create weeks from templates or previous weeks
+  - Choose to overwrite or merge when applying templates
+- Week template management
+  - Save current week as a template
+  - Apply templates to new or existing weeks
+  - Manage templates in settings
+  - Delete unused templates
 - Intuitive meal card interactions
   - Click on meal card to view detailed recipe information
   - Use edit button to modify meal settings (type, servings, days)
@@ -84,12 +91,25 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - Recipe creation: name, servings, ingredients, instructions
   - Meal scheduling: meal type, at least one day
 
-### User Preferences
-- Customize recipe view mode (grid/compact)
-- Sort recipes by name, date added, or rating
-- Filter recipes by meal type and cuisine
-- Show/hide favorites
-- Persistent preferences storage
+### Settings and Configuration
+- List Management
+  - Manage stores and locations
+  - Customize item categories
+  - Configure pantry items
+- Meal Planning
+  - View and manage week templates
+  - Delete unused templates
+  - See template details and meal counts
+- Data Management
+  - Manage recipe images
+  - Handle website credentials
+  - Control data storage
+- User interface preferences
+  - Customize recipe view mode (grid/compact)
+  - Sort recipes by name, date added, or rating
+  - Filter recipes by meal type and cuisine
+  - Show/hide favorites
+  - Persistent preferences storage
 
 ## Project Status
 
@@ -108,6 +128,8 @@ A modern, user-friendly shopping list application built with React, TypeScript, 
   - Required field validation
   - Multi-week meal planning
   - Week navigation and timeline view
+  - Week templates and previous week copying
+  - Template management in settings
   - Intuitive meal editing workflow
     - View recipe details by clicking meals
     - Edit meal settings with dedicated button
@@ -186,6 +208,12 @@ src/
 - `RecipeUrlImport`: URL-based recipe import
 - `AddMealModal`: Recipe creation and editing form (simplified with optional fields)
 - `ScheduleMealModal`: Dedicated form for scheduling selected recipes in the meal plan
+- `TemplateManager`: Template management interface in settings
+- `Settings`: Comprehensive settings management with sections for:
+  - List management (stores, categories, pantry)
+  - Meal planning (templates)
+  - Data management
+  - About information
 
 ### State Management
 - Firebase Firestore for data persistence

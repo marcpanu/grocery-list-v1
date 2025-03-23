@@ -80,6 +80,25 @@ interface Week {
   updatedAt: Date;
 }
 
+interface WeekTemplate {
+  id: string;
+  userId: string;
+  name: string;
+  description?: string;
+  meals: TemplateMeal[];
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface TemplateMeal {
+  name: string;
+  description?: string;
+  mealPlanMeal: MealPlanMealType;
+  days: string[];
+  servings: number;
+  recipeId?: string;
+}
+
 interface Meal {
   id: string;
   userId: string;         // Owner of the meal
@@ -395,3 +414,72 @@ App
     ├── PantryManager
     └── DataManagement
 ```
+
+### Settings Management
+```typescript
+interface Settings {
+  userId: string;
+  stores: Store[];
+  categories: Category[];
+  pantryItems: PantryItem[];
+  weekTemplates: WeekTemplate[];
+  preferences: UserPreferences;
+  createdAt: Date;
+  updatedAt: Date;
+}
+
+interface UserPreferences {
+  recipeViewMode: 'grid' | 'list';
+  defaultServings: number;
+  showFavorites: boolean;
+  sortBy: 'name' | 'date' | 'rating';
+  filterMealTypes: string[];
+  filterCuisine: string[];
+}
+```
+
+### Settings Organization
+The settings system is organized into distinct sections:
+
+#### List Management
+- Store configuration and management
+- Category organization and ordering
+- Pantry item definition and variants
+
+#### Meal Planning
+- Week template management
+- Template creation and deletion
+- Template application modes (overwrite/merge)
+
+#### Data Management
+- Recipe image storage
+- Website credentials for imports
+- Data usage monitoring
+
+#### User Interface
+- Recipe view preferences
+- Sorting and filtering defaults
+- Display customization options
+
+### Template Management System
+The template system provides these key features:
+
+#### Template Creation
+- Save current week as template
+- Include all meals and their settings
+- Optional template description
+- Automatic creation date tracking
+
+#### Template Application
+- Apply to new or existing weeks
+- Two application modes:
+  - Overwrite: Clear existing meals
+  - Merge: Add template meals to existing
+- Preserve meal settings during application
+- Handle recipe references properly
+
+#### Template Storage
+- Dedicated templates collection
+- User-specific template access
+- Efficient template retrieval
+- Automatic cleanup on deletion
